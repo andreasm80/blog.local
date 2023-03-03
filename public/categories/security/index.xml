@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>security on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/security/</link>
+    <description>Recent content in security on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sat, 10 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/security/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Antrea Network Policies</title>
+      <link>https://yikes.guzware.net/2021/07/10/antrea-network-policies/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/antrea-network-policies/</guid>
+      <description>
+        
+          
+            This post will go through the Antrea-native policy resources and how to use them to secure your Kubernetes environment combined with K8s network policies.
+Abbreviations used in this article:
+Container Network Interface = CNI Antrea Cluster Network Policies = ACNP Antrea Network Policies = ANP Kubernetes Network Policies = K8s policies or KNP When it comes to securing your K8s infrastructure it can be done in several layers in the infrastructure as a whole.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

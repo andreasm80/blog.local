@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>deployment on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/deployment/</link>
+    <description>Recent content in deployment on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Tue, 18 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/deployment/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>VMware NSX Application Platform</title>
+      <link>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</link>
+      <pubDate>Tue, 18 Jan 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</guid>
+      <description>
+        
+          
+            VMware NSX 3.2 is out and packed with new features. One of them is the NSX Application Platform which runs on Kubernetes to provide the NSX ATP (Advanced Threat Protection) functionality such as NSX Intelligence (covered in a previous post), NSX Network Detection and Response (NDR) and NSX Malware. This post will go through how to spin up a K8s cluster for this specific scenario covering the pre-reqs from start to finish.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Advanced LoadBalancer with Antrea on Native K8s</title>
+      <link>https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/</link>
+      <pubDate>Thu, 08 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/</guid>
+      <description>
+        
+          
+            This post will cover the steps to bring up a Kubernetes cluster in Ubuntu, then how to install and configure Antrea as CNI and how to install and configure NSX Advanced Load Balancer to use as a servicetype Load Balancer in the k8s environment with the use of Avi Kubernetes Operator.
+Abbreviations used in this post:
+NSX Advanced Load Balancer = NSX ALB Avi Kubernetes Operator = AKO Kubernetes = k8s Container Network Interface = CNI Load Balancer = lb Introduction to this post When working with pods in a k8s cluster there is often the use of nodePort, clusterIP and LoadBalancer.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

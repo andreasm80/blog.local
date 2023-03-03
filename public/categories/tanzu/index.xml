@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tanzu on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/tanzu/</link>
+    <description>Recent content in Tanzu on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Wed, 26 Oct 2022 12:06:08 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/tanzu/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>vSphere 8 with Tanzu using VDS and Avi Loadbalancer</title>
+      <link>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/</link>
+      <pubDate>Wed, 26 Oct 2022 12:06:08 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/</guid>
+      <description>
+        
+          
+            Deploy Tanzu in vSphere 8 with VDS and Avi Loadbalancer: This post will go through how to install Tanzu in vSphere 8 using vSphere VDS networking and Avi as loadbalancer. The goal is to deploy Tanzu by using vSphere Distributed Switch (no NSX this time) and utilize Avi as loadbalancer for Supervisor and workload cluster L4 endpoint (kubernetes API). When that is done I will go through how we also can extend this into L7 (Ingress) by using AKO in our workload clusters.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer</title>
+      <link>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/</link>
+      <pubDate>Wed, 26 Oct 2022 12:03:35 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/</guid>
+      <description>
+        
+          
+            Deploy Tanzu in vSphere 8 with NSX and Avi Loadbalancer: This post will go through how to install Tanzu in vSphere 8 using NSX networking (including built in L4 loadbalancer) and Avi as L7 loadbalancer. The goal is to deploy Tanzu by using NSX for all networking needs, including the Kubernetes Api endpoint (L4) and utilize Avi as loadbalancer for all L7 (Ingress). The deployment of Tanzu with NSX is an automated process, but it does not include L7 loadbalancing.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer</title>
+      <link>https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/</link>
+      <pubDate>Sun, 23 Oct 2022 08:22:35 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/</guid>
+      <description>
+        
+          
+            Global Server LoadBalancing in VMware Tanzu with AMKO This post will go through how to configure AVI (NSX ALB) with GSLB in vSphere with Tanzu (TKGs) and an upstream k8s cluster in two different physical locations. I have already covered AKO in my previous posts, this post will assume knowledge of AKO (Avi Kubernetes Operator) and extend upon that with the use of AMKO (Avi Multi-Cluster Kubernetes Operator). The goal is to have the ability to scale my k8s applications between my &amp;quot;sites&amp;quot; and make them geo-redundant.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>harbor on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/harbor/</link>
+    <description>Recent content in harbor on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Thu, 13 Oct 2022 21:56:15 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/harbor/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>VMware Harbor Registry</title>
+      <link>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</link>
+      <pubDate>Thu, 13 Oct 2022 21:56:15 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</guid>
+      <description>
+        
+          
+            This post will briefly go through how to deploy (using Helm), configure and use VMware Harbor registry in Kubernetes.
+Quick introduction to Harbor Harbor is an open source registry that secures artifacts with policies and role-based access control, ensures images are scanned and free from vulnerabilities, and signs images as trusted. Harbor, a CNCF Graduated project, delivers compliance, performance, and interoperability to help you consistently and securely manage artifacts across cloud native compute platforms like Kubernetes and Docker.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

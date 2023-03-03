@@ -1,0 +1,1137 @@
+
+<!DOCTYPE html>
+<html
+  lang="en"
+  data-figures=""
+  
+    class="page"
+  
+  
+  
+    data-mode="dim"
+  >
+  <head>
+<title>Antrea Egress | From 0.985mhz... to several Ghz</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+
+
+  
+<meta property="og:locale" content="en" />
+
+<meta property="og:type" content="article">
+<meta name="description" content="Article description." />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:creator" content="">
+<meta name="twitter:title" content="Antrea Egress" />
+<meta name="twitter:image" content="https://yikes.guzware.net/2023/02/20/antrea-egress/images/antrea-stacked-color3.webp"/>
+<meta property="og:url" content="https://yikes.guzware.net/2023/02/20/antrea-egress/" />
+<meta property="og:title" content="Antrea Egress" />
+<meta property="og:description" content="Article description." />
+<meta property="og:image" content="https://yikes.guzware.net/2023/02/20/antrea-egress/images/antrea-stacked-color3.webp" />
+  <meta name="keywords" content="nsx,vmware,kubernetes" />
+
+<link rel="apple-touch-icon" sizes="180x180" href="https://yikes.guzware.net/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://yikes.guzware.net/icons/favicon-32x32.png">
+<link rel="manifest" href="https://yikes.guzware.net/icons/site.webmanifest">
+
+<link rel="canonical" href="https://yikes.guzware.net/2023/02/20/antrea-egress/">
+
+
+
+<link rel="preload" href="https://yikes.guzware.net/css/styles.6c67fa3a7f5290a2facfb027358dd2bdb5450d04b8de427c8a74d79f524a7fb716b470b14b6ba95f1b7cf3aa9a2219a7294a6adeaf16a1080f432eae45d8c03c.css" integrity = "sha512-bGf6On9SkKL6z7AnNY3SvbVFDQS43kJ8inTXn1JKf7cWtHCxS2upXxt886qaIhmnKUpq3q8WoQgPQy6uRdjAPA==" as="style" crossorigin="anonymous">
+
+
+
+<link rel="preload" href="https://yikes.guzware.net/en/js/bundle.597a98a0532def1db904a0a3d3c07e7f9d783e74aca99a317bb98a2c3a0889eacc7a71bc353347f2604d4d61e00d90babdc933cc1fa4a3bdcee857c1e2237b27.js" as="script" integrity=
+"sha512-WXqYoFMt7x25BKCj08B&#43;f514PnSsqZoxe7mKLDoIierMenG8NTNH8mBNTWHgDZC6vckzzB&#43;ko73O6FfB4iN7Jw==" crossorigin="anonymous">
+
+
+<link rel="stylesheet" type="text/css" href="https://yikes.guzware.net/css/styles.6c67fa3a7f5290a2facfb027358dd2bdb5450d04b8de427c8a74d79f524a7fb716b470b14b6ba95f1b7cf3aa9a2219a7294a6adeaf16a1080f432eae45d8c03c.css" integrity="sha512-bGf6On9SkKL6z7AnNY3SvbVFDQS43kJ8inTXn1JKf7cWtHCxS2upXxt886qaIhmnKUpq3q8WoQgPQy6uRdjAPA==" crossorigin="anonymous">
+
+
+  </head>
+  <body
+    data-code="7"
+    data-lines="false"
+    id="documentTop"
+    data-lang="en"
+  >
+
+<header class="nav_header" >
+  <nav class="nav"><a href='https://yikes.guzware.net/' class="nav_brand nav_item" title="From 0.985mhz... to several Ghz">
+  <img src="https://yikes.guzware.net/quote3.png" class="logo" alt="From 0.985mhz... to several Ghz">
+  <div class="nav_close">
+    <div><svg class="icon">
+  <title>open-menu</title>
+  <use xlink:href="#open-menu"></use>
+</svg>
+<svg class="icon">
+  <title>closeme</title>
+  <use xlink:href="#closeme"></use>
+</svg>
+</div>
+  </div>
+</a>
+
+    <div class='nav_body nav_body_left'>
+      
+      
+      
+        
+
+  <div class="nav_parent">
+    <a href="https://yikes.guzware.net/" class="nav_item" title="Home">Home </a>
+  </div>
+  <div class="nav_parent">
+    <a href="https://yikes.guzware.net/about/" class="nav_item" title="About">About </a>
+  </div>
+      
+<div class='follow'>
+<div class="color_mode">
+  <input type="checkbox" class="color_choice" id="mode">
+</div>
+
+</div>
+
+    </div>
+  </nav>
+</header>
+
+    <main>
+  
+<div class="grid-inverse wrap content">
+  <article class="post_content">
+    <h1 class="post_title">Antrea Egress</h1>
+  <div class="post_meta">
+    <span><svg class="icon">
+  <title>calendar</title>
+  <use xlink:href="#calendar"></use>
+</svg>
+</span>
+    <span class="post_date">
+      20-02-2023</span>
+    <span class="post_time"> · 18 min read</span><span>&nbsp;· <a href='https://yikes.guzware.net/tags/antrea/' title="Antrea" class="post_tag button button_translucent">Antrea
+        </a><a href='https://yikes.guzware.net/tags/kubernetes/' title="Kubernetes" class="post_tag button button_translucent">Kubernetes
+        </a><a href='https://yikes.guzware.net/tags/tanzu/' title="Tanzu" class="post_tag button button_translucent">Tanzu
+        </a>
+    </span>
+  </div>
+
+      <div class="post_toc">
+        <h2>Overview</h2>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#configure-antrea-egress-in-tkc-vsphere-8">Configure Antrea Egress in TKC (vSphere 8)</a>
+      <ul>
+        <li><a href="#verify-antrea-egress-works-with-l2">Verify Antrea Egress works with L2</a></li>
+        <li><a href="#configure-frr-on-worker-nodes">Configure FRR on worker nodes</a></li>
+        <li><a href="#kubernetes-and-daemonset">Kubernetes and <em>Daemonset</em>.</a></li>
+        <li><a href="#a-note-on-frr-config-on-the-worker-nodes">A note on FRR config on the worker nodes</a></li>
+        <li><a href="#individual-frr-config-on-the-worker-nodes">Individual FRR config on the worker nodes</a></li>
+        <li><a href="#antrea-ip-pool-outside-subnet-of-worker-nodes">Antrea IP Pool outside subnet of worker nodes</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+      </div>
+    
+    <div class="post_body"><h1 id="antrea-egress">Antrea Egress:</h1>
+<p>What is Egress when we talk about Kubernetes? Well if a pod wants to communicate to the outside world, outside the Kubernetes cluster it runs in, out of the worker node the pod resides on, this is egress traffic (definition &quot;<em>the action of going out of or leaving a place</em>&quot; and in network terminology means the direction is outward from itself).</p>
+<img src=images/image-20230221115509202.png style="width:500px" />
+<p>Why does egress matter? Well, usually when the pods communicate out, they will use the IP address of the worker node they currently is deployed on. Thats means the actual pod IP is not the address you should be expecting when doing network inspection, tcpdump, firewall rules etc, it is the Kubernetes worker nodes IP addresses. What we call this network feature is NAT, Network Address Translation. All Kubernetes worker nodes will take the actual POD IP and translate it to its own IP before sending the traffic out of itself. And as we know, we don't know where the pod will be deployed, and the pods can be many and will relocate so in certain environments it can be hard, not granular enough to create firewall rules in the perimeter firewall to allow or block traffic from a certain pod when needed when we only can use the IP addresses of the worker nodes.</p>
+<p>Thats where Antrea Egress comes in. With Antrea Egress we have the option to dictate which specific IP address the POD can use when communication out by using an IP address that is not its POD IP address but a valid and allowed IP address in the network. You can read more on the Antrea Egress feature <a href="https://antrea.io/docs/v1.10.0/docs/egress/">here</a></p>
+<p>As the diagram below will illustrate, when pods communicate out, the will all get their POD IP addresses translated into the worker node's IP address. And the firewall between worker node and the SQL server are only able to allow or block the IP address of the worker node. That means we potentially allow or block all pods coming from this node, or nodes if we allow the range of all the worker nodes.</p>
+<img src=images/image-20230221120316551.png style="width:500px" />
+<p>Ofcourse we can use Antrea Native Policies which I have written about <a href="https://yikes.guzware.net/2021/07/10/antrea-network-policies/">here</a> or VMware NSX with NCP, and VMware NSX with Antrea Integration to do fine grained security from source. But still there are environments we need to handle rules in perimeter firewalls.</p>
+<p>So, this post will show how to enable Antrea Egress in vSphere 8 with Tanzu. With the current release of Antrea there is only support of using the same L2 network as worker nodes for the Antrea Egress IP-Pool.</p>
+<img src=images/image-20230221120744786.png style="width:500px" />
+<p>As we can see in the diagram above, Antrea Egress has been configured with an IP-Pool the pods can get if we apply Antrea Egress IPs for them to use. It will then take a free IP from the Egress IP Pool and which is within the same L2 subnet as the workers are configured on. This is very easy to do and achieve. No need to create static routes, Antrea takes care of the IP mapping. With this in place the firewall rule is now very strict, I can allow only the IP 10.10.1.40 (which is the IP the POD got from Antrea Egress Pool) and block the worker node ip address.</p>
+<p>But.... I wanted to go a bit further and make use of L3 anyway for my Antrea Egress IP-Pool by utilizing BGP. Thats where the fun starts and this article is actually about. What I would like to achieve is that the IP address pool I configfure with Antrea Egress is something completely different from what the workers are using, not even the same L2 subnet but a completely different subnet. That means we need to involve some clever routing, and some configuration done on the worker nodes as its actually their IP addresses that becomes the gateway for our Antrea Egress subnets.</p>
+<p>Something like this:</p>
+<img src=images/image-20230221121015192.png style="width:500px" />
+<p>The diagram above shows a pod getting an IP address from the Egress pool which is something completely different from what subnet the worker node itself has. What Antrea does is creating a virtual interface on the worker node and assigns all the relevant ip addresses that are being used by Antrea Egress on that interface. They will use the default route on the worker node itself when going out, but the only component in the network that does know about this Egress subnet is the worker node itself, so it needs to tell this to his buddy routers out there. Either we create a static route on the router (could be the next hop of the worker node, the closest one, or some other hop in the infrastructure) or use BGP. Static route is more or less useless, too many ip addresses to update each time an egress ip is being applied, it could be on any worker node etc. So BGP is the way to go.</p>
+<p>The Diagram below illustrates what happens if we dont tell our network routers where this network comes from and where it can be reached. It will egress out, but no one knows the way back.</p>
+<img src=images/image-20230221121152706.png style="width:700px" />
+<p>As soon as the routers are informed of the address to this IP address they will be more than happy to deliver it for us, thats their job. Imagine being a postman delivering a packet somewhere in a country without any direction, address etc to narrow down his search field. In the scenario above the return traffic will most likely be sent out via a default route to the Internet and never to be seen again 😄</p>
+<p>So after we have been so kind to update with the exact delivery address below, we will get our mail again.</p>
+<img src=images/image-20230221121312136.png style="width:700px" />
+<p>Enough explanation already, get to the actual config of this.</p>
+<h2 id="configure-antrea-egress-in-tkc-vsphere-8">Configure Antrea Egress in TKC (vSphere 8)</h2>
+<p>Deploy your TKC cluster, it must be Ubuntu os for this to work:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">cluster.x-k8s.io/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Cluster</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-2-tkc-cluster-1 </span><span class="w"> </span><span class="c"># give your tkc cluster a name</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-2-ns-1</span><span class="w"> </span><span class="c"># remember to put it in your defined vSphere Namespace</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">    </span><span class="nt">services</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;20.10.0.0/16&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span><span class="nt">pods</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;20.20.0.0/16&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;cluster.local&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">  </span><span class="nt">topology</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">    </span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="l">tanzukubernetescluster</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l">v1.23.8---vmware.2-tkg.2-zshippable</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">    </span><span class="nt">controlPlane</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">      </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">      </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">          </span><span class="nt">run.tanzu.vmware.com/resolve-os-image</span><span class="p">:</span><span class="w"> </span><span class="l">os-name=ubuntu</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">    </span><span class="nt">workers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">      </span><span class="nt">machineDeployments</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">        </span>- <span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="l">node-pool</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">node-pool-01</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">          </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">          </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">27</span><span class="cl"><span class="w">            </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">28</span><span class="cl"><span class="w">              </span><span class="nt">run.tanzu.vmware.com/resolve-os-image</span><span class="p">:</span><span class="w"> </span><span class="l">os-name=ubuntu</span><span class="w">
+</span></span></span><span class="line"><span class="ln">29</span><span class="cl"><span class="w">    </span><span class="nt">variables</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">30</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmClass</span><span class="w">
+</span></span></span><span class="line"><span class="ln">31</span><span class="cl"><span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l">best-effort-medium</span><span class="w">
+</span></span></span><span class="line"><span class="ln">32</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">storageClass</span><span class="w">
+</span></span></span><span class="line"><span class="ln">33</span><span class="cl"><span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l">vsan-default-storage-policy</span><span class="w">
+</span></span></span></code></pre></div><p>Apply the correct Antrea configs, enable the Egress feature:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">cni.tanzu.vmware.com/v1alpha1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">AntreaConfig</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-2-tkc-cluster-1-antrea-package</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-2-ns-1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">antrea</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">      </span><span class="nt">featureGates</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">        </span><span class="nt">AntreaProxy</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">        </span><span class="nt">EndpointSlice</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">        </span><span class="nt">AntreaPolicy</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">        </span><span class="nt">FlowExporter</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">        </span><span class="nt">Egress</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="c">#This needs to be enabled</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">        </span><span class="nt">NodePortLocal</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">        </span><span class="nt">AntreaTraceflow</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">        </span><span class="nt">NetworkPolicyStats</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span></code></pre></div><p>Log in to your newly created TKC cluster:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">kubectl-vsphere login --server<span class="o">=</span>10.102.7.11 --insecure-skip-tls-verify --vsphere-username<span class="o">=</span>andreasm@cpod-nsxam-wdc.az-wdc.cloud-garage.net --tanzu-kubernetes-cluster-name tkc-cluster-1 --tanzu-kubernetes-cluster-namespace ns-1
+</span></span></code></pre></div><p>Delete the Antrea Controller and Agent pods. 
+Now that we have done the initial config of our TKC cluster its time to test Antrea Egress within same subnet as worker nodes just to verify that it works.</p>
+<p>From now on you should stay in the context of your newly created TKC cluster.</p>
+<h3 id="verify-antrea-egress-works-with-l2">Verify Antrea Egress works with L2</h3>
+<p>To be able to use Antrea Egress we need to first start with an IP-Pool definition. So I create my definition like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">crd.antrea.io/v1alpha2</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ExternalIPPool</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">antrea-ippool-l2</span><span class="w"> </span><span class="c">#just a name of this specific pool</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">    </span><span class="nt">ipRanges</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">    </span>- <span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="m">10.102.6.40</span><span class="w"> </span><span class="c"># make sure not to use already used ips</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">      </span><span class="nt">end</span><span class="p">:</span><span class="w"> </span><span class="m">10.102.6.50</span><span class="w"> </span><span class="c"># should not overlap with worker nodes</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w"></span><span class="c">#    - cidr: 10.101.112.0/32  # or you can define a whole range with cidr /32, /27 etc</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"> </span>{}<span class="w"> </span><span class="c"># you can remove the brackets and define which nodes you want below by using labels</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w"></span><span class="c">#      matchLabels:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w"></span><span class="c">#        egress-l2: antrea-egress-l2</span><span class="w">
+</span></span></span></code></pre></div><p>Apply your yaml definition above:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/antrea/egress$ k apply -f ippool.wdc2.tkc.cluster-1.yaml 
+</span></span><span class="line"><span class="ln">2</span><span class="cl">externalippool.crd.antrea.io/antrea-ippool-l2 created
+</span></span></code></pre></div><p>Then we need to define the actual Egress itself. What we do with this config is selecting which pod that should get an Egress ip, from wich Antrea Egress IP pool (we can have several). So here is my example:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">crd.antrea.io/v1alpha2</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Egress</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">antrea-egress-l2</span><span class="w"> </span><span class="c">#just a name of this specific Egress config</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">appliedTo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">    </span><span class="nt">podSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">      </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-20-04 </span><span class="w"> </span><span class="c">###Which pods should get Egress IPs</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">  </span><span class="nt">externalIPPool</span><span class="p">:</span><span class="w"> </span><span class="l">antrea-ippool-l2</span><span class="w"> </span><span class="c">###The IP pool I defined above.</span><span class="w">
+</span></span></span></code></pre></div><p>Before I apply it I will just make sure that I have a pod running the these labels, if not I will deploy it and then apply the Egress. So before I apply it I will show pinging from my pod to my jumpbox VM to identify which IP it is using before applying the Egress. And the apply the Egress and see if IP changes from the POD.</p>
+<p>My ubuntu pod is up and running, I have entered the shell on it and initiates a ping from my pod to my jumpbox VM:</p>
+<img src=images/image-20230220180724075.png style="width:600px" />
+<p>So here I can see the POD identifies itself with IP 10.102.6.15. Well which worker is that?:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k get pods -n prod -o wide
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME                           READY   STATUS    RESTARTS   AGE   IP          NODE                                                      NOMINATED NODE   READINESS GATES
+</span></span><span class="line"><span class="ln">3</span><span class="cl">ubuntu-20-04-c9776f965-t8nmf   1/1     Running   <span class="m">0</span>          20h   20.40.1.2   wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds   &lt;none&gt;           &lt;none&gt;
+</span></span><span class="line"><span class="ln">4</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k get nodes -o wide
+</span></span><span class="line"><span class="ln">5</span><span class="cl">NAME                                                      STATUS   ROLES                  AGE   VERSION            INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+</span></span><span class="line"><span class="ln">6</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-qn52t   Ready    &lt;none&gt;                 20h   v1.23.8+vmware.2   10.102.6.16   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">7</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-wmj7z   Ready    &lt;none&gt;                 20h   v1.23.8+vmware.2   10.102.6.17   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">8</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds   Ready    &lt;none&gt;                 20h   v1.23.8+vmware.2   10.102.6.15   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">9</span><span class="cl">wdc-2-tkc-cluster-1-xrj44-qq24c                           Ready    control-plane,master   20h   v1.23.8+vmware.2   10.102.6.14   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span></code></pre></div><p>That is this worker: wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds.</p>
+<p>So far so good. Now let me apply the Egress on this POD.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/antrea/egress$ k apply -f antrea.egress.l2.yaml 
+</span></span><span class="line"><span class="ln">2</span><span class="cl">egress.crd.antrea.io/antrea-egress-l2 created
+</span></span></code></pre></div><p>Now how does the ping look like?</p>
+<img src=images/image-20230220181714403.png style="width:700px" />
+<p>This was as expected was it not? The POD now identifies itself with the IP 10.102.6.40 which happens to be the first IP in the range defined in the pool. Well, this is cool. Now we now that Antrea Egress works. But as mentioned, I want this to be done with a different subnet than the worker nodes. Se lets see have we can do that as &quot;seemless&quot; as possible, as we dont want to SSH into the worker nodes and do a bunch of manual installation, configuration and so on. No, we use Kubernetes for our needs here also.</p>
+<h3 id="configure-frr-on-worker-nodes">Configure FRR on worker nodes</h3>
+<p>What I want to achieve is to deploy FRR <a href="https://frrouting.org/">here</a> on my worker nodes unattended to enable BGP pr worker node to my upstream BGP router (remember, to inform about the Egress network no one knows about). The TKC workers are managed appliances, they can be deleted, scaled up and down (more workers, fewer workers.) And Deploying something manual on them are just waste of time. So we need something that deploy FRR automatically on the worker nodes.</p>
+<p>FRR is easy to deploy and configure, and it is included in the Ubuntu default repo (one reason I wanted to use Ubuntu as worker os). FRR is a very good routing protocol suite in Linux and is deployed easy on Ubuntu with &quot;<em>apt install frr</em>&quot;. FRR can be configured to use BGP which is the routing protocol I want to use. FRR needs two config files, daemons and frr.conf. <em>frr.conf</em> is individual pr node (specific IP addresses) so we need to take that into consideration also. So how can I deploy FRR on the worker nodes with their individal configuration files to automatically establish a BGP neighbourship with my Upstream router, and without logging into the actual worker nodes themselves?</p>
+<p>Below diagram just illustrating a tkc worker node with FRR installed and BGP configured:</p>
+<img src=images/image-20230220184334707.png style="width:500px" />
+<h3 id="kubernetes-and-daemonset">Kubernetes and <em>Daemonset</em>.</h3>
+<p>I have created three Daemonset definition files, one for the actual deployment of FRR on all the nodes:</p>
+<img src=images/image-20230220184639086.png style="width:600px" />
+<p>Then I have created on Daemonset definition to copy the frr.conf and daemons file for the specific worker nodes and the last definition file is used to uninistall everything on the worker nodes themselves (apt purge frr) if needed.</p>
+<p>Lets start by just deploy FRR on the workers themselves.</p>
+<p>Here is the defintion for that:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">DaemonSet</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">kube-system</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">node-custom-setup</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">    </span><span class="nt">k8s-app</span><span class="p">:</span><span class="w"> </span><span class="l">node-custom-setup</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="cp">&amp;cmd</span><span class="w"> </span><span class="l">apt-get update -qy &amp;&amp; apt-get install -qy frr</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">      </span><span class="nt">k8s-app</span><span class="p">:</span><span class="w"> </span><span class="l">node-custom-setup</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">        </span><span class="nt">k8s-app</span><span class="p">:</span><span class="w"> </span><span class="l">node-custom-setup</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">      </span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">      </span><span class="nt">initContainers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">init-node</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">          </span>- <span class="l">nsenter</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">          </span>- --<span class="l">mount=/proc/1/ns/mnt</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">          </span>- --<span class="w">
+</span></span></span><span class="line"><span class="ln">27</span><span class="cl"><span class="w">          </span>- <span class="l">sh</span><span class="w">
+</span></span></span><span class="line"><span class="ln">28</span><span class="cl"><span class="w">          </span>- -<span class="l">c</span><span class="w">
+</span></span></span><span class="line"><span class="ln">29</span><span class="cl"><span class="w">          </span>- <span class="cp">*cmd</span><span class="w">
+</span></span></span><span class="line"><span class="ln">30</span><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">alpine:3.7</span><span class="w">
+</span></span></span><span class="line"><span class="ln">31</span><span class="cl"><span class="w">        </span><span class="nt">securityContext</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">32</span><span class="cl"><span class="w">          </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">33</span><span class="cl"><span class="w">      </span><span class="nt">hostPID</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">34</span><span class="cl"><span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">35</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">wait</span><span class="w">
+</span></span></span><span class="line"><span class="ln">36</span><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">pause:3.1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">37</span><span class="cl"><span class="w">      </span><span class="nt">hostPID</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">38</span><span class="cl"><span class="w">      </span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">39</span><span class="cl"><span class="w">      </span><span class="nt">tolerations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">40</span><span class="cl"><span class="w">      </span>- <span class="nt">effect</span><span class="p">:</span><span class="w"> </span><span class="l">NoSchedule</span><span class="w">
+</span></span></span><span class="line"><span class="ln">41</span><span class="cl"><span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">node-role.kubernetes.io/master</span><span class="w">
+</span></span></span><span class="line"><span class="ln">42</span><span class="cl"><span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">43</span><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">RollingUpdate</span><span class="w">
+</span></span></span></code></pre></div><p>Before I apply the above definiton I have logged into one of my TKC worker node and just wants to show that there is no FRR installed:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">sh-5.0# <span class="nb">cd</span> /etc/frr
+</span></span><span class="line"><span class="ln">2</span><span class="cl">sh: cd: /etc/frr: No such file or directory
+</span></span><span class="line"><span class="ln">3</span><span class="cl">sh-5.0# systemctl status frr
+</span></span><span class="line"><span class="ln">4</span><span class="cl">Unit frr.service could not be found.
+</span></span><span class="line"><span class="ln">5</span><span class="cl">sh-5.0# hostname
+</span></span><span class="line"><span class="ln">6</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds
+</span></span><span class="line"><span class="ln">7</span><span class="cl">sh-5.0# 
+</span></span></code></pre></div><p>Now apply:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k apply -f deploy-frr.yaml 
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">daemonset.apps/node-custom-setup configured
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k get pods -n kube-system 
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">NAME                                                                      READY   STATUS     RESTARTS   AGE
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">antrea-agent-4jrks                                                        2/2     Running    <span class="m">0</span>          20h
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">antrea-agent-4khkr                                                        2/2     Running    <span class="m">0</span>          20h
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">antrea-agent-4wxb5                                                        2/2     Running    <span class="m">0</span>          20h
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">antrea-agent-ccglp                                                        2/2     Running    <span class="m">0</span>          20h
+</span></span><span class="line"><span class="ln">10</span><span class="cl">antrea-controller-56d86d6b9b-hvrtc                                        1/1     Running    <span class="m">0</span>          20h
+</span></span><span class="line"><span class="ln">11</span><span class="cl">coredns-7d8f74b498-j5sjt                                                  1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">12</span><span class="cl">coredns-7d8f74b498-mgqrm                                                  1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">13</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-qn52t   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">14</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-wmj7z   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">15</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">16</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-xrj44-qq24c                           1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">17</span><span class="cl">etcd-wdc-2-tkc-cluster-1-xrj44-qq24c                                      1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">18</span><span class="cl">kube-apiserver-wdc-2-tkc-cluster-1-xrj44-qq24c                            1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">19</span><span class="cl">kube-controller-manager-wdc-2-tkc-cluster-1-xrj44-qq24c                   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">20</span><span class="cl">kube-proxy-44qxn                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">21</span><span class="cl">kube-proxy-4x72n                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">22</span><span class="cl">kube-proxy-shhxb                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">23</span><span class="cl">kube-proxy-zxhdb                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">24</span><span class="cl">kube-scheduler-wdc-2-tkc-cluster-1-xrj44-qq24c                            1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">25</span><span class="cl">metrics-server-6777988975-cxnpv                                           1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">26</span><span class="cl">node-custom-setup-5rlkr                                                   1/1     Running    <span class="m">0</span>          34s <span class="c1">#There they are</span>
+</span></span><span class="line"><span class="ln">27</span><span class="cl">node-custom-setup-7gf2v                                                   1/1     Running    <span class="m">0</span>          62m <span class="c1">#There they are</span>
+</span></span><span class="line"><span class="ln">28</span><span class="cl">node-custom-setup-b4j4l                                                   1/1     Running    <span class="m">0</span>          62m <span class="c1">#There they are</span>
+</span></span><span class="line"><span class="ln">29</span><span class="cl">node-custom-setup-wjpgz                                                   0/1     Init:0/1   <span class="m">0</span>          1s  <span class="c1">#There they are</span>
+</span></span></code></pre></div><p>Now what has happened on the TKC worker nodes itself:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">sh-5.0# <span class="nb">cd</span> /etc/frr/
+</span></span><span class="line"><span class="ln">2</span><span class="cl">sh-5.0# <span class="nb">pwd</span>
+</span></span><span class="line"><span class="ln">3</span><span class="cl">/etc/frr
+</span></span><span class="line"><span class="ln">4</span><span class="cl">sh-5.0# ls
+</span></span><span class="line"><span class="ln">5</span><span class="cl">daemons  frr.conf  support_bundle_commands.conf  vtysh.conf
+</span></span><span class="line"><span class="ln">6</span><span class="cl">sh-5.0# systemctl status frr
+</span></span><span class="line"><span class="ln">7</span><span class="cl">● frr.service - FRRouting
+</span></span><span class="line"><span class="ln">8</span><span class="cl">     Loaded: loaded <span class="o">(</span>/lib/systemd/system/frr.service<span class="p">;</span> enabled<span class="p">;</span> vendor preset: enabled<span class="o">)</span>
+</span></span><span class="line"><span class="ln">9</span><span class="cl">     Active: active <span class="o">(</span>running<span class="o">)</span> since Mon 2023-02-20 17:53:33 UTC<span class="p">;</span> 1min 36s ago
+</span></span></code></pre></div><p>Wow that looks good. But the frr.conf is more or less empty so it doesnt do anything right now.</p>
+<h3 id="a-note-on-frr-config-on-the-worker-nodes">A note on FRR config on the worker nodes</h3>
+<p>Before jumping into this section I would like to elaborate a bit around the frr.conf files being copied. If you are expecting that all worker nodes will be on same BGP AS number and your next-hop BGP neighbors are the same ones and in the same L2 as your worker node (illustrated above) you could probably go with the same config for all worker nodes. Then you can edit the same definition used for the FRR deployment to also copy and install the config in the same operation. The steps I do below describes individual config pr worker node. If you need different BGP AS numbers, multi-hop (next-hop is several hops away), individual update-source interfaces is configured then you need individual frr.config pr node.</p>
+<img src=images/image-20230221081149215.png style="width:600px" />
+<h3 id="individual-frr-config-on-the-worker-nodes">Individual FRR config on the worker nodes</h3>
+<p>I need to &quot;inject&quot; the correct config for each worker node. So I label each and one with their unique label like this:
+(I map the names node1-&gt;lowest-ip)</p>
+<p>I have already configured my upstream bgp router to accept my workers as soon as they are configured and ready. This is how this looks.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">router bgp <span class="m">65802</span>
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl"> bgp router-id 172.20.0.102
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl"> redistribute connected
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl"> neighbor 10.102.6.15 remote-as <span class="m">66889</span>
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl"> neighbor 10.102.6.16 remote-as <span class="m">66889</span>
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl"> neighbor 10.102.6.17 remote-as <span class="m">66889</span>
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl"> neighbor 172.20.0.1 remote-as <span class="m">65700</span>
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">!
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl"> address-family ipv6
+</span></span><span class="line"><span class="ln">10</span><span class="cl"> exit-address-family
+</span></span><span class="line"><span class="ln">11</span><span class="cl"> <span class="nb">exit</span>
+</span></span><span class="line"><span class="ln">12</span><span class="cl">
+</span></span><span class="line"><span class="ln">13</span><span class="cl">
+</span></span><span class="line"><span class="ln">14</span><span class="cl">cpodrouter-nsxam-wdc-02# show ip bgp summary 
+</span></span><span class="line"><span class="ln">15</span><span class="cl">BGP router identifier 172.20.0.102, <span class="nb">local</span> AS number <span class="m">65802</span>
+</span></span><span class="line"><span class="ln">16</span><span class="cl">RIB entries 147, using <span class="m">16</span> KiB of memory
+</span></span><span class="line"><span class="ln">17</span><span class="cl">Peers 4, using <span class="m">36</span> KiB of memory
+</span></span><span class="line"><span class="ln">18</span><span class="cl">
+</span></span><span class="line"><span class="ln">19</span><span class="cl">Neighbor        V         AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+</span></span><span class="line"><span class="ln">20</span><span class="cl">10.102.6.15     <span class="m">4</span> <span class="m">66889</span>    <span class="m">1191</span>    <span class="m">1197</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> never    Active     <span class="c1"># Node1 not Established yet</span>
+</span></span><span class="line"><span class="ln">21</span><span class="cl">10.102.6.16     <span class="m">4</span> <span class="m">66889</span>       <span class="m">0</span>       <span class="m">0</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> never    Active     <span class="c1"># Node2 not Established yet</span>
+</span></span><span class="line"><span class="ln">22</span><span class="cl">10.102.6.17     <span class="m">4</span> <span class="m">66889</span>    <span class="m">1201</span>    <span class="m">1197</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> never    Active     <span class="c1"># Node3 not Established yet</span>
+</span></span><span class="line"><span class="ln">23</span><span class="cl">172.20.0.1      <span class="m">4</span> <span class="m">65700</span>   <span class="m">19228</span>   <span class="m">19172</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> 01w4d09h       <span class="m">65</span>
+</span></span></code></pre></div><p>To verify again, this is the current output of frr.conf on node1:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">sh-5.0# cat frr.conf 
+</span></span><span class="line"><span class="ln">2</span><span class="cl"><span class="c1"># default to using syslog. /etc/rsyslog.d/45-frr.conf places the log</span>
+</span></span><span class="line"><span class="ln">3</span><span class="cl"><span class="c1"># in /var/log/frr/frr.log</span>
+</span></span><span class="line"><span class="ln">4</span><span class="cl">log syslog informational
+</span></span><span class="line"><span class="ln">5</span><span class="cl">sh-5.0# 
+</span></span></code></pre></div><p>This is the definition I use to copy the daemons and frr.conf for the individual worker nodes:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">DaemonSet</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">kube-system</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">node-frr-config</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">    </span><span class="nt">k8s-app</span><span class="p">:</span><span class="w"> </span><span class="l">node-frr-config</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="cp">&amp;cmd</span><span class="w"> </span><span class="l">cp /tmp/wdc-2.node1.frr.conf /etc/frr/frr.conf &amp;&amp; cp /tmp/daemons /etc/frr &amp;&amp; systemctl restart frr</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">      </span><span class="nt">k8s-app</span><span class="p">:</span><span class="w"> </span><span class="l">node-frr-config</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">        </span><span class="nt">k8s-app</span><span class="p">:</span><span class="w"> </span><span class="l">node-frr-config</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">      </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">        </span><span class="nt">nodelabel</span><span class="p">:</span><span class="w"> </span><span class="l">wdc2-node1</span><span class="w"> </span><span class="c">#Here is my specific node selection done</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">      </span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">      </span><span class="nt">initContainers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">copy-file</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">busybox</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;sh&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-c&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cp /var/nfs/wdc-2.node1.frr.conf /var/nfs/daemons /data&#39;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln">27</span><span class="cl"><span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">28</span><span class="cl"><span class="w">        </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">nfs-vol</span><span class="w">
+</span></span></span><span class="line"><span class="ln">29</span><span class="cl"><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l">/var/nfs</span><span class="w"> </span><span class="c"># The mountpoint inside the container</span><span class="w">
+</span></span></span><span class="line"><span class="ln">30</span><span class="cl"><span class="w">        </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">node-vol</span><span class="w">
+</span></span></span><span class="line"><span class="ln">31</span><span class="cl"><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l">/data</span><span class="w">
+</span></span></span><span class="line"><span class="ln">32</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">init-node</span><span class="w">
+</span></span></span><span class="line"><span class="ln">33</span><span class="cl"><span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">34</span><span class="cl"><span class="w">          </span>- <span class="l">nsenter</span><span class="w">
+</span></span></span><span class="line"><span class="ln">35</span><span class="cl"><span class="w">          </span>- --<span class="l">mount=/proc/1/ns/mnt</span><span class="w">
+</span></span></span><span class="line"><span class="ln">36</span><span class="cl"><span class="w">          </span>- --<span class="w">
+</span></span></span><span class="line"><span class="ln">37</span><span class="cl"><span class="w">          </span>- <span class="l">sh</span><span class="w">
+</span></span></span><span class="line"><span class="ln">38</span><span class="cl"><span class="w">          </span>- -<span class="l">c</span><span class="w">
+</span></span></span><span class="line"><span class="ln">39</span><span class="cl"><span class="w">          </span>- <span class="cp">*cmd</span><span class="w">
+</span></span></span><span class="line"><span class="ln">40</span><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">alpine:3.7</span><span class="w">
+</span></span></span><span class="line"><span class="ln">41</span><span class="cl"><span class="w">        </span><span class="nt">securityContext</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">42</span><span class="cl"><span class="w">          </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">43</span><span class="cl"><span class="w">      </span><span class="nt">hostPID</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">44</span><span class="cl"><span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">45</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">wait</span><span class="w">
+</span></span></span><span class="line"><span class="ln">46</span><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">pause:3.1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">47</span><span class="cl"><span class="w">      </span><span class="nt">hostPID</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">48</span><span class="cl"><span class="w">      </span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">49</span><span class="cl"><span class="w">      </span><span class="nt">tolerations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">50</span><span class="cl"><span class="w">      </span>- <span class="nt">effect</span><span class="p">:</span><span class="w"> </span><span class="l">NoSchedule</span><span class="w">
+</span></span></span><span class="line"><span class="ln">51</span><span class="cl"><span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">node-role.kubernetes.io/master</span><span class="w">
+</span></span></span><span class="line"><span class="ln">52</span><span class="cl"><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">53</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">nfs-vol</span><span class="w">
+</span></span></span><span class="line"><span class="ln">54</span><span class="cl"><span class="w">        </span><span class="nt">nfs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">55</span><span class="cl"><span class="w">          </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="m">10.101.10.99</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">56</span><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/home/andreasm/antrea/egress/FRR/nfs </span><span class="w">
+</span></span></span><span class="line"><span class="ln">57</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">node-vol</span><span class="w">
+</span></span></span><span class="line"><span class="ln">58</span><span class="cl"><span class="w">        </span><span class="nt">hostPath</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">59</span><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/tmp</span><span class="w">
+</span></span></span><span class="line"><span class="ln">60</span><span class="cl"><span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">Directory</span><span class="w">
+</span></span></span><span class="line"><span class="ln">61</span><span class="cl"><span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">62</span><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">RollingUpdate</span><span class="w">
+</span></span></span></code></pre></div><p>Notice this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln">1</span><span class="cl"><span class="w">       </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">2</span><span class="cl"><span class="w">        </span><span class="nt">nodelabel</span><span class="p">:</span><span class="w"> </span><span class="l">wdc2-node1</span><span class="w">
+</span></span></span></code></pre></div><p>This is used to select the correct node after I have labeled them like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k get nodes -o wide
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME                                                      STATUS   ROLES                  AGE   VERSION            INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+</span></span><span class="line"><span class="ln">3</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-qn52t   Ready    &lt;none&gt;                 21h   v1.23.8+vmware.2   10.102.6.16   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">4</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-wmj7z   Ready    &lt;none&gt;                 21h   v1.23.8+vmware.2   10.102.6.17   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">5</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds   Ready    &lt;none&gt;                 21h   v1.23.8+vmware.2   10.102.6.15   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">6</span><span class="cl">wdc-2-tkc-cluster-1-xrj44-qq24c                           Ready    control-plane,master   21h   v1.23.8+vmware.2   10.102.6.14   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">7</span><span class="cl">
+</span></span><span class="line"><span class="ln">8</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k label node wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds <span class="nv">nodelabel</span><span class="o">=</span>wdc2-node1
+</span></span><span class="line"><span class="ln">9</span><span class="cl">node/wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds labeled
+</span></span></code></pre></div><p>So its just about time to apply the configs pr node:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k apply -f wdc2.frr.node1.config.yaml 
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">daemonset.apps/node-custom-setup configured
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k get pods -n kube-system 
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">NAME                                                                      READY   STATUS     RESTARTS   AGE
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">antrea-agent-4jrks                                                        2/2     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">antrea-agent-4khkr                                                        2/2     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">antrea-agent-4wxb5                                                        2/2     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">antrea-agent-ccglp                                                        2/2     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">antrea-controller-56d86d6b9b-hvrtc                                        1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">10</span><span class="cl">coredns-7d8f74b498-j5sjt                                                  1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">11</span><span class="cl">coredns-7d8f74b498-mgqrm                                                  1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">12</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-qn52t   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">13</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-wmj7z   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">14</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">15</span><span class="cl">docker-registry-wdc-2-tkc-cluster-1-xrj44-qq24c                           1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">16</span><span class="cl">etcd-wdc-2-tkc-cluster-1-xrj44-qq24c                                      1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">17</span><span class="cl">kube-apiserver-wdc-2-tkc-cluster-1-xrj44-qq24c                            1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">18</span><span class="cl">kube-controller-manager-wdc-2-tkc-cluster-1-xrj44-qq24c                   1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">19</span><span class="cl">kube-proxy-44qxn                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">20</span><span class="cl">kube-proxy-4x72n                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">21</span><span class="cl">kube-proxy-shhxb                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">22</span><span class="cl">kube-proxy-zxhdb                                                          1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">23</span><span class="cl">kube-scheduler-wdc-2-tkc-cluster-1-xrj44-qq24c                            1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">24</span><span class="cl">metrics-server-6777988975-cxnpv                                           1/1     Running    <span class="m">0</span>          21h
+</span></span><span class="line"><span class="ln">25</span><span class="cl">node-custom-setup-w4mg5                                                   0/1     Init:0/2   <span class="m">0</span>          4s
+</span></span></code></pre></div><p>Now what does my upstream router say:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">cpodrouter-nsxam-wdc-02# show ip bgp summary 
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">BGP router identifier 172.20.0.102, <span class="nb">local</span> AS number <span class="m">65802</span>
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">RIB entries 149, using <span class="m">16</span> KiB of memory
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">Peers 4, using <span class="m">36</span> KiB of memory
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">Neighbor        V         AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">10.102.6.15     <span class="m">4</span> <span class="m">66889</span>    <span class="m">1202</span>    <span class="m">1209</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> 00:00:55        <span class="m">2</span> <span class="c1">#Hey I am a happy neighbour</span>
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">10.102.6.16     <span class="m">4</span> <span class="m">66889</span>       <span class="m">0</span>       <span class="m">0</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> never    Active     
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">10.102.6.17     <span class="m">4</span> <span class="m">66889</span>    <span class="m">1201</span>    <span class="m">1197</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> never    Active     
+</span></span><span class="line"><span class="ln">10</span><span class="cl">172.20.0.1      <span class="m">4</span> <span class="m">65700</span>   <span class="m">19249</span>   <span class="m">19194</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> 01w4d10h       <span class="m">65</span>
+</span></span><span class="line"><span class="ln">11</span><span class="cl">
+</span></span><span class="line"><span class="ln">12</span><span class="cl">Total number of neighbors <span class="m">4</span>
+</span></span><span class="line"><span class="ln">13</span><span class="cl">
+</span></span><span class="line"><span class="ln">14</span><span class="cl">Total num. Established sessions <span class="m">2</span>
+</span></span><span class="line"><span class="ln">15</span><span class="cl">Total num. of routes received     <span class="m">67</span>
+</span></span></code></pre></div><p>Then I just need to deploy on the other two workers.</p>
+<p>My upstream bgp router is very happy to have new established neighbours:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">cpodrouter-nsxam-wdc-02# show ip bgp summary 
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">BGP router identifier 172.20.0.102, <span class="nb">local</span> AS number <span class="m">65802</span>
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">RIB entries 153, using <span class="m">17</span> KiB of memory
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">Peers 4, using <span class="m">36</span> KiB of memory
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">Neighbor        V         AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">10.102.6.15     <span class="m">4</span> <span class="m">66889</span>    <span class="m">1221</span>    <span class="m">1232</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> 00:01:01        <span class="m">2</span>
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">10.102.6.16     <span class="m">4</span> <span class="m">66889</span>      <span class="m">11</span>      <span class="m">16</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> 00:00:36        <span class="m">2</span>
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">10.102.6.17     <span class="m">4</span> <span class="m">66889</span>    <span class="m">1225</span>    <span class="m">1227</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> 00:00:09        <span class="m">2</span>
+</span></span><span class="line"><span class="ln">10</span><span class="cl">172.20.0.1      <span class="m">4</span> <span class="m">65700</span>   <span class="m">19254</span>   <span class="m">19205</span>        <span class="m">0</span>    <span class="m">0</span>    <span class="m">0</span> 01w4d10h       <span class="m">65</span>
+</span></span><span class="line"><span class="ln">11</span><span class="cl">
+</span></span><span class="line"><span class="ln">12</span><span class="cl">Total number of neighbors <span class="m">4</span>
+</span></span></code></pre></div><h3 id="antrea-ip-pool-outside-subnet-of-worker-nodes">Antrea IP Pool outside subnet of worker nodes</h3>
+<p>Lets apply an IP pool which resides outside worker nodes subnet and apply Egress on my test pod again.</p>
+<p>Here is the IP pool config:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">crd.antrea.io/v1alpha2</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ExternalIPPool</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">antrea-ippool-l3</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">    </span><span class="nt">ipRanges</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">    </span>- <span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="m">10.102.40.41</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">      </span><span class="nt">end</span><span class="p">:</span><span class="w"> </span><span class="m">10.102.40.51</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w"></span><span class="c">#    - cidr: 10.102.40.0/24</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w"></span><span class="c">#      matchLabels:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w"></span><span class="c">#        egress-l3: antrea-egress-l3</span><span class="w">
+</span></span></span></code></pre></div><p>And the Egress:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">crd.antrea.io/v1alpha2</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Egress</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">antrea-egress-l3</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">appliedTo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">    </span><span class="nt">podSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">      </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-20-04  </span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">  </span><span class="nt">externalIPPool</span><span class="p">:</span><span class="w"> </span><span class="l">antrea-ippool-l3 </span><span class="w">
+</span></span></span></code></pre></div><p>Apply it and check the IP address from the POD....</p>
+<img src=images/image-20230220193703388.png style="width:700px" />
+<p>Well, how about that?</p>
+<p>I know my workers reside on these ip addresses, but my POD is using a completely different IP address:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/antrea/egress/deploy-frr$ k get nodes -o wide
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME                                                      STATUS   ROLES                  AGE   VERSION            INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+</span></span><span class="line"><span class="ln">3</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-qn52t   Ready    &lt;none&gt;                 21h   v1.23.8+vmware.2   10.102.6.16   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">4</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-wmj7z   Ready    &lt;none&gt;                 21h   v1.23.8+vmware.2   10.102.6.17   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">5</span><span class="cl">wdc-2-tkc-cluster-1-node-pool-01-5hz5z-5597d8895f-z7cds   Ready    &lt;none&gt;                 21h   v1.23.8+vmware.2   10.102.6.15   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span><span class="line"><span class="ln">6</span><span class="cl">wdc-2-tkc-cluster-1-xrj44-qq24c                           Ready    control-plane,master   21h   v1.23.8+vmware.2   10.102.6.14   &lt;none&gt;        Ubuntu 20.04.5 LTS   5.4.0-128-generic   containerd://1.6.6
+</span></span></code></pre></div><p>What about the routing table in my upstream bgp router:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">*&gt; 10.102.40.41/32  10.102.6.17              <span class="m">0</span>             <span class="m">0</span> <span class="m">66889</span> ?
+</span></span></code></pre></div><p>Well have you seen..</p>
+<p>Objective accomplished----&gt;</p>
+
+    </div>
+
+
+
+
+  </article>
+<aside class="sidebar">
+  <section class="sidebar_inner">
+    <br>
+    
+  
+  <div class="search">
+    <input type="search" class="search_field form_field" placeholder='Search...' id="find" autocomplete="off" data-scope='post'>
+    <label for="find" class="search_label"><svg class="icon">
+  <title>search</title>
+  <use xlink:href="#search"></use>
+</svg>
+
+    </label>
+    
+    <div class="search_results results"></div>
+  </div>
+
+        <h2>Hi there</h2>
+      <div class="author_bio">
+        This blog is a WIP, sometimes I just throw up some topics for myself to remember to be finished later. Stay tuned...
+      </div>
+      <a href='https://yikes.guzware.net/about/' class="button mt-1" role="button" title='Read More'>Read More</a>
+
+    
+    
+    <h2 class="mt-4">Recent Posts</h2>
+    <ul class="flex-column">
+      <li>
+        <a href="https://yikes.guzware.net/2021/07/10/antrea-network-policies/" class="nav-link" title="Antrea Network Policies">Antrea Network Policies</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2023/02/20/antrea-egress/" class="nav-link" title="Antrea Egress">Antrea Egress</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/" class="nav-link" title="vSphere 8 with Tanzu using VDS and Avi Loadbalancer">vSphere 8 with Tanzu using VDS and Avi Loadbalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/" class="nav-link" title="vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer">vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/ako-explained/" class="nav-link" title="AKO Explained">AKO Explained</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/" class="nav-link" title="GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer">GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/" class="nav-link" title="We Take a Look at the AKO Crds">We Take a Look at the AKO Crds</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/running-the-unifi-controller-in-kubernetes/" class="nav-link" title="Running the Unifi Controller in Kubernetes">Running the Unifi Controller in Kubernetes</a>
+      </li>
+    </ul>
+    <div>
+      <h2 class="mt-4 taxonomy" id="categories-section">Categories</h2>
+      <nav class="tags_nav">
+        <a href='https://yikes.guzware.net/categories/kubernetes/' class="post_tag button button_translucent" title="kubernetes">
+          KUBERNETES
+          <span class="button_tally">19</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/vmware-nsx/' class="post_tag button button_translucent" title="vmware-nsx">
+          VMWARE-NSX
+          <span class="button_tally">7</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx/' class="post_tag button button_translucent" title="nsx">
+          NSX
+          <span class="button_tally">6</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/antrea/' class="post_tag button button_translucent" title="antrea">
+          ANTREA
+          <span class="button_tally">5</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx-advanced-loadbalancer/' class="post_tag button button_translucent" title="nsx-advanced-loadbalancer">
+          NSX-ADVANCED-LOADBALANCER
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/tanzu/' class="post_tag button button_translucent" title="tanzu">
+          TANZU
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/avi/' class="post_tag button button_translucent" title="avi">
+          AVI
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx-t/' class="post_tag button button_translucent" title="nsx-t">
+          NSX-T
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/ako/' class="post_tag button button_translucent" title="ako">
+          AKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/blog/' class="post_tag button button_translucent" title="blog">
+          BLOG
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/docker/' class="post_tag button button_translucent" title="docker">
+          DOCKER
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/gslb/' class="post_tag button button_translucent" title="gslb">
+          GSLB
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/harbor/' class="post_tag button button_translucent" title="harbor">
+          HARBOR
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/helm/' class="post_tag button button_translucent" title="helm">
+          HELM
+          <span class="button_tally">1</span>
+        </a>
+        
+        
+        <br>
+        <div class="post_tags_toggle button">All Categories</div>
+        <div class="post_tags">
+          <div class="tags_list">
+            
+            <a href='https://yikes.guzware.net/categories/ako/' class=" post_tag button button_translucent" data-position=1 title="ako">AKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/antrea/' class=" post_tag button button_translucent" data-position=5 title="antrea">ANTREA<span class="button_tally">5</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/avi/' class=" post_tag button button_translucent" data-position=2 title="avi">AVI<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/blog/' class=" post_tag button button_translucent" data-position=1 title="blog">BLOG<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/docker/' class=" post_tag button button_translucent" data-position=1 title="docker">DOCKER<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/gslb/' class=" post_tag button button_translucent" data-position=1 title="gslb">GSLB<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/harbor/' class=" post_tag button button_translucent" data-position=1 title="harbor">HARBOR<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/helm/' class=" post_tag button button_translucent" data-position=1 title="helm">HELM<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/homeautomation/' class=" post_tag button button_translucent" data-position=1 title="homeautomation">HOMEAUTOMATION<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/hugo/' class=" post_tag button button_translucent" data-position=1 title="hugo">HUGO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/ingress/' class=" post_tag button button_translucent" data-position=1 title="ingress">INGRESS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/kubernetes/' class=" post_tag button button_translucent" data-position=19 title="kubernetes">KUBERNETES<span class="button_tally">19</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/kubernetesnetworking/' class=" post_tag button button_translucent" data-position=1 title="kubernetesnetworking">KUBERNETESNETWORKING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/logging/' class=" post_tag button button_translucent" data-position=1 title="logging">LOGGING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/monitoring/' class=" post_tag button button_translucent" data-position=1 title="monitoring">MONITORING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/networking/' class=" post_tag button button_translucent" data-position=1 title="networking">NETWORKING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx/' class=" post_tag button button_translucent" data-position=6 title="nsx">NSX<span class="button_tally">6</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-advanced-loadbalancer/' class=" post_tag button button_translucent" data-position=3 title="nsx-advanced-loadbalancer">NSX-ADVANCED-LOADBALANCER<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-application-platform/' class=" post_tag button button_translucent" data-position=1 title="nsx-application-platform">NSX-APPLICATION-PLATFORM<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-t/' class=" post_tag button button_translucent" data-position=2 title="nsx-t">NSX-T<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/pinniped/' class=" post_tag button button_translucent" data-position=1 title="pinniped">PINNIPED<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/security/' class=" post_tag button button_translucent" data-position=1 title="security">SECURITY<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/tanzu/' class=" post_tag button button_translucent" data-position=3 title="tanzu">TANZU<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmare-nsx-intelligence/' class=" post_tag button button_translucent" data-position=1 title="vmare-nsx-intelligence">VMARE-NSX-INTELLIGENCE<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmware-cloud/' class=" post_tag button button_translucent" data-position=1 title="vmware-cloud">VMWARE-CLOUD<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmware-nsx/' class=" post_tag button button_translucent" data-position=7 title="vmware-nsx">VMWARE-NSX<span class="button_tally">7</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vsphere/' class=" post_tag button button_translucent" data-position=1 title="vsphere">VSPHERE<span class="button_tally">1</span>
+            </a>
+            
+            <div class="tags_sort"><span title="sort alphabetically">[A~Z]</span><span title="sort by count">[0~9]</span>
+            </div>
+            <span class="tags_hide"><svg class="icon">
+            <use xlink:href="#closeme"></use>
+          </svg></span>
+          </div>
+        </div>
+      </nav>
+    </div>
+    <div>
+      <h2 class="mt-4 taxonomy" id="tags-section">Tags</h2>
+      <nav class="tags_nav">
+        <a href='https://yikes.guzware.net/tags/informational/' class="post_tag button button_translucent" title="informational">
+          INFORMATIONAL
+          <span class="button_tally">8</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/howto/' class="post_tag button button_translucent" title="howto">
+          HOWTO
+          <span class="button_tally">5</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/configurations/' class="post_tag button button_translucent" title="configurations">
+          CONFIGURATIONS
+          <span class="button_tally">4</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/authentication/' class="post_tag button button_translucent" title="authentication">
+          AUTHENTICATION
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/cert-manager/' class="post_tag button button_translucent" title="cert-manager">
+          CERT-MANAGER
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/kubernetes/' class="post_tag button button_translucent" title="kubernetes">
+          KUBERNETES
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/rbac/' class="post_tag button button_translucent" title="rbac">
+          RBAC
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/tanzu/' class="post_tag button button_translucent" title="tanzu">
+          TANZU
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/deployment/' class="post_tag button button_translucent" title="deployment">
+          DEPLOYMENT
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/issues/' class="post_tag button button_translucent" title="issues">
+          ISSUES
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/troubleshooting/' class="post_tag button button_translucent" title="troubleshooting">
+          TROUBLESHOOTING
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/ako/' class="post_tag button button_translucent" title="ako">
+          AKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/amko/' class="post_tag button button_translucent" title="amko">
+          AMKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/antrea/' class="post_tag button button_translucent" title="antrea">
+          ANTREA
+          <span class="button_tally">1</span>
+        </a>
+        
+        
+        <br>
+        <div class="post_tags_toggle button">All Tags</div>
+        <div class="post_tags">
+          <div class="tags_list">
+            
+            <a href='https://yikes.guzware.net/tags/ako/' class=" post_tag button button_translucent" data-position=1 title="ako">AKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/amko/' class=" post_tag button button_translucent" data-position=1 title="amko">AMKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/antrea/' class=" post_tag button button_translucent" data-position=1 title="antrea">ANTREA<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/authentication/' class=" post_tag button button_translucent" data-position=3 title="authentication">AUTHENTICATION<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/avi/' class=" post_tag button button_translucent" data-position=1 title="avi">AVI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/cert-manager/' class=" post_tag button button_translucent" data-position=3 title="cert-manager">CERT-MANAGER<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/cni/' class=" post_tag button button_translucent" data-position=1 title="cni">CNI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/configuration/' class=" post_tag button button_translucent" data-position=1 title="configuration">CONFIGURATION<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/configurations/' class=" post_tag button button_translucent" data-position=4 title="configurations">CONFIGURATIONS<span class="button_tally">4</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/deployment/' class=" post_tag button button_translucent" data-position=2 title="deployment">DEPLOYMENT<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/fails/' class=" post_tag button button_translucent" data-position=1 title="fails">FAILS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/grafana/' class=" post_tag button button_translucent" data-position=1 title="grafana">GRAFANA<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/howto/' class=" post_tag button button_translucent" data-position=5 title="howto">HOWTO<span class="button_tally">5</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/informational/' class=" post_tag button button_translucent" data-position=8 title="informational">INFORMATIONAL<span class="button_tally">8</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/ingress/' class=" post_tag button button_translucent" data-position=1 title="ingress">INGRESS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/issues/' class=" post_tag button button_translucent" data-position=2 title="issues">ISSUES<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/just-for-fun/' class=" post_tag button button_translucent" data-position=1 title="just-for-fun">JUST-FOR-FUN<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/k8s/' class=" post_tag button button_translucent" data-position=1 title="k8s">K8S<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/kubernetes/' class=" post_tag button button_translucent" data-position=3 title="kubernetes">KUBERNETES<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/loadbalancing/' class=" post_tag button button_translucent" data-position=1 title="loadbalancing">LOADBALANCING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/loki/' class=" post_tag button button_translucent" data-position=1 title="loki">LOKI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/network-policies/' class=" post_tag button button_translucent" data-position=1 title="network-policies">NETWORK-POLICIES<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/nsx/' class=" post_tag button button_translucent" data-position=1 title="nsx">NSX<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/nsx-advanced-loadbalancer/' class=" post_tag button button_translucent" data-position=1 title="nsx-advanced-loadbalancer">NSX-ADVANCED-LOADBALANCER<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/prometheus/' class=" post_tag button button_translucent" data-position=1 title="prometheus">PROMETHEUS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/promtail/' class=" post_tag button button_translucent" data-position=1 title="promtail">PROMTAIL<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/rbac/' class=" post_tag button button_translucent" data-position=3 title="rbac">RBAC<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/security/' class=" post_tag button button_translucent" data-position=1 title="security">SECURITY<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/tanzu/' class=" post_tag button button_translucent" data-position=3 title="tanzu">TANZU<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/tipstricks/' class=" post_tag button button_translucent" data-position=1 title="tipstricks">TIPSTRICKS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/troubleshooting/' class=" post_tag button button_translucent" data-position=2 title="troubleshooting">TROUBLESHOOTING<span class="button_tally">2</span>
+            </a>
+            
+            <div class="tags_sort"><span title="sort alphabetically">[A~Z]</span><span title="sort by count">[0~9]</span>
+            </div>
+            <span class="tags_hide"><svg class="icon">
+            <use xlink:href="#closeme"></use>
+          </svg></span>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </section>
+</aside>
+
+  
+</div>
+    </main><svg width="0" height="0" class="hidden">
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="facebook">
+    <path d="M437 0H75C33.648 0 0 33.648 0 75v362c0 41.352 33.648 75 75 75h151V331h-60v-90h60v-61c0-49.629 40.371-90 90-90h91v90h-91v61h91l-15 90h-76v181h121c41.352 0 75-33.648 75-75V75c0-41.352-33.648-75-75-75zm0 0"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18.001 18.001" id="twitter">
+    <path d="M15.891 4.013c.808-.496 1.343-1.173 1.605-2.034a8.68 8.68 0 0 1-2.351.861c-.703-.756-1.593-1.14-2.66-1.14-1.043 0-1.924.366-2.643 1.078a3.56 3.56 0 0 0-1.076 2.605c0 .309.039.585.117.819-3.076-.105-5.622-1.381-7.628-3.837-.34.601-.51 1.213-.51 1.846 0 1.301.549 2.332 1.645 3.089-.625-.053-1.176-.211-1.645-.47 0 .929.273 1.705.82 2.388a3.623 3.623 0 0 0 2.115 1.291c-.312.08-.641.118-.979.118-.312 0-.533-.026-.664-.083.23.757.664 1.371 1.291 1.841a3.652 3.652 0 0 0 2.152.743C4.148 14.173 2.625 14.69.902 14.69c-.422 0-.721-.006-.902-.038 1.697 1.102 3.586 1.649 5.676 1.649 2.139 0 4.029-.542 5.674-1.626 1.645-1.078 2.859-2.408 3.639-3.974a10.77 10.77 0 0 0 1.172-4.892v-.468a7.788 7.788 0 0 0 1.84-1.921 8.142 8.142 0 0 1-2.11.593z"
+      ></path>
+  </symbol>
+  <symbol aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="mail">
+    <path  d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="calendar">
+    <path d="M452 40h-24V0h-40v40H124V0H84v40H60C26.916 40 0 66.916 0 100v352c0 33.084 26.916 60 60 60h392c33.084 0 60-26.916 60-60V100c0-33.084-26.916-60-60-60zm20 412c0 11.028-8.972 20-20 20H60c-11.028 0-20-8.972-20-20V188h432v264zm0-304H40v-48c0-11.028 8.972-20 20-20h24v40h40V80h264v40h40V80h24c11.028 0 20 8.972 20 20v48z"></path>
+    <path d="M76 230h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zM76 310h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zM76 390h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zm80-80h40v40h-40z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="github">
+    <path d="M255.968 5.329C114.624 5.329 0 120.401 0 262.353c0 113.536 73.344 209.856 175.104 243.872 12.8 2.368 17.472-5.568 17.472-12.384 0-6.112-.224-22.272-.352-43.712-71.2 15.52-86.24-34.464-86.24-34.464-11.616-29.696-28.416-37.6-28.416-37.6-23.264-15.936 1.728-15.616 1.728-15.616 25.696 1.824 39.2 26.496 39.2 26.496 22.848 39.264 59.936 27.936 74.528 21.344 2.304-16.608 8.928-27.936 16.256-34.368-56.832-6.496-116.608-28.544-116.608-127.008 0-28.064 9.984-51.008 26.368-68.992-2.656-6.496-11.424-32.64 2.496-68 0 0 21.504-6.912 70.4 26.336 20.416-5.696 42.304-8.544 64.096-8.64 21.728.128 43.648 2.944 64.096 8.672 48.864-33.248 70.336-26.336 70.336-26.336 13.952 35.392 5.184 61.504 2.56 68 16.416 17.984 26.304 40.928 26.304 68.992 0 98.72-59.84 120.448-116.864 126.816 9.184 7.936 17.376 23.616 17.376 47.584 0 34.368-.32 62.08-.32 70.496 0 6.88 4.608 14.88 17.6 12.352C438.72 472.145 512 375.857 512 262.353 512 120.401 397.376 5.329 255.968 5.329z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 212" id="gitlab">
+    <path d="M12.3 74.7h54L43.3 3c-1-3.6-6.4-3.6-7.6 0L12.3 74.8z" />
+    <path d="M12.3 74.7L.5 111c-1 3.2 0 6.8 3 8.8l101.6 74-92.5-119z"/>
+    <path d="M105 193.7l-38.6-119h-54l92.7 119z"/>
+    <path d="M105 193.7l38.7-119H66.4l38.7 119z"/>
+    <path d="M105 193.7l38.7-119H198l-93 119z"/>
+    <path d="M198 74.7l11.6 36.2c1 3 0 6.6-3 8.6l-101.5 74 93-119z"/>
+    <path d="M198 74.7h-54.3L167 3c1.2-3.6 6.4-3.6 7.6 0L198 74.8z"/> 
+  </symbol>
+  <symbol viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="rss">
+    <circle cx="3.429" cy="20.571" r="3.429"></circle>
+    <path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8v4.572c6.302.001 11.429 5.126 11.429 11.428z"></path>
+    <path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.43 8.714 19.43 19.429z"></path>
+  </symbol>
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="linkedin">
+    <path d="M437 0H75C33.648 0 0 33.648 0 75v362c0 41.352 33.648 75 75 75h362c41.352 0 75-33.648 75-75V75c0-41.352-33.648-75-75-75zM181 406h-60V196h60zm0-240h-60v-60h60zm210 240h-60V286c0-16.54-13.46-30-30-30s-30 13.46-30 30v120h-60V196h60v11.309C286.719 202.422 296.93 196 316 196c40.691.043 75 36.547 75 79.688zm0 0"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 612 612" id="to-top">
+    <path d="M604.501 440.509L325.398 134.956c-5.331-5.357-12.423-7.627-19.386-7.27-6.989-.357-14.056 1.913-19.387 7.27L7.499 440.509c-9.999 10.024-9.999 26.298 0 36.323s26.223 10.024 36.222 0l262.293-287.164L568.28 476.832c9.999 10.024 26.222 10.024 36.221 0 9.999-10.023 9.999-26.298 0-36.323z"></path>
+  </symbol>
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="carly">
+    <path d="M504.971 239.029L448 182.059V84c0-46.317-37.682-84-84-84h-44c-13.255 0-24 10.745-24 24s10.745 24 24 24h44c19.851 0 36 16.149 36 36v108c0 6.365 2.529 12.47 7.029 16.971L454.059 256l-47.029 47.029A24.002 24.002 0 0 0 400 320v108c0 19.851-16.149 36-36 36h-44c-13.255 0-24 10.745-24 24s10.745 24 24 24h44c46.318 0 84-37.683 84-84v-98.059l56.971-56.971c9.372-9.372 9.372-24.568 0-33.941zM112 192V84c0-19.851 16.149-36 36-36h44c13.255 0 24-10.745 24-24S205.255 0 192 0h-44c-46.318 0-84 37.683-84 84v98.059l-56.971 56.97c-9.373 9.373-9.373 24.568 0 33.941L64 329.941V428c0 46.317 37.682 84 84 84h44c13.255 0 24-10.745 24-24s-10.745-24-24-24h-44c-19.851 0-36-16.149-36-36V320c0-6.365-2.529-12.47-7.029-16.971L57.941 256l47.029-47.029A24.002 24.002 0 0 0 112 192z"></path>
+  </symbol>
+  <symbol viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="copy">
+    <path d="M23 2.75A2.75 2.75 0 0 0 20.25 0H8.75A2.75 2.75 0 0 0 6 2.75v13.5A2.75 2.75 0 0 0 8.75 19h11.5A2.75 2.75 0 0 0 23 16.25zM18.25 14.5h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5zm0-3h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5zm0-3h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5z"></path>
+    <path d="M8.75 20.5a4.255 4.255 0 0 1-4.25-4.25V2.75c0-.086.02-.166.025-.25H3.75A2.752 2.752 0 0 0 1 5.25v16A2.752 2.752 0 0 0 3.75 24h12a2.752 2.752 0 0 0 2.75-2.75v-.75z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.001 512.001" id="closeme">
+    <path d="M284.286 256.002L506.143 34.144c7.811-7.811 7.811-20.475 0-28.285-7.811-7.81-20.475-7.811-28.285 0L256 227.717 34.143 5.859c-7.811-7.811-20.475-7.811-28.285 0-7.81 7.811-7.811 20.475 0 28.285l221.857 221.857L5.858 477.859c-7.811 7.811-7.811 20.475 0 28.285a19.938 19.938 0 0 0 14.143 5.857 19.94 19.94 0 0 0 14.143-5.857L256 284.287l221.857 221.857c3.905 3.905 9.024 5.857 14.143 5.857s10.237-1.952 14.143-5.857c7.811-7.811 7.811-20.475 0-28.285L284.286 256.002z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="open-menu">
+    <path d="M492 236H20c-11.046 0-20 8.954-20 20s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20zm0-160H20C8.954 76 0 84.954 0 96s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20zm0 320H20c-11.046 0-20 8.954-20 20s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="instagram">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id=youtube>
+    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="stackoverflow">
+    <path d="M21 27v-8h3v11H0V19h3v8h18z"></path><path d="M17.1.2L15 1.8l7.9 10.6 2.1-1.6L17.1.2zm3.7 14.7L10.6 6.4l1.7-2 10.2 8.5-1.7 2zM7.2 12.3l12 5.6 1.1-2.4-12-5.6-1.1 2.4zm-1.8 6.8l13.56 1.96.17-2.38-13.26-2.55-.47 2.97zM19 25H5v-3h14v3z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="xing">
+    <path d="M18.188 0c-.517 0-.741.325-.927.66 0 0-7.455 13.224-7.702 13.657.015.024 4.919 9.023 4.919 9.023.17.308.436.66.967.66h3.454c.211 0 .375-.078.463-.22.089-.151.089-.346-.009-.536l-4.879-8.916c-.004-.006-.004-.016 0-.022L22.139.756c.095-.191.097-.387.006-.535C22.056.078 21.894 0 21.686 0h-3.498zM3.648 4.74c-.211 0-.385.074-.473.216-.09.149-.078.339.02.531l2.34 4.05c.004.01.004.016 0 .021L1.86 16.051c-.099.188-.093.381 0 .529.085.142.239.234.45.234h3.461c.518 0 .766-.348.945-.667l3.734-6.609-2.378-4.155c-.172-.315-.434-.659-.962-.659H3.648v.016z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 71 55" id="discord">
+    <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z"/>
+  </symbol>
+</svg>
+
+
+<footer class="footer">
+  <div class="footer_inner wrap pale">
+    <img src='https://yikes.guzware.net/icons/apple-touch-icon.png' class="icon icon_2 transparent" alt="From 0.985mhz... to several Ghz">
+    <p>Copyright&nbsp;2016-&nbsp;<span class="year"></span>&nbsp;FROM 0.985MHZ... TO SEVERAL GHZ. All Rights Reserved</p><a class="to_top" href="#documentTop">
+  <svg class="icon">
+  <title>to-top</title>
+  <use xlink:href="#to-top"></use>
+</svg>
+
+</a>
+
+  </div>
+</footer>
+
+<script type="text/javascript" src="https://yikes.guzware.net/en/js/bundle.597a98a0532def1db904a0a3d3c07e7f9d783e74aca99a317bb98a2c3a0889eacc7a71bc353347f2604d4d61e00d90babdc933cc1fa4a3bdcee857c1e2237b27.js" integrity="sha512-WXqYoFMt7x25BKCj08B&#43;f514PnSsqZoxe7mKLDoIierMenG8NTNH8mBNTWHgDZC6vckzzB&#43;ko73O6FfB4iN7Jw==" crossorigin="anonymous"></script>
+
+  <script src="https://yikes.guzware.net/js/search.min.df4d84e4983f0c71dd495e07a09815d920553c3ddf3d0767801c73373573aa17e1b489e4453272dbf4ce2a38a3d01a10b170744e50dd6bec85a598221867ba9a.js"></script>
+
+  </body>
+</html>

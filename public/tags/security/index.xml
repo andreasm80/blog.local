@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>security on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/security/</link>
+    <description>Recent content in security on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Tue, 11 Oct 2022 21:38:27 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/security/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>NSX Antrea Integration</title>
+      <link>https://yikes.guzware.net/2022/10/11/nsx-antrea-integration/</link>
+      <pubDate>Tue, 11 Oct 2022 21:38:27 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/11/nsx-antrea-integration/</guid>
+      <description>
+        
+          
+            What is the NSX Antrea integration Assumptions: I assume that the reader is aware of what Antrea is, and what a CNI is and also what NSX is. If not head over here to read more on Antrea and here to read more on NSX.
+For many years VMware NSX has help many customer secure their workload by using the NSX Distributed Firewall. As NSX has evolved over the years the different platform it supports has also broadened, from virtual machines, bare metal server, cloud workload and kubernetes pods.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

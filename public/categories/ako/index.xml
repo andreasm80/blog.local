@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>ako on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/ako/</link>
+    <description>Recent content in ako on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sun, 11 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/ako/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>K8s Ingress with NSX Advanced Load Balancer</title>
+      <link>https://yikes.guzware.net/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/</link>
+      <pubDate>Sun, 11 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/</guid>
+      <description>
+        
+          
+            Abbreviations used in this article:
+NSX Advanced Load Balancer = NSX-ALB K8s = Kubernetes (8 letters between the K and s in Kubernetes) SSL = Secure Sockets Layer AKO = Avi Kubernetes Operator (AVI now a VMware product called NSX Advanced Load Balancer) In one of my previous posts I wrote about how to install and configure AKO (Avi Kubernetes Operator) to use as Service type LoadBalancer.
+This post will try to cover the basics of how to use NSX Advanced LoadBalancer by using AKO to handle our Ingress requests (ingress-controller).
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>cert-manager on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/cert-manager/</link>
+    <description>Recent content in cert-manager on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sun, 23 Oct 2022 08:21:52 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/cert-manager/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>We Take a Look at the AKO Crds</title>
+      <link>https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/</link>
+      <pubDate>Sun, 23 Oct 2022 08:21:52 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/</guid>
+      <description>
+        
+          
+            AKO settings: What happens if we need to to this
+What happens if I need passthrough
+How does AKO work
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Running the Unifi Controller in Kubernetes</title>
+      <link>https://yikes.guzware.net/2022/10/23/running-the-unifi-controller-in-kubernetes/</link>
+      <pubDate>Sun, 23 Oct 2022 08:11:37 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/running-the-unifi-controller-in-kubernetes/</guid>
+      <description>
+        
+          
+            TOPICS: 
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>How to Deploy Tanzu With vSphere</title>
+      <link>https://yikes.guzware.net/2022/10/23/how-to-deploy-tanzu-with-vsphere/</link>
+      <pubDate>Sun, 23 Oct 2022 08:02:28 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/how-to-deploy-tanzu-with-vsphere/</guid>
+      <description>
+        
+          
+            vSphere with Tanzu (TKGs) With or without NSX-T Deploy workload clusters NSX-T Loadbalancer and AKO as Ingress 
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

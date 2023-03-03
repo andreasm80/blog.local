@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Blog on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/blog/</link>
+    <description>Recent content in Blog on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Wed, 12 Oct 2022 08:28:23 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Hugo in Kubernetes</title>
+      <link>https://yikes.guzware.net/2022/10/12/hugo-in-kubernetes/</link>
+      <pubDate>Wed, 12 Oct 2022 08:28:23 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/12/hugo-in-kubernetes/</guid>
+      <description>
+        
+          
+            This blog post will cover how I wanted to deploy Hugo to host my blog-page.
+Preparations To achieve what I wanted, deploy an highly available Hugo hosted blog page, I decided to run Hugo in Kubernetes. For that I needed
+Kubernetes cluster, obviously, consisting of several workers for the the &amp;quot;hugo&amp;quot; pods to run on (already covered here. Persistent storage (NFS in my case, already covered here) An Ingress controller (already covered here) A docker image with Hugo, nginx and go (will be covered here) Docker installed so you can build the image A place to host the docker image (Docker hub or Harbor registry will be covered here) Create the Docker image Before I can deploy Hugo I need to create an Docker image that contains the necessary bits.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

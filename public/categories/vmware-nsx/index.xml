@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>vmware nsx on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/vmware-nsx/</link>
+    <description>Recent content in vmware nsx on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sun, 13 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/vmware-nsx/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Managing your Antrea K8s clusters running in VMC from your on-prem NSX Manager</title>
+      <link>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</link>
+      <pubDate>Sun, 13 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</guid>
+      <description>
+        
+          
+            This week I was fortunate to get hold of a VMC on AWS environment and wanted to test out the possibility of managing my K8s security policies from my on-prem NSX manager by utilizing the integration of Antrea in NSX. I haven&#39;t covered that specific integration part in a blog yet, but in short: by using Antrea as your CNI and you are running NSX-T 3.2 you can manage all your K8s policies from the NSX manager GUI.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware NSX Application Platform</title>
+      <link>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</link>
+      <pubDate>Tue, 18 Jan 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</guid>
+      <description>
+        
+          
+            VMware NSX 3.2 is out and packed with new features. One of them is the NSX Application Platform which runs on Kubernetes to provide the NSX ATP (Advanced Threat Protection) functionality such as NSX Intelligence (covered in a previous post), NSX Network Detection and Response (NDR) and NSX Malware. This post will go through how to spin up a K8s cluster for this specific scenario covering the pre-reqs from start to finish.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware NSX IDS &amp; IPS</title>
+      <link>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</link>
+      <pubDate>Tue, 19 Oct 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</guid>
+      <description>
+        
+          
+            This post will go through the IDS/IPS built-in feature of the NSX distributed firewall.
+Abbreviations used in this article:
+IDS = Intrusion Detection System IPS = Intrusion Prevention System Introduction to VMware NSX distributed IDS &amp;amp; IPS Before we dive into how to configure and use the distributed IDS and IPS feature in NSX let me just go through the basics where I compare the traditional approach with IDS/IPS and the NSX distributed IDS/IPS.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Microsegmentation with VMware NSX</title>
+      <link>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</guid>
+      <description>
+        
+          
+            This post will go through one way of securing your workloads with VMware NSX. It will cover the different tools and features built into NSX to achieve a robust and automated way of securing your workload. It will go through the use of Security Groups, how they can be utilized, and how to create security policies in the distributed firewall section of NSX-T with the use of the security groups.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Intelligence - quick overview</title>
+      <link>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</guid>
+      <description>
+        
+          
+            When starting out a microsegmentation journey with VMware NSX it will be very important to have a tool that gives you all the visibility and insight you need. This is crucial if you dont know your applications requirements in detail and to make the right decisions in defining your NSX security policies.
+NSX Intelligence is your tool for that. This post is just to show a couple of screenshots of how it looks, and the next post will go more into detail how it works and how to use it.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Deploy NSX-T 2.4 Edge Nodes on a N-VDS Logical Switch</title>
+      <link>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</link>
+      <pubDate>Sat, 09 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</guid>
+      <description>
+        
+          
+            To be able to deploy an Edge node or nodes in your lab or other environment where you only have 2 physical nic you must be able to deploy it on a N-VDS switch as you have already migrated all your kernels etc to this one N-VDS switch.
+But trying to do this from the NSX-T 2.4 manager GUI you will only have the option to deploy it to VSS or VDS portgroups, the N-VDS portgroups are not visible at all.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>&#34;General Error&#34; NSX-T Manager Firewall Section</title>
+      <link>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</link>
+      <pubDate>Wed, 05 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</guid>
+      <description>
+        
+          
+            If you have missing objects in the firewall section before upgrading from NSX-T 2.1 to 2.2 you will experience a General Error in the GUI, on the Dashboard, and in the Firewall section of the GUI. You will even get general error when doing API calls to list the DFW sections https://NSXMGRIP/api/v1/firewall/sections: { &amp;quot;module\_name&amp;quot; : &amp;quot;common-services&amp;quot;, &amp;quot;error\_message&amp;quot; : &amp;quot;General error has occurred.&amp;quot;, &amp;quot;details&amp;quot; : &amp;quot;java.lang.NullPointerException&amp;quot;, &amp;quot;error\_code&amp;quot; : &amp;quot;100&amp;quot; }
+If you have upgraded the fix is straight forward.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

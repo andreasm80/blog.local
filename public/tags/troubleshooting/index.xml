@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>troubleshooting on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/troubleshooting/</link>
+    <description>Recent content in troubleshooting on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Wed, 05 Sep 2018 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/troubleshooting/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>&#34;General Error&#34; NSX-T Manager Firewall Section</title>
+      <link>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</link>
+      <pubDate>Wed, 05 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</guid>
+      <description>
+        
+          
+            If you have missing objects in the firewall section before upgrading from NSX-T 2.1 to 2.2 you will experience a General Error in the GUI, on the Dashboard, and in the Firewall section of the GUI. You will even get general error when doing API calls to list the DFW sections https://NSXMGRIP/api/v1/firewall/sections: { &amp;quot;module\_name&amp;quot; : &amp;quot;common-services&amp;quot;, &amp;quot;error\_message&amp;quot; : &amp;quot;General error has occurred.&amp;quot;, &amp;quot;details&amp;quot; : &amp;quot;java.lang.NullPointerException&amp;quot;, &amp;quot;error\_code&amp;quot; : &amp;quot;100&amp;quot; }
+If you have upgraded the fix is straight forward.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>vSphere Replication 6.1.2 vCenter plugin fails after upgrade (vCenter 6.0 U3)</title>
+      <link>https://yikes.guzware.net/2017/04/10/vsphere-replication-6.1.2-vcenter-plugin-fails-after-upgrade-vcenter-6.0-u3/</link>
+      <pubDate>Mon, 10 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2017/04/10/vsphere-replication-6.1.2-vcenter-plugin-fails-after-upgrade-vcenter-6.0-u3/</guid>
+      <description>
+        
+          
+            After upgrading vCenter (VCSA) to 6.0 U3 and upgrading the vSphere Replication Appliance to 6.1.2 the plugin in vCenter stops working. Follow this KB
+And this KB to enable SSH (for those who are unfamiliar with how to enable SSH in a *nix environment):
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>
