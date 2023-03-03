@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Networking on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/networking/</link>
+    <description>Recent content in Networking on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Mon, 20 Feb 2023 15:42:54 +0100</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/networking/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Antrea Egress</title>
+      <link>https://yikes.guzware.net/2023/02/20/antrea-egress/</link>
+      <pubDate>Mon, 20 Feb 2023 15:42:54 +0100</pubDate>
+      
+      <guid>https://yikes.guzware.net/2023/02/20/antrea-egress/</guid>
+      <description>
+        
+          
+            Antrea Egress: What is Egress when we talk about Kubernetes? Well if a pod wants to communicate to the outside world, outside the Kubernetes cluster it runs in, out of the worker node the pod resides on, this is egress traffic (definition &amp;quot;the action of going out of or leaving a place&amp;quot; and in network terminology means the direction is outward from itself).
+Why does egress matter? Well, usually when the pods communicate out, they will use the IP address of the worker node they currently is deployed on.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

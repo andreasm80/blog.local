@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>vmare nsx intelligence on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/vmare-nsx-intelligence/</link>
+    <description>Recent content in vmare nsx intelligence on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sat, 10 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/vmare-nsx-intelligence/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>NSX Intelligence - quick overview</title>
+      <link>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</guid>
+      <description>
+        
+          
+            When starting out a microsegmentation journey with VMware NSX it will be very important to have a tool that gives you all the visibility and insight you need. This is crucial if you dont know your applications requirements in detail and to make the right decisions in defining your NSX security policies.
+NSX Intelligence is your tool for that. This post is just to show a couple of screenshots of how it looks, and the next post will go more into detail how it works and how to use it.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>configuration on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/configuration/</link>
+    <description>Recent content in configuration on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Tue, 18 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/configuration/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>VMware NSX Application Platform</title>
+      <link>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</link>
+      <pubDate>Tue, 18 Jan 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</guid>
+      <description>
+        
+          
+            VMware NSX 3.2 is out and packed with new features. One of them is the NSX Application Platform which runs on Kubernetes to provide the NSX ATP (Advanced Threat Protection) functionality such as NSX Intelligence (covered in a previous post), NSX Network Detection and Response (NDR) and NSX Malware. This post will go through how to spin up a K8s cluster for this specific scenario covering the pre-reqs from start to finish.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

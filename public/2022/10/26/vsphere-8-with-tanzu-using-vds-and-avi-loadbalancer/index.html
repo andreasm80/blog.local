@@ -1,0 +1,1374 @@
+
+<!DOCTYPE html>
+<html
+  lang="en"
+  data-figures=""
+  
+    class="page"
+  
+  
+  
+    data-mode="dim"
+  >
+  <head>
+<title>vSphere 8 with Tanzu using VDS and Avi Loadbalancer | From 0.985mhz... to several Ghz</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+
+
+  
+<meta property="og:locale" content="en" />
+
+<meta property="og:type" content="article">
+<meta name="description" content="Article description." />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:creator" content="">
+<meta name="twitter:title" content="vSphere 8 with Tanzu using VDS and Avi Loadbalancer" />
+<meta name="twitter:image" content="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/images/logo-vmware-tanzu.png"/>
+<meta property="og:url" content="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/" />
+<meta property="og:title" content="vSphere 8 with Tanzu using VDS and Avi Loadbalancer" />
+<meta property="og:description" content="Article description." />
+<meta property="og:image" content="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/images/logo-vmware-tanzu.png" />
+  <meta name="keywords" content="nsx,vmware,kubernetes" />
+
+<link rel="apple-touch-icon" sizes="180x180" href="https://yikes.guzware.net/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://yikes.guzware.net/icons/favicon-32x32.png">
+<link rel="manifest" href="https://yikes.guzware.net/icons/site.webmanifest">
+
+<link rel="canonical" href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/">
+
+
+
+<link rel="preload" href="https://yikes.guzware.net/css/styles.6c67fa3a7f5290a2facfb027358dd2bdb5450d04b8de427c8a74d79f524a7fb716b470b14b6ba95f1b7cf3aa9a2219a7294a6adeaf16a1080f432eae45d8c03c.css" integrity = "sha512-bGf6On9SkKL6z7AnNY3SvbVFDQS43kJ8inTXn1JKf7cWtHCxS2upXxt886qaIhmnKUpq3q8WoQgPQy6uRdjAPA==" as="style" crossorigin="anonymous">
+
+
+
+<link rel="preload" href="https://yikes.guzware.net/en/js/bundle.597a98a0532def1db904a0a3d3c07e7f9d783e74aca99a317bb98a2c3a0889eacc7a71bc353347f2604d4d61e00d90babdc933cc1fa4a3bdcee857c1e2237b27.js" as="script" integrity=
+"sha512-WXqYoFMt7x25BKCj08B&#43;f514PnSsqZoxe7mKLDoIierMenG8NTNH8mBNTWHgDZC6vckzzB&#43;ko73O6FfB4iN7Jw==" crossorigin="anonymous">
+
+
+<link rel="stylesheet" type="text/css" href="https://yikes.guzware.net/css/styles.6c67fa3a7f5290a2facfb027358dd2bdb5450d04b8de427c8a74d79f524a7fb716b470b14b6ba95f1b7cf3aa9a2219a7294a6adeaf16a1080f432eae45d8c03c.css" integrity="sha512-bGf6On9SkKL6z7AnNY3SvbVFDQS43kJ8inTXn1JKf7cWtHCxS2upXxt886qaIhmnKUpq3q8WoQgPQy6uRdjAPA==" crossorigin="anonymous">
+
+
+  </head>
+  <body
+    data-code="7"
+    data-lines="false"
+    id="documentTop"
+    data-lang="en"
+  >
+
+<header class="nav_header" >
+  <nav class="nav"><a href='https://yikes.guzware.net/' class="nav_brand nav_item" title="From 0.985mhz... to several Ghz">
+  <img src="https://yikes.guzware.net/quote3.png" class="logo" alt="From 0.985mhz... to several Ghz">
+  <div class="nav_close">
+    <div><svg class="icon">
+  <title>open-menu</title>
+  <use xlink:href="#open-menu"></use>
+</svg>
+<svg class="icon">
+  <title>closeme</title>
+  <use xlink:href="#closeme"></use>
+</svg>
+</div>
+  </div>
+</a>
+
+    <div class='nav_body nav_body_left'>
+      
+      
+      
+        
+
+  <div class="nav_parent">
+    <a href="https://yikes.guzware.net/" class="nav_item" title="Home">Home </a>
+  </div>
+  <div class="nav_parent">
+    <a href="https://yikes.guzware.net/about/" class="nav_item" title="About">About </a>
+  </div>
+      
+<div class='follow'>
+<div class="color_mode">
+  <input type="checkbox" class="color_choice" id="mode">
+</div>
+
+</div>
+
+    </div>
+  </nav>
+</header>
+
+    <main>
+  
+<div class="grid-inverse wrap content">
+  <article class="post_content">
+    <h1 class="post_title">vSphere 8 with Tanzu using VDS and Avi Loadbalancer</h1>
+  <div class="post_meta">
+    <span><svg class="icon">
+  <title>calendar</title>
+  <use xlink:href="#calendar"></use>
+</svg>
+</span>
+    <span class="post_date">
+      26-10-2022</span>
+    <span class="post_time"> · 23 min read</span><span>&nbsp;· <a href='https://yikes.guzware.net/tags/k8s/' title="K8s" class="post_tag button button_translucent">K8s
+        </a><a href='https://yikes.guzware.net/tags/tanzu/' title="Tanzu" class="post_tag button button_translucent">Tanzu
+        </a>
+    </span>
+  </div>
+
+      <div class="post_toc">
+        <h2>Overview</h2>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#assumptions">Assumptions</a></li>
+    <li><a href="#preparations-on-the-avi-side-of-things">Preparations on the Avi side of things</a>
+      <ul>
+        <li><a href="#avi-cloud-configurations">Avi cloud configurations</a></li>
+        <li><a href="#avi-network-configs">Avi network configs</a></li>
+        <li><a href="#avi-service-engine-group">Avi service engine group</a></li>
+        <li><a href="#avi-vrf-context">Avi VRF context</a></li>
+        <li><a href="#avi-controller-ssl-certificate-for-tanzu-integration">Avi controller SSL certificate for Tanzu &quot;integration&quot;</a></li>
+      </ul>
+    </li>
+    <li><a href="#enable-workload-management-in-vsphere">Enable Workload Management in vSphere</a>
+      <ul>
+        <li><a href="#enable-workload-management">Enable workload management</a></li>
+      </ul>
+    </li>
+    <li><a href="#vsphere-namespace">vSphere Namespace</a>
+      <ul>
+        <li><a href="#create-a-vsphere-namespace">Create a vSphere namespace</a></li>
+        <li><a href="#create-workload-cluster">Create workload cluster</a></li>
+      </ul>
+    </li>
+    <li><a href="#configure-avi-as-ingress-controller-l7">Configure Avi as Ingress controller (L7)</a>
+      <ul>
+        <li><a href="#antrea-nodeportlocal">Antrea NodePortLocal</a></li>
+      </ul>
+    </li>
+    <li><a href="#configure-avi-as-ingress-controller-l7---continue">Configure Avi as Ingress controller (L7) - continue</a></li>
+  </ul>
+</nav>
+      </div>
+    
+    <div class="post_body"><h1 id="deploy-tanzu-in-vsphere-8-with-vds-and-avi-loadbalancer">Deploy Tanzu in vSphere 8 with VDS and Avi Loadbalancer:</h1>
+<p>This post will go through how to install Tanzu in vSphere 8 using vSphere VDS networking and Avi as loadbalancer.
+The goal is to deploy Tanzu by using vSphere Distributed Switch (no NSX this time) and utilize Avi as loadbalancer for Supervisor and workload cluster L4 endpoint (kubernetes API). When that is done I will go through how we also can extend this into L7 (Ingress) by using AKO in our workload clusters.</p>
+<p>The below diagram is what we should end up with after the basic deployment of Tanzu and Avi:</p>
+<img src=images/image-20230131091211841.png style="width:1000px" />
+<h2 id="assumptions">Assumptions</h2>
+<p>This post assumes we already have a vSphere environment up and running with vCenter, HA and DRS. Required network to support the basic vSphere stuff like vMotion and shared storage. And the hosts networking has been configured with a Distributed Switch with the corresponding vds portgroups for Management, Frontend network (VIP placement for kubernetes API endpoint) and workload network with corresponding VLANs. In vCenter a content library needs to be created, this is just a local library you give a meaningful name no subscriptions etc.</p>
+<img src=images/image-20230130171705186.png style="width:600px" />
+<p>At least one Avi controller is deployed, no cloud added, just deployed and the initial configs done.</p>
+<h2 id="preparations-on-the-avi-side-of-things">Preparations on the Avi side of things</h2>
+<p>This part of the guide takes place on the newly configured Avi controller(s) which currently only has the initial configuration done</p>
+<h3 id="avi-cloud-configurations">Avi cloud configurations</h3>
+<p>To prepare Avi for this deployment we need to configure the vCenter cloud. This is done here:</p>
+<img src=images/image-20230130170536851.png style="width:1000px" />
+<p>There is a Default-Cloud object there we need to convert to a vCenter cloud. This is done by clicking on this button on the far right side:
+<img src=images/image-20230130170758133.png style="width:500px" /></p>
+<p>This will bring up the following options:
+<img src=images/image-20230130170940334.png style="width:500px" /></p>
+<p>Select VMware vCenter/vSphere NSX
+Then start populate the relevant vCenter information for your vCenter:
+<img src=images/image-20230130171203959.png style="width:800px" /></p>
+<p>When credentials is added slect content library and choose your content library from the list, then click connect and then Save &amp; Relaunch</p>
+<img src=images/image-20230130172122543.png style="width:800px" />
+<p>When the dialog relaunches select the management network and ip address management. I have opted for DHCP (I have DHCP in my mgmt network, if not we can leverage Avi as IPAM provider for the mgmt network also.) This is used for the SE's mgmt interface.
+<img src=images/image-20230130172702929.png style="width:800px" /></p>
+<p>Click save for now. 
+Head over to the Template section to add IPAM and DNS.</p>
+<img src=images/image-20230130173029483.png style="width:500px" />
+<p>When using vCenter clouds the different portgroups is automatically added under networks. We need to configure some of them. But for now just create the IPAM and DNS profiles and we configure the networks later accordingly.</p>
+<p>The DNS Profile (optional, only if you want to use Avi DNS service):</p>
+<img src=images/image-20230130173253621.png style="width:800px" />
+<p>Click save when done</p>
+<p>The IPAM profile:</p>
+<img src=images/image-20230130173434279.png style="width:800px" />
+<p>Select the Default-Cloud, then select from the list &quot;Usable Networks&quot; the Frontend network vds portgroup corresponding to the frontend network we want to use for our endpoint vips. Click save.
+You should have your profiles configured now:</p>
+<img src=images/image-20230130173722476.png style="width:500px" />
+<p>Head back to your cloud again and add your newly created IPAM and DNS profiles.</p>
+<img src=images/image-20230130173924406.png style="width:800px" />
+<p>Add the profiles:
+<img src=images/image-20230130174041607.png style="width:800px" /></p>
+<p>Before you click finish, make sure you have selected &quot;Prefer Static Routes vs Directly Connected Network&quot; like this:
+<img src=images/image-20230130174332511.png style="width:800px" /></p>
+<p>Then click finish...</p>
+<h3 id="avi-network-configs">Avi network configs</h3>
+<p>Now its time to configure the networks for the SEs (VIP, dataplane). I will go ahead and configure both the Frontend VIP for kubernetes API endpoint, but also the workload network I will use when I add L7 functionality later.
+Head over to Cloud Resources:
+<img src=images/image-20230130174644029.png style="width:800px" /></p>
+<p>Scroll until you find your &quot;Frontend-network&quot;
+Click edit all the way to the right:
+<img src=images/image-20230130174806882.png style="width:1000px" /></p>
+<p>In here we need to define the subnet (if not already auto discovered) and add and IP range for the SE's and VIPS. We can decide to create just one range for both, or a range only for SEs, and one for VIPs only. To create a range for both SE and VIP do like this:
+<img src=images/image-20230130175127675.png style="width:1000px" /></p>
+<p>If you want a specific range for SE and a specific for VIP do like this:
+<img src=images/image-20230130175331727.png style="width:800px" /></p>
+<p>Common for both is to deselect the DHCP Enabled option. 
+What we have done now is to tell Avi that Avi is responsible for IP allocation to our SE's when they are deployed and configured to give them each their IP in the Frontend network, and also &quot;carve&quot; out an IP for the VIP when a Virtual Service is created and IP allocation for that service is selected to auto-allocate.
+The same would go if you decided to not use DHCP for mgmt IP, you would need to defined the network and select only &quot;Use for Service Engine&quot; (no VIPs in the management network)</p>
+<h3 id="avi-service-engine-group">Avi service engine group</h3>
+<p>Now its time to prepare the Default Service Engine Group. Head over to Cloud Resources - Service Engine Group</p>
+<img src=images/image-20230130184214753.png style="width:800px" />
+<p>Click the pencil on the far right side of the Default-Group and make the following changes:</p>
+<img src=images/image-20230130184403506.png style="width:1000px" />
+<p>In the Advanced tab:
+<img src=images/image-20230130184534370.png style="width:1000px" /></p>
+<p>Here we select our vSphere cluster for the SE placement, vSphere shared storage, and the Prefix and vCenter folder placement (if you want).
+Now that is done.</p>
+<h3 id="avi-vrf-context">Avi VRF context</h3>
+<p>Now we need to create a static route for the SE dataplane to know which gateway will take them to the &quot;backend-pool&quot; (the services they are acting as loadbalancer for). This is usually the gateway for the networks in their respective subnet as the dataplane is residing in. 
+Here I prepare the route for the Frontend network, and also the Workload network (so it is already done when moving to the step of enabling L7).
+<img src=images/image-20230130184925780.png style="width:1000px" /></p>
+<h3 id="avi-controller-ssl-certificate-for-tanzu-integration">Avi controller SSL certificate for Tanzu &quot;integration&quot;</h3>
+<p>The last step is to create a new certificate, or use your own signed certificate, for the Tanzu deployment to use.
+Head over to Templates - SSL/TLS Certificates.
+<img src=images/image-20230130185328041.png style="width:800px" /></p>
+<p>From here we click &quot;Create&quot; in the top right corner:
+<img src=images/image-20230130185414177.png style="width:200px" /></p>
+<p>I will go ahead and create a new self-signed certificate:
+<img src=images/image-20230130185713577.png style="width:1000px" /></p>
+<p>It is important that you use the IP or FQDN of the controller under &quot;Common Name&quot; and under &quot;Subject Alternate Name (SAN)&quot;</p>
+<p>Now head over to Administration - Access Settings:
+<img src=images/image-20230130185927705.png style="width:600px" /></p>
+<p>Click edit on the pencil in the top right corner, remove the existing certificates under SSL/TLS Certificate:
+<img src=images/image-20230130190108140.png style="width:800px"/></p>
+<p>And replace with the one you created:
+<img src=images/image-20230130190218629.png style="width:800px" /></p>
+<p>Now the Avi config is done for this round. Next step is to enable Workload Management in vSphere...</p>
+<h2 id="enable-workload-management-in-vsphere">Enable Workload Management in vSphere</h2>
+<p>This section will cover all the steps to enable Tanzu from vCenter, describing the selections made and the network configs.</p>
+<h3 id="enable-workload-management">Enable workload management</h3>
+<p>Head over to your vCenter server and click here:
+(from the the &quot;hamburger menu&quot; top left corner)</p>
+<img src=images/image-20230130191341788.png style="width:300px" />
+<p>Click the Get Started button:</p>
+<img src=images/image-20230130191657988.png style="width:800px" />
+<p>Step 1: Select vSphere Distributed Switch
+<img src=images/image-20230130191855793.png style="widht:800px" />
+Step 2: Select Cluster Deployment, give the supervisor cluster a name and give it a zone name:
+<img src=images/image-20230130192022243.png style="width:1000px" /></p>
+<p>Step 3: Select your Storage Policy (If VSAN and you dont have created a specific VSAN policy for this use Default Storage Policy):
+<img src=images/image-20230130192205546.png style="width:800px" /></p>
+<p>Step 4: Type in the relevant info for your Avi Controller and copy paste the certificate from your Avi controller:
+<img src=images/image-20230130192331995.png style="width:1000px" /></p>
+<p>The certificate is easily copied from the Avi controller by going to Templates - SSL/TLS Certificates and click the &quot;down arrow&quot;:
+<img src=images/image-20230130192531421.png style="width:1000px" /></p>
+<p>Then copy the certificate:
+<img src=images/image-20230130192632592.png style="width:800px" /></p>
+<p>Paste the content in the Server Certificate field above (step 4)
+Step 5: Management Network
+<img src=images/image-20230130192801347.png style="widht:1000px" />
+Here we fill in the required information for the Supervisor nodes. Management IP for the nodes themselves (needs connectivity to both vCenter and ESXi hosts, could be in the same mgmt network as vCenter and ESXi). Select the corresponding vds portgroup, select either static or DHCP if you want to use DHCP. 
+Step 6: Workload Network
+<img src=images/image-20230130193116257.png style="width:1000px" /></p>
+<p>Select the correct vds portgroup for the workload network. The supervisor and the workload nodes will be placed here. Can be static or DHCP. Leave the default &quot;Internal Network for Kubernetes Services&quot;, that is for the internal services (clusterIP etc inside the K8s clusters, they will never be exposed outside). Fill in the necessary config if you go with static. 
+Step 7: Review and Confirm and optionally give the Supervisor endpoint a DNS name which you later can register in your DNS service when we have the L4 IP for the kubernetes API endpoint. Click finish:</p>
+<img src=images/image-20230130193458959.png style="width:900px" />
+<p>The whole summary:
+<img src=images/image-20230130193620276.png style="width:900px" /></p>
+<p>Now sit back and wait for the creation of the supervisor cluster, it can take a couple of minutes.
+<img src=images/image-20230130193824810.png style="width:900px" /></p>
+<p>After a while you can take a look in your Avi controller under Applications and see if something is being created there;
+<img src=images/image-20230130194009437.png style="width:800px" /></p>
+<p>You can monitor the process from the Workload management status view by clicking on the &quot;Configuring (View) )&quot;. You can continue work with your vCenter server and go back to this progress bar whenever you want by clicking the hamburger menu Workload management.</p>
+<p>In your vCenter inventory you should also see the Supervisor VMs  and Avi SE's like this:
+<img src=images/image-20230130194536565.png style="width:700px" /></p>
+<p>When its done deploying you will see the green status here:
+<img src=images/image-20230130194650088.png style="width:900px" /></p>
+<p>Notice the Control Plane Node Address, this is our endpoint IP being served by Avi loadbalancer and the one we use to interact with the Supervisor cluster to create workloads etc..</p>
+<p>Enter the IP in your browser with https://10.102.7.11 and you should see this page:
+<img src=images/image-20230130194909087.png style="width:900px" /></p>
+<p>Download the cli tools for your operating system, deploy them so they are in your path. Will use both kubectl and kubectl-vsphere later on
+Next steps include creating namespace, deploy workload clusters. Lets dive into it.</p>
+<h2 id="vsphere-namespace">vSphere Namespace</h2>
+<p><em>vSphere with Tanzu workloads, including vSphere Pods, VMs, and Tanzu Kubernetes clusters, are deployed to a vSphere Namespace. You define a vSphere Namespace on a Supervisor and configure it with resource quota and user permissions. Depending on the DevOps needs and workloads they plan to run, you might also assign storage policies, VM classes, and content libraries for fetching the latest Tanzu Kubernetes releases and VM images.</em> <a href="https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-with-tanzu-installation-configuration/GUID-1544C9FE-0B23-434E-B823-C59EFC2F7309.html">source</a></p>
+<h3 id="create-a-vsphere-namespace">Create a vSphere namespace</h3>
+<p>Now that the Supervisor cluster is ready and running head back to your vCenter and create a vSphere namespace.
+<img src=images/image-20230131081257362.png style="width:700px" /></p>
+<p>Click create namespace (above) the select the supervisor to create the namespace on, and give your namespace a name then select the &quot;workload network&quot; you have defined for your workload placement.
+<img src=images/image-20230131081700995.png style="width:700px" /></p>
+<p>Now the namespace is being created.</p>
+<h4 id="add-additional-workload-networks">Add additional workload networks</h4>
+<p>Sidenote there is also possible to add more &quot;workload networks&quot; after the Supervisor has been configured under Supervisor config if you want to add more &quot;workload networks&quot; for separation etc.
+To do that head over to Workload Management in vCenter:</p>
+<img src=images/image-20230131090007192.png style="width:700px" />
+<p>Then select the supervisor tab:</p>
+<img src=images/image-20230131090119476.png style="width:500px" />
+<p>Click on your supervisor cluster here:
+<img src=images/image-20230131090303668.png style="width:500px" /></p>
+<p>Then click the configure tab and go to network and add your additional workload network:
+<img src=images/image-20230131090443455.png style="width:1000px" /></p>
+<p>After your namespace has been created we need to configure it with access permissions, datastores, content library and vmclasses:
+<img src=images/image-20230131090813163.png style="width:1000px" /></p>
+<h3 id="create-workload-cluster">Create workload cluster</h3>
+<p>Afte the vSphere Namespace has been configured its time to deploy a workload cluster/TKC cluster (Tanzu Kubernetes Cluster cluster 😄 ). From your workstation/jumphost where you downloaded the cli tools login in to the supervisor with access rights to the Supervisor API. (<a href="mailto:administrator@vsphere.local">administrator@vsphere.local</a> will have access).</p>
+<h4 id="custom-role-in-vcenter">Custom role in vCenter</h4>
+<p>I created a specific role in my vCenter with these privileges:</p>
+<img src=images/image-20230204091003812.png style="width:500px" />
+<p>Added my &quot;supervisor-manager&quot; user in this role as global and in the top tree of my vCenter with inheritance. Also added it as &quot;editor&quot; in my wdc-2-ns-1 vSphere Namespace.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">kubectl vsphere login --server<span class="o">=</span>10.102.7.11 --insecure-skip-tls-verify --vsphere-username<span class="o">=</span>supervisor-manager@cpod-nsxam-wdc.az-wdc.cloud-garage.net
+</span></span></code></pre></div><p>When your are logged in it will give you this output and also put the kubernetes config in your ~/.kube/config file.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~$ kubectl vsphere login --server<span class="o">=</span>10.102.7.11 --insecure-skip-tls-verify --vsphere-username<span class="o">=</span>supervisor-manager@cpod-nsxam-wdc.az-wdc.cloud-garage.net
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">KUBECTL_VSPHERE_PASSWORD environment variable is not set. Please enter the password below
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">Password: 
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">Logged in successfully.
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">You have access to the following contexts:
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">   10.102.7.11
+</span></span><span class="line"><span class="ln">10</span><span class="cl">   wdc-2-ns-1
+</span></span><span class="line"><span class="ln">11</span><span class="cl">
+</span></span><span class="line"><span class="ln">12</span><span class="cl">If the context you wish to use is not in this list, you may need to try
+</span></span><span class="line"><span class="ln">13</span><span class="cl">logging in again later, or contact your cluster administrator.
+</span></span><span class="line"><span class="ln">14</span><span class="cl">
+</span></span><span class="line"><span class="ln">15</span><span class="cl">To change context, use <span class="sb">`</span>kubectl config use-context &lt;workload name&gt;<span class="sb">`</span>
+</span></span></code></pre></div><p>When you are logged in prepare your yaml for your first workload cluster and apply it with <code>kubectl apply -f nameof.yaml</code></p>
+<p>Example:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">cluster.x-k8s.io/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Cluster</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-2-tkc-cluster-1 </span><span class="w"> </span><span class="c"># give your tkc cluster a name</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-2-ns-1</span><span class="w"> </span><span class="c"># remember to put it in your defined vSphere Namespace</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">    </span><span class="nt">services</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;20.10.0.0/16&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span><span class="nt">pods</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;20.20.0.0/16&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;cluster.local&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">  </span><span class="nt">topology</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">    </span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="l">tanzukubernetescluster</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l">v1.23.8---vmware.2-tkg.2-zshippable</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">    </span><span class="nt">controlPlane</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">      </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">      </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">          </span><span class="nt">run.tanzu.vmware.com/resolve-os-image</span><span class="p">:</span><span class="w"> </span><span class="l">os-name=ubuntu</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">    </span><span class="nt">workers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">      </span><span class="nt">machineDeployments</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">        </span>- <span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="l">node-pool</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">node-pool-01</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">          </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">          </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">27</span><span class="cl"><span class="w">            </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">28</span><span class="cl"><span class="w">              </span><span class="nt">run.tanzu.vmware.com/resolve-os-image</span><span class="p">:</span><span class="w"> </span><span class="l">os-name=ubuntu</span><span class="w">
+</span></span></span><span class="line"><span class="ln">29</span><span class="cl"><span class="w">    </span><span class="nt">variables</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">30</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">vmClass</span><span class="w">
+</span></span></span><span class="line"><span class="ln">31</span><span class="cl"><span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l">best-effort-medium</span><span class="w">
+</span></span></span><span class="line"><span class="ln">32</span><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">storageClass</span><span class="w">
+</span></span></span><span class="line"><span class="ln">33</span><span class="cl"><span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l">vsan-default-storage-policy</span><span class="w">
+</span></span></span></code></pre></div><p>As soon as I apply the above yaml it will deploy the corresponding tkc cluster in your vsphere environment:</p>
+<img src=images/image-20230204090741134.png style="width:600px" />
+<p>Sit back and enjoy while your tkc cluster is being created for you. We can check the status in the vCenter gui:</p>
+<img src=images/image-20230204091423408.png style="width:600px" />
+<p>or via kubectl:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/tkc-wdc-01-vds$ k get cluster -n wdc-2-ns-1
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME                  PHASE         AGE   VERSION
+</span></span><span class="line"><span class="ln">3</span><span class="cl">wdc-2-tkc-cluster-1   Provisioned   12m   v1.23.8+vmware.2
+</span></span></code></pre></div><p>It is ready, now we need to log into it:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/tkc-wdc-01-vds$ kubectl vsphere login --server<span class="o">=</span>10.102.7.11 --insecure-skip-tls-verify --vsphere-username<span class="o">=</span>supervisor-manager@cpod-nsxam-wdc.az-wdc.cloud-garage.net --tanzu-kubernetes-cluster-name<span class="o">=</span>wdc-2-tkc-cluster-1 --tanzu-kubernetes-cluster-namespace<span class="o">=</span>wdc-2-ns-1
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">KUBECTL_VSPHERE_PASSWORD environment variable is not set. Please enter the password below
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">Password: 
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">Logged in successfully.
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">You have access to the following contexts:
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">   10.102.7.11
+</span></span><span class="line"><span class="ln">10</span><span class="cl">   wdc-2-ns-1
+</span></span><span class="line"><span class="ln">11</span><span class="cl">   wdc-2-tkc-cluster-1
+</span></span><span class="line"><span class="ln">12</span><span class="cl">
+</span></span><span class="line"><span class="ln">13</span><span class="cl">If the context you wish to use is not in this list, you may need to try
+</span></span><span class="line"><span class="ln">14</span><span class="cl">logging in again later, or contact your cluster administrator.
+</span></span><span class="line"><span class="ln">15</span><span class="cl">
+</span></span><span class="line"><span class="ln">16</span><span class="cl">To change context, use <span class="sb">`</span>kubectl config use-context &lt;workload name&gt;<span class="sb">`</span>
+</span></span></code></pre></div><p>Check if you are able to list ns and pods:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/tkc-wdc-01-vds$ k get pods -A
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">NAMESPACE                      NAME                                                                      READY   STATUS    RESTARTS        AGE
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">kube-system                    antrea-agent-77drs                                                        2/2     Running   <span class="m">0</span>               8m35s
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">kube-system                    antrea-agent-j482r                                                        2/2     Running   <span class="m">0</span>               8m34s
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">kube-system                    antrea-agent-thh5b                                                        2/2     Running   <span class="m">0</span>               8m35s
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">kube-system                    antrea-agent-tz4fb                                                        2/2     Running   <span class="m">0</span>               8m35s
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">kube-system                    antrea-controller-575845467f-pqgll                                        1/1     Running   <span class="m">0</span>               8m35s
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">kube-system                    coredns-7d8f74b498-ft7rf                                                  1/1     Running   <span class="m">0</span>               10m
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">kube-system                    coredns-7d8f74b498-pqgp7                                                  1/1     Running   <span class="m">0</span>               7m35s
+</span></span><span class="line"><span class="ln">10</span><span class="cl">kube-system                    docker-registry-wdc-2-tkc-cluster-1-n89g2-zc27k                           1/1     Running   <span class="m">0</span>               11m
+</span></span><span class="line"><span class="ln">11</span><span class="cl">kube-system                    docker-registry-wdc-2-tkc-cluster-1-node-pool-01-4dql7-7b8b84fb4b-6cvz9   1/1     Running   <span class="m">0</span>               8m46s
+</span></span><span class="line"><span class="ln">12</span><span class="cl">kube-system                    docker-registry-wdc-2-tkc-cluster-1-node-pool-01-4dql7-7b8b84fb4b-rgn29   1/1     Running   <span class="m">0</span>               8m34s
+</span></span><span class="line"><span class="ln">13</span><span class="cl">kube-system                    docker-registry-wdc-2-tkc-cluster-1-node-pool-01-4dql7-7b8b84fb4b-rsmfw   1/1     Running   <span class="m">0</span>               9m
+</span></span><span class="line"><span class="ln">14</span><span class="cl">kube-system                    etcd-wdc-2-tkc-cluster-1-n89g2-zc27k                                      1/1     Running   <span class="m">0</span>               11m
+</span></span><span class="line"><span class="ln">15</span><span class="cl">kube-system                    kube-apiserver-wdc-2-tkc-cluster-1-n89g2-zc27k                            1/1     Running   <span class="m">0</span>               11m
+</span></span><span class="line"><span class="ln">16</span><span class="cl">kube-system                    kube-controller-manager-wdc-2-tkc-cluster-1-n89g2-zc27k                   1/1     Running   <span class="m">0</span>               11m
+</span></span><span class="line"><span class="ln">17</span><span class="cl">kube-system                    kube-proxy-67xjk                                                          1/1     Running   <span class="m">0</span>               8m46s
+</span></span><span class="line"><span class="ln">18</span><span class="cl">kube-system                    kube-proxy-6fttt                                                          1/1     Running   <span class="m">0</span>               8m35s
+</span></span><span class="line"><span class="ln">19</span><span class="cl">kube-system                    kube-proxy-m4wt8                                                          1/1     Running   <span class="m">0</span>               11m
+</span></span><span class="line"><span class="ln">20</span><span class="cl">kube-system                    kube-proxy-rbsjw                                                          1/1     Running   <span class="m">0</span>               9m1s
+</span></span><span class="line"><span class="ln">21</span><span class="cl">kube-system                    kube-scheduler-wdc-2-tkc-cluster-1-n89g2-zc27k                            1/1     Running   <span class="m">0</span>               11m
+</span></span><span class="line"><span class="ln">22</span><span class="cl">kube-system                    metrics-server-6f7c489795-scmm6                                           1/1     Running   <span class="m">0</span>               8m36s
+</span></span><span class="line"><span class="ln">23</span><span class="cl">secretgen-controller           secretgen-controller-6966677567-4hngd                                     1/1     Running   <span class="m">0</span>               8m26s
+</span></span><span class="line"><span class="ln">24</span><span class="cl">tkg-system                     kapp-controller-55f9977c86-bqppj                                          2/2     Running   <span class="m">0</span>               9m22s
+</span></span><span class="line"><span class="ln">25</span><span class="cl">tkg-system                     tanzu-capabilities-controller-manager-cb4bc7978-qh9s8                     1/1     Running   <span class="m">3</span> <span class="o">(</span>87s ago<span class="o">)</span>     7m54s
+</span></span><span class="line"><span class="ln">26</span><span class="cl">vmware-system-auth             guest-cluster-auth-svc-r4rk9                                              1/1     Running   <span class="m">0</span>               7m48s
+</span></span><span class="line"><span class="ln">27</span><span class="cl">vmware-system-cloud-provider   guest-cluster-cloud-provider-859b8dc577-8jlth                             1/1     Running   <span class="m">0</span>               8m48s
+</span></span><span class="line"><span class="ln">28</span><span class="cl">vmware-system-csi              vsphere-csi-controller-6db86b997-l5glc                                    6/6     Running   <span class="m">0</span>               8m46s
+</span></span><span class="line"><span class="ln">29</span><span class="cl">vmware-system-csi              vsphere-csi-node-7bdpl                                                    3/3     Running   <span class="m">2</span> <span class="o">(</span>7m34s ago<span class="o">)</span>   8m34s
+</span></span><span class="line"><span class="ln">30</span><span class="cl">vmware-system-csi              vsphere-csi-node-q7zqr                                                    3/3     Running   <span class="m">3</span> <span class="o">(</span>7m32s ago<span class="o">)</span>   8m46s
+</span></span><span class="line"><span class="ln">31</span><span class="cl">vmware-system-csi              vsphere-csi-node-r8v2c                                                    3/3     Running   <span class="m">3</span> <span class="o">(</span>7m34s ago<span class="o">)</span>   8m44s
+</span></span><span class="line"><span class="ln">32</span><span class="cl">vmware-system-csi              vsphere-csi-node-zl4m2                                                    3/3     Running   <span class="m">3</span> <span class="o">(</span>7m40s ago<span class="o">)</span>   8m46s
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/tkc-wdc-01-vds$ k get ns
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">NAME                           STATUS   AGE
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">default                        Active   12m
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">kube-node-lease                Active   12m
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">kube-public                    Active   12m
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">kube-system                    Active   12m
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">secretgen-controller           Active   9m3s
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">tkg-system                     Active   9m55s
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">vmware-system-auth             Active   12m
+</span></span><span class="line"><span class="ln">10</span><span class="cl">vmware-system-cloud-provider   Active   10m
+</span></span><span class="line"><span class="ln">11</span><span class="cl">vmware-system-csi              Active   10m
+</span></span><span class="line"><span class="ln">12</span><span class="cl">vmware-system-tkg              Active   12m
+</span></span></code></pre></div><p>By default we are not allowed to run anything on our newly created tkc cluster. We need to define some ClusterRoles. I will just apply a global clusterolres on my tkc cluster so I can do what I want with it like this:
+Apply the psp policy yaml:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ClusterRole</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">psp:privileged</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w"></span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w"></span>- <span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;policy&#39;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;podsecuritypolicies&#39;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w">     </span><span class="p">[</span><span class="s1">&#39;use&#39;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">  </span><span class="nt">resourceNames</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">  </span>- <span class="l">vmware-system-privileged</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ClusterRoleBinding</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">all:psp:privileged</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w"></span><span class="nt">roleRef</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ClusterRole</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">psp:privileged</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w"></span><span class="nt">subjects</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w"></span>- <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Group</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">system:serviceaccounts</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io</span><span class="w">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">kubectl apply -f roles.yaml
+</span></span><span class="line"><span class="ln">2</span><span class="cl">clusterrole.rbac.authorization.k8s.io/psp:privileged created
+</span></span><span class="line"><span class="ln">3</span><span class="cl">clusterrolebinding.rbac.authorization.k8s.io/all:psp:privileged created
+</span></span></code></pre></div><p>Now that I am allowed to deploy stuff I am ready to consume the newly cluster. But this blog was how to deploy Tanzu with VDS and Avi Loadbalancer. So far I have only covered the L4 part where Avi is providing me the K8s API endpoints, I will now jump over to the section where I configure both Avi and my tkc cluster to use Ingress (L7) also so I can publish/expose my applications with ingress. That means installing an additional component called AKO in my tkc cluster and configure Avi accordingly.</p>
+<h2 id="configure-avi-as-ingress-controller-l7">Configure Avi as Ingress controller (L7)</h2>
+<p>For Avi Ingress we need to deploy a component in our TKC cluster called AKO. AKO stands for Avi Kubernetes Operator and introduces the ability to translate our k8s api to the Avi controller so we can make our Avi automatically create vs services for us as soon as we request them from our TKC cluster. To deploy AKO we use Helm. In short we need to add the AKO helm repository, get the ako values, edit them to fit our environment, then install it by using Helm. So let us go through this step-by-step (I have also covered it a while back in an Upstream k8s cluster) but let us do it again here.</p>
+<p>Create the namespace for the ako pod:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">k create ns avi-system
+</span></span><span class="line"><span class="ln">2</span><span class="cl">namespace/avi-system created
+</span></span></code></pre></div><p>Then add the repo to Helm:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">helm repo add ako https://projects.registry.vmware.com/chartrepo/ako
+</span></span></code></pre></div><p>Check the repo:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~$ helm search repo
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME            	CHART VERSION	APP VERSION	DESCRIPTION                             
+</span></span><span class="line"><span class="ln">3</span><span class="cl">ako/ako         	1.8.2        	1.8.2      	A helm chart for Avi Kubernetes Operator
+</span></span><span class="line"><span class="ln">4</span><span class="cl">ako/ako-operator	1.3.1        	1.3.1      	A Helm chart for Kubernetes AKO Operator
+</span></span><span class="line"><span class="ln">5</span><span class="cl">ako/amko        	1.8.2        	1.8.2      	A helm chart for Avi Kubernetes Operator
+</span></span></code></pre></div><p>Get the values.yaml:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="ln">1</span><span class="cl"> helm show values ako/ako --version 1.8.2 &gt; values.yaml
+</span></span></code></pre></div><p>Now its time to edit the value file. I will go through the values files, update it accordingly and adjust some configurations in Avi controller.</p>
+<p>The values.yaml for ako chart:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="c"># this file has been edited by me to easier reflect the changes I have done. So all default comments have been removed, and contains only my comments.</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">replicaCount</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w"></span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l">projects.registry.vmware.com/ako/ako</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">pullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w"></span><span class="nt">AKOSettings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">  </span><span class="nt">primaryInstance</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">  </span><span class="nt">enableEvents</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="w">  
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">  </span><span class="nt">logLevel</span><span class="p">:</span><span class="w"> </span><span class="l">WARN   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">  </span><span class="nt">fullSyncFrequency</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;1800&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">  </span><span class="nt">apiServerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">  </span><span class="nt">deleteConfig</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">  </span><span class="nt">disableStaticRouteSync</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-tkc-cluster-1  </span><span class="w"> </span><span class="c"># Here we need to define a name for our specific TKC cluster. This must not be the exact names as the cluster itself, but why not, it MUST be unique across all your TKC clusters if you have multiple AKO enabled TKC/K8s clusters on same Avi controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">  </span><span class="nt">cniPlugin</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;antrea&#39;</span><span class="w"> </span><span class="c">#This needs to be set to Antrea, the reason is that you would like to configure NodePortLocal.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">  </span><span class="nt">enableEVH</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">  </span><span class="nt">layer7Only</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="c"># This is very important to set to true as we already have an other AKO instance managing L4 for our k8s api endpoints. We will only configure this instance to use L7. </span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">  </span><span class="nt">namespaceSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">    </span><span class="nt">labelKey</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">    </span><span class="nt">labelValue</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">  </span><span class="nt">servicesAPI</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">  </span><span class="nt">vipPerNamespace</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">27</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">28</span><span class="cl"><span class="w"></span><span class="nt">NetworkSettings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">29</span><span class="cl"><span class="w">  </span><span class="nt">nodeNetworkList</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">30</span><span class="cl"><span class="w">  </span><span class="c"># nodeNetworkList:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">31</span><span class="cl"><span class="w">    </span>- <span class="nt">networkName</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;vds-tkc-workload-vlan-1026&#34;</span><span class="w"> </span><span class="c"># this is the VDS portgroup you have for your specific TKC cluster workers running in. In my case the defined portgroup name above. You can see this in vCenter</span><span class="w">
+</span></span></span><span class="line"><span class="ln">32</span><span class="cl"><span class="w">      </span><span class="nt">cidrs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">33</span><span class="cl"><span class="w">      </span>- <span class="m">10.102.6.0</span><span class="l">/24</span><span class="w"> </span><span class="c"># this is the CIDR for your workers</span><span class="w">
+</span></span></span><span class="line"><span class="ln">34</span><span class="cl"><span class="w">  </span><span class="nt">enableRHI</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">35</span><span class="cl"><span class="w">  </span><span class="nt">nsxtT1LR</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">36</span><span class="cl"><span class="w">  </span><span class="nt">bgpPeerLabels</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">37</span><span class="cl"><span class="w">  </span><span class="c"># bgpPeerLabels:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">38</span><span class="cl"><span class="w">  </span><span class="c">#   - peer1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">39</span><span class="cl"><span class="w">  </span><span class="c">#   - peer2</span><span class="w">
+</span></span></span><span class="line"><span class="ln">40</span><span class="cl"><span class="w">  </span><span class="nt">vipNetworkList</span><span class="p">:</span><span class="w">  
+</span></span></span><span class="line"><span class="ln">41</span><span class="cl"><span class="w">    </span>- <span class="nt">networkName</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;vds-tkc-frontend-vlan-1027&#34;</span><span class="w"> </span><span class="c"># This can be the same VIP network you have configured in previously for api endpint or it can be a completely new one. I am going the easy route using the same. It can be shared across multiple cluster (is using NodePortLocal), or can be specific for each tkc cluster. </span><span class="w">
+</span></span></span><span class="line"><span class="ln">42</span><span class="cl"><span class="w">      </span><span class="nt">cidr</span><span class="p">:</span><span class="w"> </span><span class="m">10.102.7.0</span><span class="l">/24</span><span class="w">
+</span></span></span><span class="line"><span class="ln">43</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">44</span><span class="cl"><span class="w"></span><span class="nt">L7Settings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">45</span><span class="cl"><span class="w">  </span><span class="nt">defaultIngController</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="w"> </span><span class="c"># Specify if this is the only Ingress controller you have or default if using several others.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">46</span><span class="cl"><span class="w">  </span><span class="nt">noPGForSNI</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">47</span><span class="cl"><span class="w">  </span><span class="nt">serviceType</span><span class="p">:</span><span class="w"> </span><span class="l">NodePortLocal</span><span class="w"> </span><span class="c"># Here we select nodeportlocal - verify that Antrea is configured to use NodePortLocal</span><span class="w">
+</span></span></span><span class="line"><span class="ln">48</span><span class="cl"><span class="w">  </span><span class="nt">shardVSSize</span><span class="p">:</span><span class="w"> </span><span class="l">SMALL  </span><span class="w"> </span><span class="c"># I am setting this to small so I can run more services using same IP.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">49</span><span class="cl"><span class="w">  </span><span class="nt">passthroughShardSize</span><span class="p">:</span><span class="w"> </span><span class="l">SMALL   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">50</span><span class="cl"><span class="w">  </span><span class="nt">enableMCI</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">51</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">52</span><span class="cl"><span class="w"></span><span class="nt">L4Settings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">53</span><span class="cl"><span class="w">  </span><span class="nt">defaultDomain</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">54</span><span class="cl"><span class="w">  </span><span class="nt">autoFQDN</span><span class="p">:</span><span class="w"> </span><span class="l">default   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">55</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">56</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">57</span><span class="cl"><span class="w"></span><span class="nt">ControllerSettings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">58</span><span class="cl"><span class="w">  </span><span class="nt">serviceEngineGroupName</span><span class="p">:</span><span class="w"> </span><span class="l">Default-Group  </span><span class="w"> </span><span class="c"># If you dont decide to use the same VIP as k8s api endpoint you could decide to create an additional ServiceEngineGroup for your L7 services (IP separation etc). </span><span class="w">
+</span></span></span><span class="line"><span class="ln">59</span><span class="cl"><span class="w">  </span><span class="nt">controllerVersion</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;22.1.1&#39;</span><span class="w"> </span><span class="c"># AKO version 1.8.2 supports Avi 22.1.3</span><span class="w">
+</span></span></span><span class="line"><span class="ln">60</span><span class="cl"><span class="w">  </span><span class="nt">cloudName</span><span class="p">:</span><span class="w"> </span><span class="l">Default-Cloud  </span><span class="w"> </span><span class="c"># The configured cloud name on the Avi controller.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">61</span><span class="cl"><span class="w">  </span><span class="nt">controllerHost</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;172.21.101.50&#39;</span><span class="w"> </span><span class="c"># IP address or Hostname of Avi Controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">62</span><span class="cl"><span class="w">  </span><span class="nt">tenantName</span><span class="p">:</span><span class="w"> </span><span class="l">admin   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">63</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">64</span><span class="cl"><span class="w"></span><span class="nt">nodePortSelector</span><span class="p">:</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">65</span><span class="cl"><span class="w">  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">66</span><span class="cl"><span class="w">  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">67</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">68</span><span class="cl"><span class="w"></span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">69</span><span class="cl"><span class="w">  </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">70</span><span class="cl"><span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l">350m</span><span class="w">
+</span></span></span><span class="line"><span class="ln">71</span><span class="cl"><span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l">400Mi</span><span class="w">
+</span></span></span><span class="line"><span class="ln">72</span><span class="cl"><span class="w">  </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">73</span><span class="cl"><span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l">200m</span><span class="w">
+</span></span></span><span class="line"><span class="ln">74</span><span class="cl"><span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l">300Mi</span><span class="w">
+</span></span></span><span class="line"><span class="ln">75</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">76</span><span class="cl"><span class="w"></span><span class="nt">podSecurityContext</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="ln">77</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">78</span><span class="cl"><span class="w"></span><span class="nt">rbac</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">79</span><span class="cl"><span class="w">  </span><span class="nt">pspEnable</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="ln">80</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">81</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">82</span><span class="cl"><span class="w"></span><span class="nt">avicredentials</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">83</span><span class="cl"><span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;admin&#39;</span><span class="w"> </span><span class="c"># username for the Avi controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">84</span><span class="cl"><span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;password&#39;</span><span class="w"> </span><span class="c"># password for the Avi controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">85</span><span class="cl"><span class="w">  </span><span class="nt">authtoken</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">86</span><span class="cl"><span class="w">  </span><span class="nt">certificateAuthorityData</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">87</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">88</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">89</span><span class="cl"><span class="w"></span><span class="nt">persistentVolumeClaim</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">90</span><span class="cl"><span class="w"></span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l">/log</span><span class="w">
+</span></span></span><span class="line"><span class="ln">91</span><span class="cl"><span class="w"></span><span class="nt">logFile</span><span class="p">:</span><span class="w"> </span><span class="l">avi.log</span><span class="w">
+</span></span></span></code></pre></div><p>A word around the VIP network used for the L7/Ingress. As we deploy AKO as standalone we are not restricted to use only the components defined to support the install of Tanzu with vSphere, like service engine groups, vip networks etc. We could decide to create a separate VIP network by using a dedicated SE group for these networks. We could also decide to have the SE's using  a separate dataplane network than the VIP itself. If going this path there is some config steps that needs to be taken on the network side. Routing to the VIP addresses, either Avi can be configured by using BGP, or we create static routes in the physical routers. But as the VIPs are coming and going (applications are published, deleted, etc) these IPs change. So BGP would be the best option, or use an already defined VLAN as I am doing in this example. In my other post on using NSX and Avi with Tanzu I will show how to use NSX for BGP. Maybe I will update this post also by adding a section where I use BGP from Avi to my upstream router. But for now I will stick with using my VLAN I have called frontend which already have a gateway and a route defined. So all my VIPs will be reachable through this network.</p>
+<h3 id="antrea-nodeportlocal">Antrea NodePortLocal</h3>
+<p>And another word around NodePortLocal. To be able to utilize NodePortLocal your Antrea config in the TKC cluster must be verified whether it is configured with NPL or not. So let us do instead of just assume something.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/ako/ako_vds$ k get configmaps -n kube-system antrea-config-f5d8g47b88 -oyaml
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">apiVersion: v1
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">data:
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">  antrea-agent.conf: <span class="p">|</span>
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">    featureGates:
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">      AntreaProxy: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">      EndpointSlice: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">      Traceflow: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">      NodePortLocal: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">10</span><span class="cl">      AntreaPolicy: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">11</span><span class="cl">      FlowExporter: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">12</span><span class="cl">      NetworkPolicyStats: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">13</span><span class="cl">      Egress: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">14</span><span class="cl">      AntreaIPAM: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">15</span><span class="cl">      Multicast: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">16</span><span class="cl">      ServiceExternalIP: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">17</span><span class="cl">    trafficEncapMode: encap
+</span></span><span class="line"><span class="ln">18</span><span class="cl">    noSNAT: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">19</span><span class="cl">    tunnelType: geneve
+</span></span><span class="line"><span class="ln">20</span><span class="cl">    trafficEncryptionMode: none
+</span></span><span class="line"><span class="ln">21</span><span class="cl">    wireGuard:
+</span></span><span class="line"><span class="ln">22</span><span class="cl">      port: <span class="m">51820</span>
+</span></span><span class="line"><span class="ln">23</span><span class="cl">    egress: <span class="o">{}</span>
+</span></span><span class="line"><span class="ln">24</span><span class="cl">    serviceCIDR: 20.10.0.0/16
+</span></span></code></pre></div><p>Well that was not good. So we need to enable it. Luckily, with Tanzu with vSphere its quite simple actually.
+Switch context to your vSphere Namespace, edit an antreaconfig, apply it.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/antrea$ k config use-context wdc-2-ns-1 
+</span></span><span class="line"><span class="ln">2</span><span class="cl">Switched to context <span class="s2">&#34;wdc-2-ns-1&#34;</span>.
+</span></span><span class="line"><span class="ln">3</span><span class="cl">andreasm@linuxvm01:~/antrea$ k get cluster
+</span></span><span class="line"><span class="ln">4</span><span class="cl">NAME                  PHASE         AGE     VERSION
+</span></span><span class="line"><span class="ln">5</span><span class="cl">wdc-2-tkc-cluster-1   Provisioned   3h26m   v1.23.8+vmware.2
+</span></span><span class="line"><span class="ln">6</span><span class="cl">andreasm@linuxvm01:~/antrea$ k apply -f antreaconfig-wdc-2-nsx-1.yaml 
+</span></span><span class="line"><span class="ln">7</span><span class="cl">Warning: resource antreaconfigs/wdc-2-tkc-cluster-1-antrea-package is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+</span></span><span class="line"><span class="ln">8</span><span class="cl">antreaconfig.cni.tanzu.vmware.com/wdc-2-tkc-cluster-1-antrea-package configured
+</span></span></code></pre></div><p>The antreaconfig I used:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">apiVersion: cni.tanzu.vmware.com/v1alpha1
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">kind: AntreaConfig
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">metadata:
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">  name: wdc-2-tkc-cluster-1-antrea-package  <span class="c1"># notice the naming-convention tkc cluster name-antrea-package</span>
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">  namespace: wdc-2-ns-1 <span class="c1"># your vSphere Namespace the TKC cluster is in.</span>
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">spec:
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">  antrea:
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">    config:
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">      featureGates:
+</span></span><span class="line"><span class="ln">10</span><span class="cl">        AntreaProxy: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">11</span><span class="cl">        EndpointSlice: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">12</span><span class="cl">        AntreaPolicy: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">13</span><span class="cl">        FlowExporter: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">14</span><span class="cl">        Egress: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">15</span><span class="cl">        NodePortLocal: <span class="nb">true</span> <span class="c1"># Set this to true</span>
+</span></span><span class="line"><span class="ln">16</span><span class="cl">        AntreaTraceflow: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">17</span><span class="cl">        NetworkPolicyStats: <span class="nb">true</span>
+</span></span></code></pre></div><p>Lets have a look at my Antrea config in my TKC cluster now:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/antrea$ k config use-context 
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">10.102.7.11          wdc-2-ns-1           wdc-2-tkc-cluster-1  
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">andreasm@linuxvm01:~/antrea$ k config use-context wdc-2-tkc-cluster-1 
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">Switched to context <span class="s2">&#34;wdc-2-tkc-cluster-1&#34;</span>.
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">andreasm@linuxvm01:~/antrea$ k get configmaps -n kube-system antrea-config-f5d8g47b88 -oyaml
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">apiVersion: v1
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">data:
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">  antrea-agent.conf: <span class="p">|</span>
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">    featureGates:
+</span></span><span class="line"><span class="ln">10</span><span class="cl">      AntreaProxy: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">11</span><span class="cl">      EndpointSlice: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">12</span><span class="cl">      Traceflow: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">13</span><span class="cl">      NodePortLocal: <span class="nb">true</span> <span class="c1"># Yes, there it is</span>
+</span></span><span class="line"><span class="ln">14</span><span class="cl">      AntreaPolicy: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">15</span><span class="cl">      FlowExporter: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">16</span><span class="cl">      NetworkPolicyStats: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">17</span><span class="cl">      Egress: <span class="nb">true</span>
+</span></span><span class="line"><span class="ln">18</span><span class="cl">      AntreaIPAM: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">19</span><span class="cl">      Multicast: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">20</span><span class="cl">      ServiceExternalIP: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">21</span><span class="cl">    trafficEncapMode: encap
+</span></span><span class="line"><span class="ln">22</span><span class="cl">    noSNAT: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">23</span><span class="cl">    tunnelType: geneve
+</span></span><span class="line"><span class="ln">24</span><span class="cl">    trafficEncryptionMode: none
+</span></span><span class="line"><span class="ln">25</span><span class="cl">    wireGuard:
+</span></span><span class="line"><span class="ln">26</span><span class="cl">      port: <span class="m">51820</span>
+</span></span><span class="line"><span class="ln">27</span><span class="cl">    egress:
+</span></span><span class="line"><span class="ln">28</span><span class="cl">      exceptCIDRs: <span class="o">[]</span>
+</span></span><span class="line"><span class="ln">29</span><span class="cl">    serviceCIDR: 20.10.0.0/16
+</span></span></code></pre></div><p>But... Even though our cluster config has been updated we need to delete the Antrea pods so they can restart and read their new configmap again.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/ako$ k delete pod -n kube-system antrea-controller-575845467f-pqgll 
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">pod <span class="s2">&#34;antrea-controller-575845467f-pqgll&#34;</span> deleted
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">andreasm@linuxvm01:~/ako$ k delete pod -n kube-system antrea-agent-
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">antrea-agent-77drs  antrea-agent-j482r  antrea-agent-thh5b  antrea-agent-tz4fb  
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">andreasm@linuxvm01:~/ako$ k delete pod -n kube-system antrea-agent-77drs 
+</span></span><span class="line"><span class="ln"> 6</span><span class="cl">pod <span class="s2">&#34;antrea-agent-77drs&#34;</span> deleted
+</span></span><span class="line"><span class="ln"> 7</span><span class="cl">andreasm@linuxvm01:~/ako$ k delete pod -n kube-system antrea-agent-j482r 
+</span></span><span class="line"><span class="ln"> 8</span><span class="cl">pod <span class="s2">&#34;antrea-agent-j482r&#34;</span> deleted
+</span></span><span class="line"><span class="ln"> 9</span><span class="cl">andreasm@linuxvm01:~/ako$ k delete pod -n kube-system antrea-agent-thh5b 
+</span></span><span class="line"><span class="ln">10</span><span class="cl">pod <span class="s2">&#34;antrea-agent-thh5b&#34;</span> deleted
+</span></span><span class="line"><span class="ln">11</span><span class="cl">andreasm@linuxvm01:~/ako$ k delete pod -n kube-system antrea-agent-tz4fb 
+</span></span><span class="line"><span class="ln">12</span><span class="cl">pod <span class="s2">&#34;antrea-agent-tz4fb&#34;</span> deleted
+</span></span></code></pre></div><h2 id="configure-avi-as-ingress-controller-l7---continue">Configure Avi as Ingress controller (L7) - continue</h2>
+<p>Now that we have assured NodePortLocal is configured, its time to deploy AKO. I have also verified that I have the VIP network configured in Avi as I am using the existing network that is already defined. So install AKO then 😄</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">helm install  ako/ako  --generate-name --version 1.8.2 -f ako.vds.wdc-2.values.yaml --namespace<span class="o">=</span>avi-system
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME: ako-1675511021
+</span></span><span class="line"><span class="ln">3</span><span class="cl">LAST DEPLOYED: Sat Feb  <span class="m">4</span> 11:43:42 <span class="m">2023</span>
+</span></span><span class="line"><span class="ln">4</span><span class="cl">NAMESPACE: avi-system
+</span></span><span class="line"><span class="ln">5</span><span class="cl">STATUS: deployed
+</span></span><span class="line"><span class="ln">6</span><span class="cl">REVISION: <span class="m">1</span>
+</span></span><span class="line"><span class="ln">7</span><span class="cl">TEST SUITE: None
+</span></span></code></pre></div><p>Verify that the AKO pod is running:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/ako/ako_vds$ k get pods -n avi-system 
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME    READY   STATUS    RESTARTS   AGE
+</span></span><span class="line"><span class="ln">3</span><span class="cl">ako-0   1/1     Running   <span class="m">0</span>          57s
+</span></span></code></pre></div><p>Check logs for some immediate messages that needs investigating before trying to deploy a test application.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln"> 1</span><span class="cl">andreasm@linuxvm01:~/ako/ako_vds$ k logs -n avi-system ako-0 
+</span></span><span class="line"><span class="ln"> 2</span><span class="cl">2023-02-04T11:43:51.240Z	INFO	api/api.go:52	Setting route <span class="k">for</span> GET /api/status
+</span></span><span class="line"><span class="ln"> 3</span><span class="cl">2023-02-04T11:43:51.241Z	INFO	ako-main/main.go:71	AKO is running with version: v1.8.2
+</span></span><span class="line"><span class="ln"> 4</span><span class="cl">2023-02-04T11:43:51.241Z	INFO	api/api.go:110	Starting API server at :8080
+</span></span><span class="line"><span class="ln"> 5</span><span class="cl">2023-02-04T11:43:51.242Z	INFO	ako-main/main.go:81	We are running inside kubernetes cluster. Won<span class="s1">&#39;t use kubeconfig files.
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="s1">2023-02-04T11:43:51.265Z	INFO	lib/control_config.go:198	ako.vmware.com/v1alpha1/AviInfraSetting enabled on cluster
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="s1">2023-02-04T11:43:51.270Z	INFO	lib/control_config.go:207	ako.vmware.com/v1alpha1/HostRule enabled on cluster
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="s1">2023-02-04T11:43:51.273Z	INFO	lib/control_config.go:216	ako.vmware.com/v1alpha1/HTTPRule enabled on cluster
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="s1">2023-02-04T11:43:51.290Z	INFO	ako-main/main.go:150	Kubernetes cluster apiserver version 1.23
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="s1">2023-02-04T11:43:51.296Z	INFO	utils/utils.go:168	Initializing configmap informer in avi-system
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="s1">2023-02-04T11:43:51.296Z	INFO	lib/dynamic_client.go:118	Skipped initializing dynamic informers antrea 
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="s1">2023-02-04T11:43:51.445Z	INFO	k8s/ako_init.go:455	Successfully connected to AVI controller using existing AKO secret
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="s1">2023-02-04T11:43:51.446Z	INFO	ako-main/main.go:261	Valid Avi Secret found, continuing .. 
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="s1">2023-02-04T11:43:51.866Z	INFO	cache/avi_ctrl_clients.go:71	Setting the client version to 22.1.1
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="s1">2023-02-04T11:43:51.866Z	INFO	ako-main/main.go:279	SEgroup name found, continuing ..
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="s1">2023-02-04T11:43:53.015Z	INFO	cache/controller_obj_cache.go:2340	Avi cluster state is CLUSTER_UP_NO_HA
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="s1">2023-02-04T11:43:53.176Z	INFO	cache/controller_obj_cache.go:2901	Setting cloud vType: CLOUD_VCENTER
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="s1">2023-02-04T11:43:53.176Z	INFO	cache/controller_obj_cache.go:2904	Setting cloud uuid: cloud-ae84c777-ebf8-4b07-878b-880be6b201b5
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="s1">2023-02-04T11:43:53.176Z	INFO	lib/lib.go:291	Setting AKOUser: ako-wdc-2-tkc-cluster-1 for Avi Objects
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="s1">2023-02-04T11:43:53.177Z	INFO	cache/controller_obj_cache.go:2646	Skipping the check for SE group labels 
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="s1">2023-02-04T11:43:53.332Z	INFO	cache/controller_obj_cache.go:3204	Setting VRF global found from network vds-tkc-frontend-vlan-1027
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="s1">2023-02-04T11:43:53.332Z	INFO	record/event.go:282	Event(v1.ObjectReference{Kind:&#34;Pod&#34;, Namespace:&#34;avi-system&#34;, Name:&#34;ako-0&#34;, UID:&#34;4b0ee7bf-e5f5-4987-b226-7687c5759b4a&#34;, APIVersion:&#34;v1&#34;, ResourceVersion:&#34;41019&#34;, FieldPath:&#34;&#34;}): type: &#39;</span>Normal<span class="s1">&#39; reason: &#39;</span>ValidatedUserInput<span class="err">&#39;</span> User input validation completed.
+</span></span><span class="line"><span class="ln">23</span><span class="cl">2023-02-04T11:43:53.336Z	INFO	lib/lib.go:230	Setting Disable Sync to: <span class="nb">false</span>
+</span></span><span class="line"><span class="ln">24</span><span class="cl">2023-02-04T11:43:53.338Z	INFO	k8s/ako_init.go:310	avi k8s configmap created
+</span></span></code></pre></div><p>Looks good, let us try do deploy an application and expose it with Ingress</p>
+<p>I have two demo applications, banana and apple. Yaml comes below. I deploy them</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/ako$ k create ns fruit
+</span></span><span class="line"><span class="ln">2</span><span class="cl">namespace/fruit created
+</span></span><span class="line"><span class="ln">3</span><span class="cl">andreasm@linuxvm01:~/ako$ k apply -f apple.yaml -f banana.yaml 
+</span></span><span class="line"><span class="ln">4</span><span class="cl">pod/apple-app created
+</span></span><span class="line"><span class="ln">5</span><span class="cl">service/apple-service created
+</span></span><span class="line"><span class="ln">6</span><span class="cl">pod/banana-app created
+</span></span><span class="line"><span class="ln">7</span><span class="cl">service/banana-service created
+</span></span></code></pre></div><p>yaml for banana and fruit</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Pod</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">banana-app</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">banana</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">fruit</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">  </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">banana-app</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">hashicorp/http-echo</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-text=banana&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">banana-service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">fruit</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">banana</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">  </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">    </span>- <span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">5678</span><span class="w"> </span><span class="c"># Default port for image</span><span class="w">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Pod</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">apple-app</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">apple</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">fruit</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">  </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">apple-app</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">hashicorp/http-echo</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">        </span>- <span class="s2">&#34;-text=apple&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">apple-service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">fruit</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">apple</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">  </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">    </span>- <span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">5678</span><span class="w"> </span><span class="c"># Default port for image</span><span class="w">
+</span></span></span></code></pre></div><p>Then I apply the Ingress:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Ingress</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">ingress-example</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">fruit</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w"></span><span class="c">#  annotations:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w"></span><span class="c">#    ako.vmware.com/enable-tls: &#34;true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">  </span><span class="nt">ingressClassName</span><span class="p">:</span><span class="w"> </span><span class="l">avi-lb</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">    </span>- <span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">fruit-tkgs.you-have.your-domain.here</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">      </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">        </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">        </span>- <span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/apple</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">          </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l">Prefix</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">          </span><span class="nt">backend</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">            </span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">apple-service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">              </span><span class="nt">port</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">                </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="m">5678</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">        </span>- <span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/banana</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">          </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l">Prefix</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">          </span><span class="nt">backend</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">            </span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">banana-service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">27</span><span class="cl"><span class="w">              </span><span class="nt">port</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">28</span><span class="cl"><span class="w">                </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="m">5678</span><span class="w">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">k apply -f ingress-example.yaml
+</span></span></code></pre></div><p>You should more or less instantly notice a new virtual service in your Avi controller:
+<img src=images/image-20230204125846954.png style="width:1000px" /></p>
+<p>And let us check the ingress in k8s:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="ln">1</span><span class="cl">andreasm@linuxvm01:~/ako$ k get ingress -n fruit 
+</span></span><span class="line"><span class="ln">2</span><span class="cl">NAME              CLASS    HOSTS                                  ADDRESS       PORTS   AGE
+</span></span><span class="line"><span class="ln">3</span><span class="cl">ingress-example   avi-lb   fruit-tkgs.you-have.your-domain.here   10.102.7.15   80      2m49s
+</span></span></code></pre></div><p>There it is, with the actual VIP it gets from Avi.</p>
+<p>Heres is the view of the application from the Dashboard view in Avi:
+<img src=images/image-20230204131504137.png style="width:800px" /></p>
+<p>Also notice that the SE's now also places itself in the same network as the worker nodes, but still creates the VIP in the frontend-network.</p>
+<img src=images/image-20230204131807141.png style="width:1000px" />
+<p>Meaning our network diagram will now look like this:
+<img src=images/image-20230204132224533.png style="width:900px" alt="updated diagram with L7" /></p>
+<p>Now, AKO comes with its own CRDs that one can work with. I will go through these in a separate post.</p>
+
+    </div>
+
+
+
+
+  </article>
+<aside class="sidebar">
+  <section class="sidebar_inner">
+    <br>
+    
+  
+  <div class="search">
+    <input type="search" class="search_field form_field" placeholder='Search...' id="find" autocomplete="off" data-scope='post'>
+    <label for="find" class="search_label"><svg class="icon">
+  <title>search</title>
+  <use xlink:href="#search"></use>
+</svg>
+
+    </label>
+    
+    <div class="search_results results"></div>
+  </div>
+
+        <h2>Hi there</h2>
+      <div class="author_bio">
+        This blog is a WIP, sometimes I just throw up some topics for myself to remember to be finished later. Stay tuned...
+      </div>
+      <a href='https://yikes.guzware.net/about/' class="button mt-1" role="button" title='Read More'>Read More</a>
+
+    
+    
+    <h2 class="mt-4">Recent Posts</h2>
+    <ul class="flex-column">
+      <li>
+        <a href="https://yikes.guzware.net/2021/07/10/antrea-network-policies/" class="nav-link" title="Antrea Network Policies">Antrea Network Policies</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2023/02/20/antrea-egress/" class="nav-link" title="Antrea Egress">Antrea Egress</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/" class="nav-link" title="vSphere 8 with Tanzu using VDS and Avi Loadbalancer">vSphere 8 with Tanzu using VDS and Avi Loadbalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/" class="nav-link" title="vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer">vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/ako-explained/" class="nav-link" title="AKO Explained">AKO Explained</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/" class="nav-link" title="GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer">GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/" class="nav-link" title="We Take a Look at the AKO Crds">We Take a Look at the AKO Crds</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/running-the-unifi-controller-in-kubernetes/" class="nav-link" title="Running the Unifi Controller in Kubernetes">Running the Unifi Controller in Kubernetes</a>
+      </li>
+    </ul>
+    <div>
+      <h2 class="mt-4 taxonomy" id="categories-section">Categories</h2>
+      <nav class="tags_nav">
+        <a href='https://yikes.guzware.net/categories/kubernetes/' class="post_tag button button_translucent" title="kubernetes">
+          KUBERNETES
+          <span class="button_tally">19</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/vmware-nsx/' class="post_tag button button_translucent" title="vmware-nsx">
+          VMWARE-NSX
+          <span class="button_tally">7</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx/' class="post_tag button button_translucent" title="nsx">
+          NSX
+          <span class="button_tally">6</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/antrea/' class="post_tag button button_translucent" title="antrea">
+          ANTREA
+          <span class="button_tally">5</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx-advanced-loadbalancer/' class="post_tag button button_translucent" title="nsx-advanced-loadbalancer">
+          NSX-ADVANCED-LOADBALANCER
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/tanzu/' class="post_tag button button_translucent" title="tanzu">
+          TANZU
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/avi/' class="post_tag button button_translucent" title="avi">
+          AVI
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx-t/' class="post_tag button button_translucent" title="nsx-t">
+          NSX-T
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/ako/' class="post_tag button button_translucent" title="ako">
+          AKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/blog/' class="post_tag button button_translucent" title="blog">
+          BLOG
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/docker/' class="post_tag button button_translucent" title="docker">
+          DOCKER
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/gslb/' class="post_tag button button_translucent" title="gslb">
+          GSLB
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/harbor/' class="post_tag button button_translucent" title="harbor">
+          HARBOR
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/helm/' class="post_tag button button_translucent" title="helm">
+          HELM
+          <span class="button_tally">1</span>
+        </a>
+        
+        
+        <br>
+        <div class="post_tags_toggle button">All Categories</div>
+        <div class="post_tags">
+          <div class="tags_list">
+            
+            <a href='https://yikes.guzware.net/categories/ako/' class=" post_tag button button_translucent" data-position=1 title="ako">AKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/antrea/' class=" post_tag button button_translucent" data-position=5 title="antrea">ANTREA<span class="button_tally">5</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/avi/' class=" post_tag button button_translucent" data-position=2 title="avi">AVI<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/blog/' class=" post_tag button button_translucent" data-position=1 title="blog">BLOG<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/docker/' class=" post_tag button button_translucent" data-position=1 title="docker">DOCKER<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/gslb/' class=" post_tag button button_translucent" data-position=1 title="gslb">GSLB<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/harbor/' class=" post_tag button button_translucent" data-position=1 title="harbor">HARBOR<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/helm/' class=" post_tag button button_translucent" data-position=1 title="helm">HELM<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/homeautomation/' class=" post_tag button button_translucent" data-position=1 title="homeautomation">HOMEAUTOMATION<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/hugo/' class=" post_tag button button_translucent" data-position=1 title="hugo">HUGO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/ingress/' class=" post_tag button button_translucent" data-position=1 title="ingress">INGRESS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/kubernetes/' class=" post_tag button button_translucent" data-position=19 title="kubernetes">KUBERNETES<span class="button_tally">19</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/kubernetesnetworking/' class=" post_tag button button_translucent" data-position=1 title="kubernetesnetworking">KUBERNETESNETWORKING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/logging/' class=" post_tag button button_translucent" data-position=1 title="logging">LOGGING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/monitoring/' class=" post_tag button button_translucent" data-position=1 title="monitoring">MONITORING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/networking/' class=" post_tag button button_translucent" data-position=1 title="networking">NETWORKING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx/' class=" post_tag button button_translucent" data-position=6 title="nsx">NSX<span class="button_tally">6</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-advanced-loadbalancer/' class=" post_tag button button_translucent" data-position=3 title="nsx-advanced-loadbalancer">NSX-ADVANCED-LOADBALANCER<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-application-platform/' class=" post_tag button button_translucent" data-position=1 title="nsx-application-platform">NSX-APPLICATION-PLATFORM<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-t/' class=" post_tag button button_translucent" data-position=2 title="nsx-t">NSX-T<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/pinniped/' class=" post_tag button button_translucent" data-position=1 title="pinniped">PINNIPED<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/security/' class=" post_tag button button_translucent" data-position=1 title="security">SECURITY<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/tanzu/' class=" post_tag button button_translucent" data-position=3 title="tanzu">TANZU<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmare-nsx-intelligence/' class=" post_tag button button_translucent" data-position=1 title="vmare-nsx-intelligence">VMARE-NSX-INTELLIGENCE<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmware-cloud/' class=" post_tag button button_translucent" data-position=1 title="vmware-cloud">VMWARE-CLOUD<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmware-nsx/' class=" post_tag button button_translucent" data-position=7 title="vmware-nsx">VMWARE-NSX<span class="button_tally">7</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vsphere/' class=" post_tag button button_translucent" data-position=1 title="vsphere">VSPHERE<span class="button_tally">1</span>
+            </a>
+            
+            <div class="tags_sort"><span title="sort alphabetically">[A~Z]</span><span title="sort by count">[0~9]</span>
+            </div>
+            <span class="tags_hide"><svg class="icon">
+            <use xlink:href="#closeme"></use>
+          </svg></span>
+          </div>
+        </div>
+      </nav>
+    </div>
+    <div>
+      <h2 class="mt-4 taxonomy" id="tags-section">Tags</h2>
+      <nav class="tags_nav">
+        <a href='https://yikes.guzware.net/tags/informational/' class="post_tag button button_translucent" title="informational">
+          INFORMATIONAL
+          <span class="button_tally">8</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/howto/' class="post_tag button button_translucent" title="howto">
+          HOWTO
+          <span class="button_tally">5</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/configurations/' class="post_tag button button_translucent" title="configurations">
+          CONFIGURATIONS
+          <span class="button_tally">4</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/authentication/' class="post_tag button button_translucent" title="authentication">
+          AUTHENTICATION
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/cert-manager/' class="post_tag button button_translucent" title="cert-manager">
+          CERT-MANAGER
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/kubernetes/' class="post_tag button button_translucent" title="kubernetes">
+          KUBERNETES
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/rbac/' class="post_tag button button_translucent" title="rbac">
+          RBAC
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/tanzu/' class="post_tag button button_translucent" title="tanzu">
+          TANZU
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/deployment/' class="post_tag button button_translucent" title="deployment">
+          DEPLOYMENT
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/issues/' class="post_tag button button_translucent" title="issues">
+          ISSUES
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/troubleshooting/' class="post_tag button button_translucent" title="troubleshooting">
+          TROUBLESHOOTING
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/ako/' class="post_tag button button_translucent" title="ako">
+          AKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/amko/' class="post_tag button button_translucent" title="amko">
+          AMKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/antrea/' class="post_tag button button_translucent" title="antrea">
+          ANTREA
+          <span class="button_tally">1</span>
+        </a>
+        
+        
+        <br>
+        <div class="post_tags_toggle button">All Tags</div>
+        <div class="post_tags">
+          <div class="tags_list">
+            
+            <a href='https://yikes.guzware.net/tags/ako/' class=" post_tag button button_translucent" data-position=1 title="ako">AKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/amko/' class=" post_tag button button_translucent" data-position=1 title="amko">AMKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/antrea/' class=" post_tag button button_translucent" data-position=1 title="antrea">ANTREA<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/authentication/' class=" post_tag button button_translucent" data-position=3 title="authentication">AUTHENTICATION<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/avi/' class=" post_tag button button_translucent" data-position=1 title="avi">AVI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/cert-manager/' class=" post_tag button button_translucent" data-position=3 title="cert-manager">CERT-MANAGER<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/cni/' class=" post_tag button button_translucent" data-position=1 title="cni">CNI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/configuration/' class=" post_tag button button_translucent" data-position=1 title="configuration">CONFIGURATION<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/configurations/' class=" post_tag button button_translucent" data-position=4 title="configurations">CONFIGURATIONS<span class="button_tally">4</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/deployment/' class=" post_tag button button_translucent" data-position=2 title="deployment">DEPLOYMENT<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/fails/' class=" post_tag button button_translucent" data-position=1 title="fails">FAILS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/grafana/' class=" post_tag button button_translucent" data-position=1 title="grafana">GRAFANA<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/howto/' class=" post_tag button button_translucent" data-position=5 title="howto">HOWTO<span class="button_tally">5</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/informational/' class=" post_tag button button_translucent" data-position=8 title="informational">INFORMATIONAL<span class="button_tally">8</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/ingress/' class=" post_tag button button_translucent" data-position=1 title="ingress">INGRESS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/issues/' class=" post_tag button button_translucent" data-position=2 title="issues">ISSUES<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/just-for-fun/' class=" post_tag button button_translucent" data-position=1 title="just-for-fun">JUST-FOR-FUN<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/k8s/' class=" post_tag button button_translucent" data-position=1 title="k8s">K8S<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/kubernetes/' class=" post_tag button button_translucent" data-position=3 title="kubernetes">KUBERNETES<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/loadbalancing/' class=" post_tag button button_translucent" data-position=1 title="loadbalancing">LOADBALANCING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/loki/' class=" post_tag button button_translucent" data-position=1 title="loki">LOKI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/network-policies/' class=" post_tag button button_translucent" data-position=1 title="network-policies">NETWORK-POLICIES<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/nsx/' class=" post_tag button button_translucent" data-position=1 title="nsx">NSX<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/nsx-advanced-loadbalancer/' class=" post_tag button button_translucent" data-position=1 title="nsx-advanced-loadbalancer">NSX-ADVANCED-LOADBALANCER<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/prometheus/' class=" post_tag button button_translucent" data-position=1 title="prometheus">PROMETHEUS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/promtail/' class=" post_tag button button_translucent" data-position=1 title="promtail">PROMTAIL<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/rbac/' class=" post_tag button button_translucent" data-position=3 title="rbac">RBAC<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/security/' class=" post_tag button button_translucent" data-position=1 title="security">SECURITY<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/tanzu/' class=" post_tag button button_translucent" data-position=3 title="tanzu">TANZU<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/tipstricks/' class=" post_tag button button_translucent" data-position=1 title="tipstricks">TIPSTRICKS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/troubleshooting/' class=" post_tag button button_translucent" data-position=2 title="troubleshooting">TROUBLESHOOTING<span class="button_tally">2</span>
+            </a>
+            
+            <div class="tags_sort"><span title="sort alphabetically">[A~Z]</span><span title="sort by count">[0~9]</span>
+            </div>
+            <span class="tags_hide"><svg class="icon">
+            <use xlink:href="#closeme"></use>
+          </svg></span>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </section>
+</aside>
+
+  
+</div>
+    </main><svg width="0" height="0" class="hidden">
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="facebook">
+    <path d="M437 0H75C33.648 0 0 33.648 0 75v362c0 41.352 33.648 75 75 75h151V331h-60v-90h60v-61c0-49.629 40.371-90 90-90h91v90h-91v61h91l-15 90h-76v181h121c41.352 0 75-33.648 75-75V75c0-41.352-33.648-75-75-75zm0 0"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18.001 18.001" id="twitter">
+    <path d="M15.891 4.013c.808-.496 1.343-1.173 1.605-2.034a8.68 8.68 0 0 1-2.351.861c-.703-.756-1.593-1.14-2.66-1.14-1.043 0-1.924.366-2.643 1.078a3.56 3.56 0 0 0-1.076 2.605c0 .309.039.585.117.819-3.076-.105-5.622-1.381-7.628-3.837-.34.601-.51 1.213-.51 1.846 0 1.301.549 2.332 1.645 3.089-.625-.053-1.176-.211-1.645-.47 0 .929.273 1.705.82 2.388a3.623 3.623 0 0 0 2.115 1.291c-.312.08-.641.118-.979.118-.312 0-.533-.026-.664-.083.23.757.664 1.371 1.291 1.841a3.652 3.652 0 0 0 2.152.743C4.148 14.173 2.625 14.69.902 14.69c-.422 0-.721-.006-.902-.038 1.697 1.102 3.586 1.649 5.676 1.649 2.139 0 4.029-.542 5.674-1.626 1.645-1.078 2.859-2.408 3.639-3.974a10.77 10.77 0 0 0 1.172-4.892v-.468a7.788 7.788 0 0 0 1.84-1.921 8.142 8.142 0 0 1-2.11.593z"
+      ></path>
+  </symbol>
+  <symbol aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="mail">
+    <path  d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="calendar">
+    <path d="M452 40h-24V0h-40v40H124V0H84v40H60C26.916 40 0 66.916 0 100v352c0 33.084 26.916 60 60 60h392c33.084 0 60-26.916 60-60V100c0-33.084-26.916-60-60-60zm20 412c0 11.028-8.972 20-20 20H60c-11.028 0-20-8.972-20-20V188h432v264zm0-304H40v-48c0-11.028 8.972-20 20-20h24v40h40V80h264v40h40V80h24c11.028 0 20 8.972 20 20v48z"></path>
+    <path d="M76 230h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zM76 310h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zM76 390h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zm80-80h40v40h-40z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="github">
+    <path d="M255.968 5.329C114.624 5.329 0 120.401 0 262.353c0 113.536 73.344 209.856 175.104 243.872 12.8 2.368 17.472-5.568 17.472-12.384 0-6.112-.224-22.272-.352-43.712-71.2 15.52-86.24-34.464-86.24-34.464-11.616-29.696-28.416-37.6-28.416-37.6-23.264-15.936 1.728-15.616 1.728-15.616 25.696 1.824 39.2 26.496 39.2 26.496 22.848 39.264 59.936 27.936 74.528 21.344 2.304-16.608 8.928-27.936 16.256-34.368-56.832-6.496-116.608-28.544-116.608-127.008 0-28.064 9.984-51.008 26.368-68.992-2.656-6.496-11.424-32.64 2.496-68 0 0 21.504-6.912 70.4 26.336 20.416-5.696 42.304-8.544 64.096-8.64 21.728.128 43.648 2.944 64.096 8.672 48.864-33.248 70.336-26.336 70.336-26.336 13.952 35.392 5.184 61.504 2.56 68 16.416 17.984 26.304 40.928 26.304 68.992 0 98.72-59.84 120.448-116.864 126.816 9.184 7.936 17.376 23.616 17.376 47.584 0 34.368-.32 62.08-.32 70.496 0 6.88 4.608 14.88 17.6 12.352C438.72 472.145 512 375.857 512 262.353 512 120.401 397.376 5.329 255.968 5.329z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 212" id="gitlab">
+    <path d="M12.3 74.7h54L43.3 3c-1-3.6-6.4-3.6-7.6 0L12.3 74.8z" />
+    <path d="M12.3 74.7L.5 111c-1 3.2 0 6.8 3 8.8l101.6 74-92.5-119z"/>
+    <path d="M105 193.7l-38.6-119h-54l92.7 119z"/>
+    <path d="M105 193.7l38.7-119H66.4l38.7 119z"/>
+    <path d="M105 193.7l38.7-119H198l-93 119z"/>
+    <path d="M198 74.7l11.6 36.2c1 3 0 6.6-3 8.6l-101.5 74 93-119z"/>
+    <path d="M198 74.7h-54.3L167 3c1.2-3.6 6.4-3.6 7.6 0L198 74.8z"/> 
+  </symbol>
+  <symbol viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="rss">
+    <circle cx="3.429" cy="20.571" r="3.429"></circle>
+    <path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8v4.572c6.302.001 11.429 5.126 11.429 11.428z"></path>
+    <path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.43 8.714 19.43 19.429z"></path>
+  </symbol>
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="linkedin">
+    <path d="M437 0H75C33.648 0 0 33.648 0 75v362c0 41.352 33.648 75 75 75h362c41.352 0 75-33.648 75-75V75c0-41.352-33.648-75-75-75zM181 406h-60V196h60zm0-240h-60v-60h60zm210 240h-60V286c0-16.54-13.46-30-30-30s-30 13.46-30 30v120h-60V196h60v11.309C286.719 202.422 296.93 196 316 196c40.691.043 75 36.547 75 79.688zm0 0"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 612 612" id="to-top">
+    <path d="M604.501 440.509L325.398 134.956c-5.331-5.357-12.423-7.627-19.386-7.27-6.989-.357-14.056 1.913-19.387 7.27L7.499 440.509c-9.999 10.024-9.999 26.298 0 36.323s26.223 10.024 36.222 0l262.293-287.164L568.28 476.832c9.999 10.024 26.222 10.024 36.221 0 9.999-10.023 9.999-26.298 0-36.323z"></path>
+  </symbol>
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="carly">
+    <path d="M504.971 239.029L448 182.059V84c0-46.317-37.682-84-84-84h-44c-13.255 0-24 10.745-24 24s10.745 24 24 24h44c19.851 0 36 16.149 36 36v108c0 6.365 2.529 12.47 7.029 16.971L454.059 256l-47.029 47.029A24.002 24.002 0 0 0 400 320v108c0 19.851-16.149 36-36 36h-44c-13.255 0-24 10.745-24 24s10.745 24 24 24h44c46.318 0 84-37.683 84-84v-98.059l56.971-56.971c9.372-9.372 9.372-24.568 0-33.941zM112 192V84c0-19.851 16.149-36 36-36h44c13.255 0 24-10.745 24-24S205.255 0 192 0h-44c-46.318 0-84 37.683-84 84v98.059l-56.971 56.97c-9.373 9.373-9.373 24.568 0 33.941L64 329.941V428c0 46.317 37.682 84 84 84h44c13.255 0 24-10.745 24-24s-10.745-24-24-24h-44c-19.851 0-36-16.149-36-36V320c0-6.365-2.529-12.47-7.029-16.971L57.941 256l47.029-47.029A24.002 24.002 0 0 0 112 192z"></path>
+  </symbol>
+  <symbol viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="copy">
+    <path d="M23 2.75A2.75 2.75 0 0 0 20.25 0H8.75A2.75 2.75 0 0 0 6 2.75v13.5A2.75 2.75 0 0 0 8.75 19h11.5A2.75 2.75 0 0 0 23 16.25zM18.25 14.5h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5zm0-3h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5zm0-3h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5z"></path>
+    <path d="M8.75 20.5a4.255 4.255 0 0 1-4.25-4.25V2.75c0-.086.02-.166.025-.25H3.75A2.752 2.752 0 0 0 1 5.25v16A2.752 2.752 0 0 0 3.75 24h12a2.752 2.752 0 0 0 2.75-2.75v-.75z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.001 512.001" id="closeme">
+    <path d="M284.286 256.002L506.143 34.144c7.811-7.811 7.811-20.475 0-28.285-7.811-7.81-20.475-7.811-28.285 0L256 227.717 34.143 5.859c-7.811-7.811-20.475-7.811-28.285 0-7.81 7.811-7.811 20.475 0 28.285l221.857 221.857L5.858 477.859c-7.811 7.811-7.811 20.475 0 28.285a19.938 19.938 0 0 0 14.143 5.857 19.94 19.94 0 0 0 14.143-5.857L256 284.287l221.857 221.857c3.905 3.905 9.024 5.857 14.143 5.857s10.237-1.952 14.143-5.857c7.811-7.811 7.811-20.475 0-28.285L284.286 256.002z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="open-menu">
+    <path d="M492 236H20c-11.046 0-20 8.954-20 20s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20zm0-160H20C8.954 76 0 84.954 0 96s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20zm0 320H20c-11.046 0-20 8.954-20 20s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="instagram">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id=youtube>
+    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="stackoverflow">
+    <path d="M21 27v-8h3v11H0V19h3v8h18z"></path><path d="M17.1.2L15 1.8l7.9 10.6 2.1-1.6L17.1.2zm3.7 14.7L10.6 6.4l1.7-2 10.2 8.5-1.7 2zM7.2 12.3l12 5.6 1.1-2.4-12-5.6-1.1 2.4zm-1.8 6.8l13.56 1.96.17-2.38-13.26-2.55-.47 2.97zM19 25H5v-3h14v3z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="xing">
+    <path d="M18.188 0c-.517 0-.741.325-.927.66 0 0-7.455 13.224-7.702 13.657.015.024 4.919 9.023 4.919 9.023.17.308.436.66.967.66h3.454c.211 0 .375-.078.463-.22.089-.151.089-.346-.009-.536l-4.879-8.916c-.004-.006-.004-.016 0-.022L22.139.756c.095-.191.097-.387.006-.535C22.056.078 21.894 0 21.686 0h-3.498zM3.648 4.74c-.211 0-.385.074-.473.216-.09.149-.078.339.02.531l2.34 4.05c.004.01.004.016 0 .021L1.86 16.051c-.099.188-.093.381 0 .529.085.142.239.234.45.234h3.461c.518 0 .766-.348.945-.667l3.734-6.609-2.378-4.155c-.172-.315-.434-.659-.962-.659H3.648v.016z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 71 55" id="discord">
+    <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z"/>
+  </symbol>
+</svg>
+
+
+<footer class="footer">
+  <div class="footer_inner wrap pale">
+    <img src='https://yikes.guzware.net/icons/apple-touch-icon.png' class="icon icon_2 transparent" alt="From 0.985mhz... to several Ghz">
+    <p>Copyright&nbsp;2016-&nbsp;<span class="year"></span>&nbsp;FROM 0.985MHZ... TO SEVERAL GHZ. All Rights Reserved</p><a class="to_top" href="#documentTop">
+  <svg class="icon">
+  <title>to-top</title>
+  <use xlink:href="#to-top"></use>
+</svg>
+
+</a>
+
+  </div>
+</footer>
+
+<script type="text/javascript" src="https://yikes.guzware.net/en/js/bundle.597a98a0532def1db904a0a3d3c07e7f9d783e74aca99a317bb98a2c3a0889eacc7a71bc353347f2604d4d61e00d90babdc933cc1fa4a3bdcee857c1e2237b27.js" integrity="sha512-WXqYoFMt7x25BKCj08B&#43;f514PnSsqZoxe7mKLDoIierMenG8NTNH8mBNTWHgDZC6vckzzB&#43;ko73O6FfB4iN7Jw==" crossorigin="anonymous"></script>
+
+  <script src="https://yikes.guzware.net/js/search.min.df4d84e4983f0c71dd495e07a09815d920553c3ddf3d0767801c73373573aa17e1b489e4453272dbf4ce2a38a3d01a10b170744e50dd6bec85a598221867ba9a.js"></script>
+
+  </body>
+</html>

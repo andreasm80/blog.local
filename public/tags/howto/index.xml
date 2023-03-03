@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>howto on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/howto/</link>
+    <description>Recent content in howto on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Thu, 13 Oct 2022 21:56:15 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/howto/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>VMware Harbor Registry</title>
+      <link>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</link>
+      <pubDate>Thu, 13 Oct 2022 21:56:15 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</guid>
+      <description>
+        
+          
+            This post will briefly go through how to deploy (using Helm), configure and use VMware Harbor registry in Kubernetes.
+Quick introduction to Harbor Harbor is an open source registry that secures artifacts with policies and role-based access control, ensures images are scanned and free from vulnerabilities, and signs images as trusted. Harbor, a CNCF Graduated project, delivers compliance, performance, and interoperability to help you consistently and securely manage artifacts across cloud native compute platforms like Kubernetes and Docker.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Hugo in Kubernetes</title>
+      <link>https://yikes.guzware.net/2022/10/12/hugo-in-kubernetes/</link>
+      <pubDate>Wed, 12 Oct 2022 08:28:23 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/12/hugo-in-kubernetes/</guid>
+      <description>
+        
+          
+            This blog post will cover how I wanted to deploy Hugo to host my blog-page.
+Preparations To achieve what I wanted, deploy an highly available Hugo hosted blog page, I decided to run Hugo in Kubernetes. For that I needed
+Kubernetes cluster, obviously, consisting of several workers for the the &amp;quot;hugo&amp;quot; pods to run on (already covered here. Persistent storage (NFS in my case, already covered here) An Ingress controller (already covered here) A docker image with Hugo, nginx and go (will be covered here) Docker installed so you can build the image A place to host the docker image (Docker hub or Harbor registry will be covered here) Create the Docker image Before I can deploy Hugo I need to create an Docker image that contains the necessary bits.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Pinniped Authentication Service</title>
+      <link>https://yikes.guzware.net/2022/10/11/pinniped-authentication-service/</link>
+      <pubDate>Tue, 11 Oct 2022 22:39:07 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/11/pinniped-authentication-service/</guid>
+      <description>
+        
+          
+            How to use Pinniped as the authentication service in Kubernets with OpenLDAP
+Goal: Deploy an authentication service to handle RBAC in Kubernetes Purpose: User/access management in Kubernetes
+Pinniped introduction 
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Cert Manager and Letsencrypt</title>
+      <link>https://yikes.guzware.net/2022/10/11/cert-manager-and-letsencrypt/</link>
+      <pubDate>Tue, 11 Oct 2022 22:33:41 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/11/cert-manager-and-letsencrypt/</guid>
+      <description>
+        
+          
+            This article will quickly go through how to create wildcard certificates and automatically renew them with Lets Encrypt and Cert-Manager
+Cert-Manager cert-manager adds certificates and certificate issuers as resource types in Kubernetes clusters, and simplifies the process of obtaining, renewing and using those certificates.
+It can issue certificates from a variety of supported sources, including Let&#39;s Encrypt, HashiCorp Vault, and Venafi as well as private PKI.
+It will ensure certificates are valid and up to date, and attempt to renew certificates at a configured time before expiry.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Advanced LoadBalancer with Antrea on Native K8s</title>
+      <link>https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/</link>
+      <pubDate>Thu, 08 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/</guid>
+      <description>
+        
+          
+            This post will cover the steps to bring up a Kubernetes cluster in Ubuntu, then how to install and configure Antrea as CNI and how to install and configure NSX Advanced Load Balancer to use as a servicetype Load Balancer in the k8s environment with the use of Avi Kubernetes Operator.
+Abbreviations used in this post:
+NSX Advanced Load Balancer = NSX ALB Avi Kubernetes Operator = AKO Kubernetes = k8s Container Network Interface = CNI Load Balancer = lb Introduction to this post When working with pods in a k8s cluster there is often the use of nodePort, clusterIP and LoadBalancer.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

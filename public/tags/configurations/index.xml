@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>configurations on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/configurations/</link>
+    <description>Recent content in configurations on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Mon, 12 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/configurations/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Configure NSX Advanced Load Balancer (NSX-ALB) as DNS provider</title>
+      <link>https://yikes.guzware.net/2021/07/12/configure-nsx-advanced-load-balancer-nsx-alb-as-dns-provider/</link>
+      <pubDate>Mon, 12 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/12/configure-nsx-advanced-load-balancer-nsx-alb-as-dns-provider/</guid>
+      <description>
+        
+          
+            NSX ALB has a very useful feature built-in, to function as DNS server for your domains defined in your NSX-ALB environment. Meaning that all host-records will be automatically resolved by fqdn as soon as the service is created.
+If you have followed my other post about how to configure the AKO (Avi Kubernetes Operator) http://yikes.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/ you are familiar with creating DNS profiles in NSX-ALB. The first step in configuring NSX-ALB as DNS provider is to configure one or more domain names in NSX-ALB.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Kubernetes Persistent Volumes with NFS</title>
+      <link>https://yikes.guzware.net/2021/07/12/kubernetes-persistent-volumes-with-nfs/</link>
+      <pubDate>Mon, 12 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/12/kubernetes-persistent-volumes-with-nfs/</guid>
+      <description>
+        
+          
+            Use NFS for your PVC needs If you are running vShere with Tanzu, TKG on vSphere or are using vSphere as your hypervisor for your worker-nodes you have the option to use the vSphere CSI plugin here. In Tanzu this is automatically configured and enabled. But if you are not so privileged to have vSphere as your foundation for your environment one have to look at other options. Thats where NFS comes in.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>K8s Ingress with NSX Advanced Load Balancer</title>
+      <link>https://yikes.guzware.net/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/</link>
+      <pubDate>Sun, 11 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/</guid>
+      <description>
+        
+          
+            Abbreviations used in this article:
+NSX Advanced Load Balancer = NSX-ALB K8s = Kubernetes (8 letters between the K and s in Kubernetes) SSL = Secure Sockets Layer AKO = Avi Kubernetes Operator (AVI now a VMware product called NSX Advanced Load Balancer) In one of my previous posts I wrote about how to install and configure AKO (Avi Kubernetes Operator) to use as Service type LoadBalancer.
+This post will try to cover the basics of how to use NSX Advanced LoadBalancer by using AKO to handle our Ingress requests (ingress-controller).
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Deploy NSX-T 2.4 Edge Nodes on a N-VDS Logical Switch</title>
+      <link>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</link>
+      <pubDate>Sat, 09 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</guid>
+      <description>
+        
+          
+            To be able to deploy an Edge node or nodes in your lab or other environment where you only have 2 physical nic you must be able to deploy it on a N-VDS switch as you have already migrated all your kernels etc to this one N-VDS switch.
+But trying to do this from the NSX-T 2.4 manager GUI you will only have the option to deploy it to VSS or VDS portgroups, the N-VDS portgroups are not visible at all.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

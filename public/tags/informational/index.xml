@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>informational on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/informational/</link>
+    <description>Recent content in informational on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Thu, 13 Oct 2022 21:56:15 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/informational/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Antrea Network Policies</title>
+      <link>https://yikes.guzware.net/2021/07/10/antrea-network-policies/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/antrea-network-policies/</guid>
+      <description>
+        
+          
+            This post will go through the Antrea-native policy resources and how to use them to secure your Kubernetes environment combined with K8s network policies.
+Abbreviations used in this article:
+Container Network Interface = CNI Antrea Cluster Network Policies = ACNP Antrea Network Policies = ANP Kubernetes Network Policies = K8s policies or KNP When it comes to securing your K8s infrastructure it can be done in several layers in the infrastructure as a whole.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware Harbor Registry</title>
+      <link>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</link>
+      <pubDate>Thu, 13 Oct 2022 21:56:15 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</guid>
+      <description>
+        
+          
+            This post will briefly go through how to deploy (using Helm), configure and use VMware Harbor registry in Kubernetes.
+Quick introduction to Harbor Harbor is an open source registry that secures artifacts with policies and role-based access control, ensures images are scanned and free from vulnerabilities, and signs images as trusted. Harbor, a CNCF Graduated project, delivers compliance, performance, and interoperability to help you consistently and securely manage artifacts across cloud native compute platforms like Kubernetes and Docker.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Managing your Antrea K8s clusters running in VMC from your on-prem NSX Manager</title>
+      <link>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</link>
+      <pubDate>Sun, 13 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</guid>
+      <description>
+        
+          
+            This week I was fortunate to get hold of a VMC on AWS environment and wanted to test out the possibility of managing my K8s security policies from my on-prem NSX manager by utilizing the integration of Antrea in NSX. I haven&#39;t covered that specific integration part in a blog yet, but in short: by using Antrea as your CNI and you are running NSX-T 3.2 you can manage all your K8s policies from the NSX manager GUI.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware NSX IDS &amp; IPS</title>
+      <link>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</link>
+      <pubDate>Tue, 19 Oct 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</guid>
+      <description>
+        
+          
+            This post will go through the IDS/IPS built-in feature of the NSX distributed firewall.
+Abbreviations used in this article:
+IDS = Intrusion Detection System IPS = Intrusion Prevention System Introduction to VMware NSX distributed IDS &amp;amp; IPS Before we dive into how to configure and use the distributed IDS and IPS feature in NSX let me just go through the basics where I compare the traditional approach with IDS/IPS and the NSX distributed IDS/IPS.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Configure NSX Advanced Load Balancer (NSX-ALB) as DNS provider</title>
+      <link>https://yikes.guzware.net/2021/07/12/configure-nsx-advanced-load-balancer-nsx-alb-as-dns-provider/</link>
+      <pubDate>Mon, 12 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/12/configure-nsx-advanced-load-balancer-nsx-alb-as-dns-provider/</guid>
+      <description>
+        
+          
+            NSX ALB has a very useful feature built-in, to function as DNS server for your domains defined in your NSX-ALB environment. Meaning that all host-records will be automatically resolved by fqdn as soon as the service is created.
+If you have followed my other post about how to configure the AKO (Avi Kubernetes Operator) http://yikes.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/ you are familiar with creating DNS profiles in NSX-ALB. The first step in configuring NSX-ALB as DNS provider is to configure one or more domain names in NSX-ALB.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Antrea - Kubernetes CNI</title>
+      <link>https://yikes.guzware.net/2021/07/10/antrea-kubernetes-cni/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/antrea-kubernetes-cni/</guid>
+      <description>
+        
+          
+            This is an introduction post to Antrea, what it is and which features it has.
+For more details head over to:
+https://antrea.io/ and https://github.com/antrea-io/antrea
+First of, Antrea is a CNI. CNI stands for Container Network Interface. As the world moves into Kubernetes more and more, we need a good CNI to support everything from network to security within Kubernetes. Thats where Antrea comes into play.
+Antrea has a rich set of features such as:
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Microsegmentation with VMware NSX</title>
+      <link>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</guid>
+      <description>
+        
+          
+            This post will go through one way of securing your workloads with VMware NSX. It will cover the different tools and features built into NSX to achieve a robust and automated way of securing your workload. It will go through the use of Security Groups, how they can be utilized, and how to create security policies in the distributed firewall section of NSX-T with the use of the security groups.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Intelligence - quick overview</title>
+      <link>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</guid>
+      <description>
+        
+          
+            When starting out a microsegmentation journey with VMware NSX it will be very important to have a tool that gives you all the visibility and insight you need. This is crucial if you dont know your applications requirements in detail and to make the right decisions in defining your NSX security policies.
+NSX Intelligence is your tool for that. This post is just to show a couple of screenshots of how it looks, and the next post will go more into detail how it works and how to use it.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>kubernetesnetworking on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/kubernetesnetworking/</link>
+    <description>Recent content in kubernetesnetworking on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sat, 10 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/kubernetesnetworking/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Antrea - Kubernetes CNI</title>
+      <link>https://yikes.guzware.net/2021/07/10/antrea-kubernetes-cni/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/antrea-kubernetes-cni/</guid>
+      <description>
+        
+          
+            This is an introduction post to Antrea, what it is and which features it has.
+For more details head over to:
+https://antrea.io/ and https://github.com/antrea-io/antrea
+First of, Antrea is a CNI. CNI stands for Container Network Interface. As the world moves into Kubernetes more and more, we need a good CNI to support everything from network to security within Kubernetes. Thats where Antrea comes into play.
+Antrea has a rich set of features such as:
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

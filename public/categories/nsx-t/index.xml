@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>nsx-t on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/nsx-t/</link>
+    <description>Recent content in nsx-t on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sat, 10 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/nsx-t/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Microsegmentation with VMware NSX</title>
+      <link>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</guid>
+      <description>
+        
+          
+            This post will go through one way of securing your workloads with VMware NSX. It will cover the different tools and features built into NSX to achieve a robust and automated way of securing your workload. It will go through the use of Security Groups, how they can be utilized, and how to create security policies in the distributed firewall section of NSX-T with the use of the security groups.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Deploy NSX-T 2.4 Edge Nodes on a N-VDS Logical Switch</title>
+      <link>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</link>
+      <pubDate>Sat, 09 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</guid>
+      <description>
+        
+          
+            To be able to deploy an Edge node or nodes in your lab or other environment where you only have 2 physical nic you must be able to deploy it on a N-VDS switch as you have already migrated all your kernels etc to this one N-VDS switch.
+But trying to do this from the NSX-T 2.4 manager GUI you will only have the option to deploy it to VSS or VDS portgroups, the N-VDS portgroups are not visible at all.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

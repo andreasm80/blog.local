@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>monitoring on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/monitoring/</link>
+    <description>Recent content in monitoring on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Wed, 19 Oct 2022 10:54:37 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/monitoring/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Monitoring With Prometheus, Loki, Promtail and Grafana</title>
+      <link>https://yikes.guzware.net/2022/10/19/monitoring-with-prometheus-loki-promtail-and-grafana/</link>
+      <pubDate>Wed, 19 Oct 2022 10:54:37 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/19/monitoring-with-prometheus-loki-promtail-and-grafana/</guid>
+      <description>
+        
+          
+            Logging and metrics monitoring I wanted to visualize performance metrics in Grafana, and getting the logs from my Kubernetes clusters available centrally. So i chose to go with Grafana as my &amp;quot;dashboard&amp;quot; for visualizing, Prometheus for metrics and Loki for logs. I did fiddle some to get this up and running. But after I while I managed to get it sorted the way I wanted.
+Sources used in this article: Bitnami, Grafana and Kube-Prometheus-Stack
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

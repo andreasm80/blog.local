@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/post/</link>
+    <description>Recent content in Posts on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Mon, 20 Feb 2023 15:42:54 +0100</lastBuildDate><atom:link href="https://yikes.guzware.net/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Antrea Network Policies</title>
+      <link>https://yikes.guzware.net/2021/07/10/antrea-network-policies/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/antrea-network-policies/</guid>
+      <description>
+        
+          
+            This post will go through the Antrea-native policy resources and how to use them to secure your Kubernetes environment combined with K8s network policies.
+Abbreviations used in this article:
+Container Network Interface = CNI Antrea Cluster Network Policies = ACNP Antrea Network Policies = ANP Kubernetes Network Policies = K8s policies or KNP When it comes to securing your K8s infrastructure it can be done in several layers in the infrastructure as a whole.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Antrea Egress</title>
+      <link>https://yikes.guzware.net/2023/02/20/antrea-egress/</link>
+      <pubDate>Mon, 20 Feb 2023 15:42:54 +0100</pubDate>
+      
+      <guid>https://yikes.guzware.net/2023/02/20/antrea-egress/</guid>
+      <description>
+        
+          
+            Antrea Egress: What is Egress when we talk about Kubernetes? Well if a pod wants to communicate to the outside world, outside the Kubernetes cluster it runs in, out of the worker node the pod resides on, this is egress traffic (definition &amp;quot;the action of going out of or leaving a place&amp;quot; and in network terminology means the direction is outward from itself).
+Why does egress matter? Well, usually when the pods communicate out, they will use the IP address of the worker node they currently is deployed on.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>vSphere 8 with Tanzu using VDS and Avi Loadbalancer</title>
+      <link>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/</link>
+      <pubDate>Wed, 26 Oct 2022 12:06:08 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/</guid>
+      <description>
+        
+          
+            Deploy Tanzu in vSphere 8 with VDS and Avi Loadbalancer: This post will go through how to install Tanzu in vSphere 8 using vSphere VDS networking and Avi as loadbalancer. The goal is to deploy Tanzu by using vSphere Distributed Switch (no NSX this time) and utilize Avi as loadbalancer for Supervisor and workload cluster L4 endpoint (kubernetes API). When that is done I will go through how we also can extend this into L7 (Ingress) by using AKO in our workload clusters.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer</title>
+      <link>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/</link>
+      <pubDate>Wed, 26 Oct 2022 12:03:35 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/</guid>
+      <description>
+        
+          
+            Deploy Tanzu in vSphere 8 with NSX and Avi Loadbalancer: This post will go through how to install Tanzu in vSphere 8 using NSX networking (including built in L4 loadbalancer) and Avi as L7 loadbalancer. The goal is to deploy Tanzu by using NSX for all networking needs, including the Kubernetes Api endpoint (L4) and utilize Avi as loadbalancer for all L7 (Ingress). The deployment of Tanzu with NSX is an automated process, but it does not include L7 loadbalancing.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>AKO Explained</title>
+      <link>https://yikes.guzware.net/2022/10/26/ako-explained/</link>
+      <pubDate>Wed, 26 Oct 2022 12:02:39 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/26/ako-explained/</guid>
+      <description>
+        
+          
+            What is AKO? AKO is an operator which works as an ingress controller and performs Avi-specific functions in an OpenShift/Kubernetes environment with the Avi Controller. It runs as a pod in the cluster and translates the required OpenShift/Kubernetes objects to Avi objects and automates the implementation of ingresses/routes/services on the Service Engines (SE) via the Avi Controller. ref: link
+How to install AKO AKO is very easy installed with Helm. Four basic steps needs to be done.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer</title>
+      <link>https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/</link>
+      <pubDate>Sun, 23 Oct 2022 08:22:35 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/</guid>
+      <description>
+        
+          
+            Global Server LoadBalancing in VMware Tanzu with AMKO This post will go through how to configure AVI (NSX ALB) with GSLB in vSphere with Tanzu (TKGs) and an upstream k8s cluster in two different physical locations. I have already covered AKO in my previous posts, this post will assume knowledge of AKO (Avi Kubernetes Operator) and extend upon that with the use of AMKO (Avi Multi-Cluster Kubernetes Operator). The goal is to have the ability to scale my k8s applications between my &amp;quot;sites&amp;quot; and make them geo-redundant.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>We Take a Look at the AKO Crds</title>
+      <link>https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/</link>
+      <pubDate>Sun, 23 Oct 2022 08:21:52 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/</guid>
+      <description>
+        
+          
+            AKO settings: What happens if we need to to this
+What happens if I need passthrough
+How does AKO work
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Running the Unifi Controller in Kubernetes</title>
+      <link>https://yikes.guzware.net/2022/10/23/running-the-unifi-controller-in-kubernetes/</link>
+      <pubDate>Sun, 23 Oct 2022 08:11:37 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/running-the-unifi-controller-in-kubernetes/</guid>
+      <description>
+        
+          
+            TOPICS: 
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>How to Deploy Tanzu With vSphere</title>
+      <link>https://yikes.guzware.net/2022/10/23/how-to-deploy-tanzu-with-vsphere/</link>
+      <pubDate>Sun, 23 Oct 2022 08:02:28 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/how-to-deploy-tanzu-with-vsphere/</guid>
+      <description>
+        
+          
+            vSphere with Tanzu (TKGs) With or without NSX-T Deploy workload clusters NSX-T Loadbalancer and AKO as Ingress 
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Monitoring With Prometheus, Loki, Promtail and Grafana</title>
+      <link>https://yikes.guzware.net/2022/10/19/monitoring-with-prometheus-loki-promtail-and-grafana/</link>
+      <pubDate>Wed, 19 Oct 2022 10:54:37 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/19/monitoring-with-prometheus-loki-promtail-and-grafana/</guid>
+      <description>
+        
+          
+            Logging and metrics monitoring I wanted to visualize performance metrics in Grafana, and getting the logs from my Kubernetes clusters available centrally. So i chose to go with Grafana as my &amp;quot;dashboard&amp;quot; for visualizing, Prometheus for metrics and Loki for logs. I did fiddle some to get this up and running. But after I while I managed to get it sorted the way I wanted.
+Sources used in this article: Bitnami, Grafana and Kube-Prometheus-Stack
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware Harbor Registry</title>
+      <link>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</link>
+      <pubDate>Thu, 13 Oct 2022 21:56:15 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/</guid>
+      <description>
+        
+          
+            This post will briefly go through how to deploy (using Helm), configure and use VMware Harbor registry in Kubernetes.
+Quick introduction to Harbor Harbor is an open source registry that secures artifacts with policies and role-based access control, ensures images are scanned and free from vulnerabilities, and signs images as trusted. Harbor, a CNCF Graduated project, delivers compliance, performance, and interoperability to help you consistently and securely manage artifacts across cloud native compute platforms like Kubernetes and Docker.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Hugo in Kubernetes</title>
+      <link>https://yikes.guzware.net/2022/10/12/hugo-in-kubernetes/</link>
+      <pubDate>Wed, 12 Oct 2022 08:28:23 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/12/hugo-in-kubernetes/</guid>
+      <description>
+        
+          
+            This blog post will cover how I wanted to deploy Hugo to host my blog-page.
+Preparations To achieve what I wanted, deploy an highly available Hugo hosted blog page, I decided to run Hugo in Kubernetes. For that I needed
+Kubernetes cluster, obviously, consisting of several workers for the the &amp;quot;hugo&amp;quot; pods to run on (already covered here. Persistent storage (NFS in my case, already covered here) An Ingress controller (already covered here) A docker image with Hugo, nginx and go (will be covered here) Docker installed so you can build the image A place to host the docker image (Docker hub or Harbor registry will be covered here) Create the Docker image Before I can deploy Hugo I need to create an Docker image that contains the necessary bits.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Pinniped Authentication Service</title>
+      <link>https://yikes.guzware.net/2022/10/11/pinniped-authentication-service/</link>
+      <pubDate>Tue, 11 Oct 2022 22:39:07 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/11/pinniped-authentication-service/</guid>
+      <description>
+        
+          
+            How to use Pinniped as the authentication service in Kubernets with OpenLDAP
+Goal: Deploy an authentication service to handle RBAC in Kubernetes Purpose: User/access management in Kubernetes
+Pinniped introduction 
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Cert Manager and Letsencrypt</title>
+      <link>https://yikes.guzware.net/2022/10/11/cert-manager-and-letsencrypt/</link>
+      <pubDate>Tue, 11 Oct 2022 22:33:41 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/11/cert-manager-and-letsencrypt/</guid>
+      <description>
+        
+          
+            This article will quickly go through how to create wildcard certificates and automatically renew them with Lets Encrypt and Cert-Manager
+Cert-Manager cert-manager adds certificates and certificate issuers as resource types in Kubernetes clusters, and simplifies the process of obtaining, renewing and using those certificates.
+It can issue certificates from a variety of supported sources, including Let&#39;s Encrypt, HashiCorp Vault, and Venafi as well as private PKI.
+It will ensure certificates are valid and up to date, and attempt to renew certificates at a configured time before expiry.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Antrea Integration</title>
+      <link>https://yikes.guzware.net/2022/10/11/nsx-antrea-integration/</link>
+      <pubDate>Tue, 11 Oct 2022 21:38:27 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/11/nsx-antrea-integration/</guid>
+      <description>
+        
+          
+            What is the NSX Antrea integration Assumptions: I assume that the reader is aware of what Antrea is, and what a CNI is and also what NSX is. If not head over here to read more on Antrea and here to read more on NSX.
+For many years VMware NSX has help many customer secure their workload by using the NSX Distributed Firewall. As NSX has evolved over the years the different platform it supports has also broadened, from virtual machines, bare metal server, cloud workload and kubernetes pods.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Managing your Antrea K8s clusters running in VMC from your on-prem NSX Manager</title>
+      <link>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</link>
+      <pubDate>Sun, 13 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</guid>
+      <description>
+        
+          
+            This week I was fortunate to get hold of a VMC on AWS environment and wanted to test out the possibility of managing my K8s security policies from my on-prem NSX manager by utilizing the integration of Antrea in NSX. I haven&#39;t covered that specific integration part in a blog yet, but in short: by using Antrea as your CNI and you are running NSX-T 3.2 you can manage all your K8s policies from the NSX manager GUI.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware NSX Application Platform</title>
+      <link>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</link>
+      <pubDate>Tue, 18 Jan 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</guid>
+      <description>
+        
+          
+            VMware NSX 3.2 is out and packed with new features. One of them is the NSX Application Platform which runs on Kubernetes to provide the NSX ATP (Advanced Threat Protection) functionality such as NSX Intelligence (covered in a previous post), NSX Network Detection and Response (NDR) and NSX Malware. This post will go through how to spin up a K8s cluster for this specific scenario covering the pre-reqs from start to finish.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>My LAB</title>
+      <link>https://yikes.guzware.net/2021/10/19/my-lab/</link>
+      <pubDate>Tue, 19 Oct 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/10/19/my-lab/</guid>
+      <description>
+        
+          
+            This page will explain my lab environment, which is used in all the examples, tutorials in this blog.
+Lab overview/connectivity - physical, logical and hybrid It is nice to have an overview of how the underlying hardware looks like and when reading my different articles. So I decided to create some diagrams to illustrate this. Which hopefully will help understanding my blog posts further. First out is the physical components (which is relevant for the posts in this blog).
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware NSX IDS &amp; IPS</title>
+      <link>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</link>
+      <pubDate>Tue, 19 Oct 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</guid>
+      <description>
+        
+          
+            This post will go through the IDS/IPS built-in feature of the NSX distributed firewall.
+Abbreviations used in this article:
+IDS = Intrusion Detection System IPS = Intrusion Prevention System Introduction to VMware NSX distributed IDS &amp;amp; IPS Before we dive into how to configure and use the distributed IDS and IPS feature in NSX let me just go through the basics where I compare the traditional approach with IDS/IPS and the NSX distributed IDS/IPS.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>The Home Automation category</title>
+      <link>https://yikes.guzware.net/2021/07/14/the-home-automation-category/</link>
+      <pubDate>Wed, 14 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/14/the-home-automation-category/</guid>
+      <description>
+        
+          
+            When I finish up the other posts I have started on there will be content coming here also
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Configure NSX Advanced Load Balancer (NSX-ALB) as DNS provider</title>
+      <link>https://yikes.guzware.net/2021/07/12/configure-nsx-advanced-load-balancer-nsx-alb-as-dns-provider/</link>
+      <pubDate>Mon, 12 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/12/configure-nsx-advanced-load-balancer-nsx-alb-as-dns-provider/</guid>
+      <description>
+        
+          
+            NSX ALB has a very useful feature built-in, to function as DNS server for your domains defined in your NSX-ALB environment. Meaning that all host-records will be automatically resolved by fqdn as soon as the service is created.
+If you have followed my other post about how to configure the AKO (Avi Kubernetes Operator) http://yikes.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/ you are familiar with creating DNS profiles in NSX-ALB. The first step in configuring NSX-ALB as DNS provider is to configure one or more domain names in NSX-ALB.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Kubernetes Persistent Volumes with NFS</title>
+      <link>https://yikes.guzware.net/2021/07/12/kubernetes-persistent-volumes-with-nfs/</link>
+      <pubDate>Mon, 12 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/12/kubernetes-persistent-volumes-with-nfs/</guid>
+      <description>
+        
+          
+            Use NFS for your PVC needs If you are running vShere with Tanzu, TKG on vSphere or are using vSphere as your hypervisor for your worker-nodes you have the option to use the vSphere CSI plugin here. In Tanzu this is automatically configured and enabled. But if you are not so privileged to have vSphere as your foundation for your environment one have to look at other options. Thats where NFS comes in.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>K8s Ingress with NSX Advanced Load Balancer</title>
+      <link>https://yikes.guzware.net/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/</link>
+      <pubDate>Sun, 11 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/</guid>
+      <description>
+        
+          
+            Abbreviations used in this article:
+NSX Advanced Load Balancer = NSX-ALB K8s = Kubernetes (8 letters between the K and s in Kubernetes) SSL = Secure Sockets Layer AKO = Avi Kubernetes Operator (AVI now a VMware product called NSX Advanced Load Balancer) In one of my previous posts I wrote about how to install and configure AKO (Avi Kubernetes Operator) to use as Service type LoadBalancer.
+This post will try to cover the basics of how to use NSX Advanced LoadBalancer by using AKO to handle our Ingress requests (ingress-controller).
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Antrea - Kubernetes CNI</title>
+      <link>https://yikes.guzware.net/2021/07/10/antrea-kubernetes-cni/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/antrea-kubernetes-cni/</guid>
+      <description>
+        
+          
+            This is an introduction post to Antrea, what it is and which features it has.
+For more details head over to:
+https://antrea.io/ and https://github.com/antrea-io/antrea
+First of, Antrea is a CNI. CNI stands for Container Network Interface. As the world moves into Kubernetes more and more, we need a good CNI to support everything from network to security within Kubernetes. Thats where Antrea comes into play.
+Antrea has a rich set of features such as:
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Microsegmentation with VMware NSX</title>
+      <link>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/</guid>
+      <description>
+        
+          
+            This post will go through one way of securing your workloads with VMware NSX. It will cover the different tools and features built into NSX to achieve a robust and automated way of securing your workload. It will go through the use of Security Groups, how they can be utilized, and how to create security policies in the distributed firewall section of NSX-T with the use of the security groups.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Intelligence - quick overview</title>
+      <link>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</guid>
+      <description>
+        
+          
+            When starting out a microsegmentation journey with VMware NSX it will be very important to have a tool that gives you all the visibility and insight you need. This is crucial if you dont know your applications requirements in detail and to make the right decisions in defining your NSX security policies.
+NSX Intelligence is your tool for that. This post is just to show a couple of screenshots of how it looks, and the next post will go more into detail how it works and how to use it.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Advanced LoadBalancer with Antrea on Native K8s</title>
+      <link>https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/</link>
+      <pubDate>Thu, 08 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/</guid>
+      <description>
+        
+          
+            This post will cover the steps to bring up a Kubernetes cluster in Ubuntu, then how to install and configure Antrea as CNI and how to install and configure NSX Advanced Load Balancer to use as a servicetype Load Balancer in the k8s environment with the use of Avi Kubernetes Operator.
+Abbreviations used in this post:
+NSX Advanced Load Balancer = NSX ALB Avi Kubernetes Operator = AKO Kubernetes = k8s Container Network Interface = CNI Load Balancer = lb Introduction to this post When working with pods in a k8s cluster there is often the use of nodePort, clusterIP and LoadBalancer.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Deploy NSX-T 2.4 Edge Nodes on a N-VDS Logical Switch</title>
+      <link>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</link>
+      <pubDate>Sat, 09 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2019/03/09/deploy-nsx-t-2.4-edge-nodes-on-a-n-vds-logical-switch/</guid>
+      <description>
+        
+          
+            To be able to deploy an Edge node or nodes in your lab or other environment where you only have 2 physical nic you must be able to deploy it on a N-VDS switch as you have already migrated all your kernels etc to this one N-VDS switch.
+But trying to do this from the NSX-T 2.4 manager GUI you will only have the option to deploy it to VSS or VDS portgroups, the N-VDS portgroups are not visible at all.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>&#34;General Error&#34; NSX-T Manager Firewall Section</title>
+      <link>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</link>
+      <pubDate>Wed, 05 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</guid>
+      <description>
+        
+          
+            If you have missing objects in the firewall section before upgrading from NSX-T 2.1 to 2.2 you will experience a General Error in the GUI, on the Dashboard, and in the Firewall section of the GUI. You will even get general error when doing API calls to list the DFW sections https://NSXMGRIP/api/v1/firewall/sections: { &amp;quot;module\_name&amp;quot; : &amp;quot;common-services&amp;quot;, &amp;quot;error\_message&amp;quot; : &amp;quot;General error has occurred.&amp;quot;, &amp;quot;details&amp;quot; : &amp;quot;java.lang.NullPointerException&amp;quot;, &amp;quot;error\_code&amp;quot; : &amp;quot;100&amp;quot; }
+If you have upgraded the fix is straight forward.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>vSphere Replication 6.1.2 vCenter plugin fails after upgrade (vCenter 6.0 U3)</title>
+      <link>https://yikes.guzware.net/2017/04/10/vsphere-replication-6.1.2-vcenter-plugin-fails-after-upgrade-vcenter-6.0-u3/</link>
+      <pubDate>Mon, 10 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2017/04/10/vsphere-replication-6.1.2-vcenter-plugin-fails-after-upgrade-vcenter-6.0-u3/</guid>
+      <description>
+        
+          
+            After upgrading vCenter (VCSA) to 6.0 U3 and upgrading the vSphere Replication Appliance to 6.1.2 the plugin in vCenter stops working. Follow this KB
+And this KB to enable SSH (for those who are unfamiliar with how to enable SSH in a *nix environment):
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

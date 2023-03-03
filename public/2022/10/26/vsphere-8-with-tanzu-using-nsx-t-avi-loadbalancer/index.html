@@ -1,0 +1,1184 @@
+
+<!DOCTYPE html>
+<html
+  lang="en"
+  data-figures=""
+  
+    class="page"
+  
+  
+  
+    data-mode="dim"
+  >
+  <head>
+<title>vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer | From 0.985mhz... to several Ghz</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+
+
+  
+<meta property="og:locale" content="en" />
+
+<meta property="og:type" content="article">
+<meta name="description" content="Article description." />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:creator" content="">
+<meta name="twitter:title" content="vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer" />
+<meta name="twitter:image" content="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/images/logo-vmware-tanzu.png"/>
+<meta property="og:url" content="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/" />
+<meta property="og:title" content="vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer" />
+<meta property="og:description" content="Article description." />
+<meta property="og:image" content="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/images/logo-vmware-tanzu.png" />
+  <meta name="keywords" content="nsx,vmware,kubernetes" />
+
+<link rel="apple-touch-icon" sizes="180x180" href="https://yikes.guzware.net/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://yikes.guzware.net/icons/favicon-32x32.png">
+<link rel="manifest" href="https://yikes.guzware.net/icons/site.webmanifest">
+
+<link rel="canonical" href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/">
+
+
+
+<link rel="preload" href="https://yikes.guzware.net/css/styles.6c67fa3a7f5290a2facfb027358dd2bdb5450d04b8de427c8a74d79f524a7fb716b470b14b6ba95f1b7cf3aa9a2219a7294a6adeaf16a1080f432eae45d8c03c.css" integrity = "sha512-bGf6On9SkKL6z7AnNY3SvbVFDQS43kJ8inTXn1JKf7cWtHCxS2upXxt886qaIhmnKUpq3q8WoQgPQy6uRdjAPA==" as="style" crossorigin="anonymous">
+
+
+
+<link rel="preload" href="https://yikes.guzware.net/en/js/bundle.597a98a0532def1db904a0a3d3c07e7f9d783e74aca99a317bb98a2c3a0889eacc7a71bc353347f2604d4d61e00d90babdc933cc1fa4a3bdcee857c1e2237b27.js" as="script" integrity=
+"sha512-WXqYoFMt7x25BKCj08B&#43;f514PnSsqZoxe7mKLDoIierMenG8NTNH8mBNTWHgDZC6vckzzB&#43;ko73O6FfB4iN7Jw==" crossorigin="anonymous">
+
+
+<link rel="stylesheet" type="text/css" href="https://yikes.guzware.net/css/styles.6c67fa3a7f5290a2facfb027358dd2bdb5450d04b8de427c8a74d79f524a7fb716b470b14b6ba95f1b7cf3aa9a2219a7294a6adeaf16a1080f432eae45d8c03c.css" integrity="sha512-bGf6On9SkKL6z7AnNY3SvbVFDQS43kJ8inTXn1JKf7cWtHCxS2upXxt886qaIhmnKUpq3q8WoQgPQy6uRdjAPA==" crossorigin="anonymous">
+
+
+  </head>
+  <body
+    data-code="7"
+    data-lines="false"
+    id="documentTop"
+    data-lang="en"
+  >
+
+<header class="nav_header" >
+  <nav class="nav"><a href='https://yikes.guzware.net/' class="nav_brand nav_item" title="From 0.985mhz... to several Ghz">
+  <img src="https://yikes.guzware.net/quote3.png" class="logo" alt="From 0.985mhz... to several Ghz">
+  <div class="nav_close">
+    <div><svg class="icon">
+  <title>open-menu</title>
+  <use xlink:href="#open-menu"></use>
+</svg>
+<svg class="icon">
+  <title>closeme</title>
+  <use xlink:href="#closeme"></use>
+</svg>
+</div>
+  </div>
+</a>
+
+    <div class='nav_body nav_body_left'>
+      
+      
+      
+        
+
+  <div class="nav_parent">
+    <a href="https://yikes.guzware.net/" class="nav_item" title="Home">Home </a>
+  </div>
+  <div class="nav_parent">
+    <a href="https://yikes.guzware.net/about/" class="nav_item" title="About">About </a>
+  </div>
+      
+<div class='follow'>
+<div class="color_mode">
+  <input type="checkbox" class="color_choice" id="mode">
+</div>
+
+</div>
+
+    </div>
+  </nav>
+</header>
+
+    <main>
+  
+<div class="grid-inverse wrap content">
+  <article class="post_content">
+    <h1 class="post_title">vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer</h1>
+  <div class="post_meta">
+    <span><svg class="icon">
+  <title>calendar</title>
+  <use xlink:href="#calendar"></use>
+</svg>
+</span>
+    <span class="post_date">
+      26-10-2022</span>
+    <span class="post_time"> · 30 min read</span><span>&nbsp;· <a href='https://yikes.guzware.net/tags/tanzu/' title="Tanzu" class="post_tag button button_translucent">Tanzu
+        </a><a href='https://yikes.guzware.net/tags/kubernetes/' title="Kubernetes" class="post_tag button button_translucent">Kubernetes
+        </a><a href='https://yikes.guzware.net/tags/nsx/' title="NSX" class="post_tag button button_translucent">NSX
+        </a><a href='https://yikes.guzware.net/tags/avi/' title="Avi" class="post_tag button button_translucent">Avi
+        </a>
+    </span>
+  </div>
+
+      <div class="post_toc">
+        <h2>Overview</h2>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#preparations---nsx-config">Preparations - NSX config</a>
+      <ul>
+        <li><a href="#initial-configs-in-the-nsx-manager">Initial configs in the NSX manager</a></li>
+        <li><a href="#nsx-profiles-uplink-transport-zones-and-transport-node-profiles">NSX Profiles: Uplink, Transport Zones and Transport Node Profiles</a></li>
+        <li><a href="#install-nsx-components-on-the-esxi-hosts">Install NSX components on the ESXi hosts</a></li>
+        <li><a href="#deploy-nsx-edges">Deploy NSX Edges</a></li>
+        <li><a href="#the-t0">The T0</a></li>
+      </ul>
+    </li>
+    <li><a href="#deploy-tanzu-with-nsx">Deploy Tanzu with NSX</a>
+      <ul>
+        <li><a href="#nsx-components-configured-by-wcpncp">NSX components configured by WCP/NCP</a></li>
+        <li><a href="#vsphere-namespace">vSphere Namespace</a></li>
+      </ul>
+    </li>
+    <li><a href="#configure-avi-as-ingress-controller-l7-with-nsx-as-l4-lb">Configure Avi as Ingress controller (L7) with NSX as L4 LB</a>
+      <ul>
+        <li><a href="#configure-nsx-cloud-in-avi---network-preparations">Configure NSX cloud in Avi - network preparations</a></li>
+        <li><a href="#se-groups">SE Groups</a></li>
+        <li><a href="#avi-networks">Avi Networks</a></li>
+        <li><a href="#avi-ipamdns-template">Avi IPAM/DNS template</a></li>
+        <li><a href="#avi-dns-service">Avi DNS service</a></li>
+      </ul>
+    </li>
+    <li><a href="#ako-in-tkc">AKO in TKC</a>
+      <ul>
+        <li><a href="#aviinfrasetting">AviInfraSetting</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+      </div>
+    
+    <div class="post_body"><h1 id="deploy-tanzu-in-vsphere-8-with-nsx-and-avi-loadbalancer">Deploy Tanzu in vSphere 8 with NSX and Avi Loadbalancer:</h1>
+<p>This post will go through how to install Tanzu in vSphere 8 using NSX networking (including built in L4 loadbalancer) and Avi as L7 loadbalancer. The goal is to deploy Tanzu by using NSX for all networking needs, including the Kubernetes Api endpoint (L4) and utilize Avi as loadbalancer for all L7 (Ingress). The deployment of Tanzu with NSX is an automated process, but it does not include L7 loadbalancing. This post will quickly go through how to  configure NSX and Avi to support this setup and also the actual configuration/deployment steps of Tanzu.
+The following components will be touched upon in this post: NSX, Tanzu, TKC, AKO, NCP, vCenter, AVI and Antrea. All networks needed for this deployment will be handled by NSX, except vCenter, NSX manager and Avi controller but including the management network for the supervisor cluster and Avi SE's. In the end we will also have a quick look at how to use Antrea Egress in one of the TKC clusters.</p>
+<p>We should end up with the following initial network diagram for this deployment (will update it later in the post reflecting several network for our TKC cluster with and without NAT (without NAT when using Egress):
+<img src=images/image-20230208103317524.png style="width:1000px" alt="Initial diagram" /></p>
+<h2 id="preparations---nsx-config">Preparations - NSX config</h2>
+<p>This post assumes a working vSphere environment with storage configured, vMotion network, vSAN (if using vSAN), HA, DRS enabled and configured.
+So this step will cover the basic NSX config for this use-case. NSX will need some network configured in the physical environment like the Geneve Tunnel VLAN, Uplink VLAN(s) for our T0 in addition to the most likely already defined management network for the placement of NSX managers, NSX edges and Avi controller and/or SE's. 
+So lets jump in.</p>
+<h3 id="initial-configs-in-the-nsx-manager">Initial configs in the NSX manager</h3>
+<p>The first NSX manager is already deployed. Accept the EULA and skip the NSX tutorial:</p>
+<p><img src=images/image-20230214131607430.png style="width:400px" /> <img src=images/image-20230214131745125.png style="width:400px" /></p>
+<p>When done, head over to System -&gt; Licenses and add your license key. Then, still under system, head over to Appliances and add a cluster IP. Even though you only have 1 NSX manager for test/poc it can make sense to use cluster ip adding, removing nsx managers etc and still point to the same IP.</p>
+<img src=images/image-20230214132845680.png style="width:600px" />
+<p>Click on <em>Set Virtual IP</em> and type in your wanted cluster ip. Out of the box its the same layer 2 subnet as your controllers are placed in (it possible to use L3 also but that involves an external LoadBalancer, not the built in for this purpose).</p>
+<img src=images/image-20230214133036605.png style="widht:500px" />
+<p>Click save and wait.
+<img src=images/image-20230214133146676.png style="width:500px" /></p>
+<p>After some minutes, try to log in via your new cluster IP. All the configs I will do will be used with this IP. It does not matter if you go directly to the NSX manager itself or the cluster IP for this post.</p>
+<p>After cluster IP is done, we need to add a Compute Manager which in our case is the vCenter server (not that you have any option besides vCenter).
+Still under System, go to Fabric expand and find Compute Manager. 
+From there click Add Compute Manager:</p>
+<img src=images/image-20230214133648776.png style="width:400px" />
+<p>Fill in the necessary information for your vCenter and make sure Service Account and Enable Trust is enabled.
+<img src=images/image-20230214133906905.png style="width:500px" alt="Click add to add vCenter Compute Manager"/></p>
+<p>Next message will ask you to use a Thumprint the vCenter says it has. You could either just say ADD or actually go to vCenter and grab the thumbprint from there and verify or paste it in the SHA-256 field before clicking add.</p>
+<img src=images/image-20230214134159970.png style="width:400px" />
+<p><em>Here is how to get the thumbprint from vCenter:</em></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">root@vcsa <span class="o">[</span> ~ <span class="o">]</span><span class="c1"># openssl x509 -in /etc/vmware-vpx/ssl/rui.crt -fingerprint -sha256 -noout</span>
+</span></span><span class="line"><span class="ln">2</span><span class="cl">SHA256 <span class="nv">Fingerprint</span><span class="o">=</span>A1:F2:11:0F:47:D8:7B:02:D1:C9:B6:87:19:C0:65:15:B7:6A:6E:23:67:AD:0C:41:03:13:DA:91:A9:D0:B2:F6
+</span></span></code></pre></div><p>Now when you are absolutely certain, add and wait.</p>
+<img src=images/image-20230214135616265.png style="width:900px" />
+<img src=images/image-20230214135729832.png style="width:900px" />
+<h3 id="nsx-profiles-uplink-transport-zones-and-transport-node-profiles">NSX Profiles: Uplink, Transport Zones and Transport Node Profiles</h3>
+<p>In NSX there is a couple of profiles that needs to be configured, profiles for the Transport nodes, Edge transport nodes, transport zones. Instead of configuring things individually NSX uses profiles so we have a consistent and central place to configure multiple components from. 
+Let start with the Uplink profiles:
+Under Fabric head over to Profiles.</p>
+<img src=images/image-20230214145120302.png style="width:400px" />
+<p>Here we need to create two uplink profiles (one for the ESXi transport nodes and one for the NSX edge transport nodes). These profile will dictate the number of uplinks used, mtu size (only for the edges after NSX 3.1) ,vlan for the geneve tunnel and nic teaming. Here we also define multiple teaming policies if we want to dictate certain uplinks to be used for deterministic traffic steering. Which I will do.</p>
+<p>Host uplink:</p>
+<img src=images/image-20230214145016888.png style="width:700px" />
+<p>In the &quot;host&quot; uplink profile we define the logical uplinks, (uplink-1 and uplink-2, but we could name them Donald-Duck-1 and 2 if we wanted). We define the default teaming-policy to be Load Balance Source as we want two vmkernels for the host-tep, and default active/active if we create a vlan segment without specifying a teaming policy in the segment. Then we add two more teaming policies with Failover Order and specify one uplink pr policy. The reason for that is because we will go on and create a VLAN segment later where we will place the Edge VM uplinks, and we need to have some control over wich uplink-&gt;nic on the ESXi host the T0 Uplinks go, and we dont want to use teaming on these, and we dont want a standby uplink as BGP is supposed to handle failover for us. This way we steer T0 Uplink 1 out via uplink-1 and T0 Uplink 2 out via uplink-2  and the ESXi hosts has been configured to map uplink-1 to VDS uplink-1 which again is mapping to pNIC0 and uplink-2 to VDS uplink-2 to pNIC1 respectively. In summary we create a vlan segment on the host for the edge VM, then we create a vlan segment for the logical T0 later.</p>
+<p>Then we define the VLAN number for the Geneve tunnel. Notice we dont specify MTU size as this will adjust after what we have in our VDS which we will map to later, so our VDS must have minumum MTU 1700 defined (it works with 1600 also, but in NSX-T 3.2 and later there is a greenfield min MTU of 1700). We will use the same VLAN for both host and edge tep wich was supported from NSX-T 3.1 and forward. But to make that work we cant use VDS portgroups for the T0, it needs to be a NSX VLAN segment. More on that later.</p>
+<p>Click save.</p>
+<p>Next up is the &quot;Edge&quot; Uplink Profile, almost same procedure:</p>
+<img src=images/image-20230214150116958.png style="width:700px" />
+<p>The biggest difference is the name of the specific teaming policies, and we specify a MTU size of 1700 as this is what I use in my VDS.</p>
+<p>Now over to Transport Zones</p>
+<img src=images/image-20230214150525317.png style="width:500px" />
+<p>Here we create three Transport Zones: 1 vlan TZ for host, 1 vlan TZ for edge  and 1 overlay which is common for both Edge and Host transport nodes.</p>
+<p>Create host-vlan-tz:</p>
+<img src=images/image-20230214150840257.png style="width:500px" alt="notice Uplink Teaming Policy Names" />
+<p>Its probably not so obvious in the GUI, but we also define our teaming policies defined in our respective uplinks earlier. Here I enter manually the uplink policy names for my host transport zone so they can be available later when I create a VLAN segment for my T0 uplinks (on the host). Click save.</p>
+<p>When done its the edge-vlan-tz:</p>
+<img src=images/image-20230214151211998.png style="width:500px" alt="notice different policy names..." />
+<p>Common for both Transport Zones is VLAN.</p>
+<p>Now the last Transport Zone for now - the Overlay TZ (this one is easy):</p>
+<img src=images/image-20230214151438827.png style="width:500px" />
+<p>The next step would be to create the Transport Node Profile, but first we need to create an IP-Pool for the TEP addresses. 
+Head over to <em>Networking</em> and <em>IP Address Pools</em> :</p>
+<img src=images/image-20230214151909478.png style="width:400px" />
+<p>Add IP address pool:</p>
+<img src=images/image-20230214152002185.png style="width:800px" />
+<p>Its only necessary to define the CIDR, IP Range and Gateway IP. Please make sure the range is sufficient to support the max amount of ESXi Transport nodes and Edge nodes you will have. 2 IPs pr device.</p>
+<p>Now back to System -&gt; Fabric again and create the Transport Node Profile under Profile:</p>
+<img src=images/image-20230214152322657.png style="width:700px"/>
+<p>Here we select the vCenter we added earlier, point to the correct VDS we want to use, select the host-profile we created and under IP assignment we use our newly created IP pool and map the uplinks to the corresponding VDS uplinks. Then ADD</p>
+<h3 id="install-nsx-components-on-the-esxi-hosts">Install NSX components on the ESXi hosts</h3>
+<p>To enable NSX after our initial configs has been done is fairly straight-forward. Head over to Nodes under System-&gt;Fabric and select the first tab Host Transport Nodes. Select your vCenter under <em>Managed by</em>  and select your cluster and click Configure NSX:</p>
+<img src=images/image-20230214152751894.png style="width:500px" />
+<p>Select your (only?) transport-node profile your created above:</p>
+<img src=images/image-20230214152908339.png style="width:400px" />
+<p>Click apply and wait...</p>
+<img src=images/image-20230214153007248.png style="width:700px" />
+<img src=images/image-20230214153221372.png style="width:700px" />
+<p>Status in vCenter - the only status we will see.</p>
+<img src=images/image-20230214153121532.png style="width:500px" />
+<p>When everything is up and green as below, NSX is installed in our ESXi hosts and we are ready to create networks 😄</p>
+<img src=images/image-20230214154230533.png style="width:700px" />
+<h3 id="deploy-nsx-edges">Deploy NSX Edges</h3>
+<p>Deploying a Edge is quite straight forward, and is done from the NSX manager under System -&gt;Fabric -&gt;Nodes -&gt;Edge Transport Nodes</p>
+<p>But I need to create two VLAN segments for Edge &quot;data-path/uplink interfaces. As I want to use the same VLAN for both Host Tep and Edge TEP I need to do that. These two segments will only be used for the actual Edge VMs, not the T0 I am going to create later. In my lab I am using VLAN 1013 for TEP and VLAN 1014 and 1015 for T0 Uplink 1 and 2. 
+So that means the first VLAN segment I create will have the VLAN Trunk range 1013-1014 and the second VLAN segment will use VLAN trunk 1013,1015
+Head over to the Networking section/Segments in the NSX UI click Add Segment:</p>
+<img src=images/image-20230222084712557.png style="width:800" />
+<p>Select host-uplink-1 under <em>Uplink Teaming Policy</em> and add your VLAN ID under VLAN. Click save</p>
+<p>Same procedure again for the second segment:</p>
+<img src=images/image-20230222085037291.png style="width:800" />
+<p>select <em>host-uplink-2</em> and the correct vlan trunk accordingly.</p>
+<p>The result should be two VLAN segments, created in our host-vlan-tz (the host vlan transport zone created earlier)</p>
+<img src=images/image-20230222085658541.png style="width:800" />
+<p>Now we can deploy our Edge(s).</p>
+<p>Head over to System -&gt;Fabric -&gt;Nodes -&gt;Edge Transport Nodes</p>
+<img src=images/image-20230222085906831.png style="width:700px" />
+<p>Click add edge node and start the edge deployment wizard:</p>
+<img src=images/image-20230222155046225.png style="width:800px" />
+<p>Give the edge a name, then fill in a FQDN name. Not sure if that part have to be actually registered in DNS, but it probably does do any harm if you decide to. Choose a form factor. When using Tanzu it can be potentially many virtual services so you should at least go with Large. You can find more sizing recommendation on the VMware official NSX docs page. Next</p>
+<img src=images/image-20230222155424399.png style="width:800px" />
+<p>Fill inn your username and passwords (if you want easier access to SSH shell for troubleshooting purposes enable SSH now).</p>
+<img src=images/image-20230222155551924.png style="width:800px" />
+<p>Select your vCenter, cluster and datastore. The rest default.</p>
+<img src=images/image-20230222155707667.png style="width:800px" />
+<p>Configure the basics... This the part of the Edge that communicates with the NSX manager. Next we will configure the networking part that will be used for the T0 uplinks and TEP.</p>
+<img src=images/image-20230222155847574.png style="width:800px" />
+<p>Here we select the transport zones for the Edge to  be part of. Note, it should be part of your overlay transport zone but not part of the host vlan transport zone. Here we have defined a Edge vlan transportzone to be used. This is the transport zone where the segment for the T0 to be created in. One of the reason is that we dont want the segment for the T0 to be visible for the host for potentially other workloads, and the segment is actually created in the Edge, thats where the T0 is realised (The SR part of the T0). Then we select the edge-profile we created earlier, the same IP pool as the hosts. Under uplinks we select the respective vlan segments  uplink 1 and 2 created earlier.</p>
+<img src=images/image-20230222160434857.png style="width:450px" />
+<p>Then finish. It should take a couple of minutes to report ready in the NSX manager ui.</p>
+<img src=images/image-20230222160614604.png style="width:700px" />
+<p>Status when ready for duty:</p>
+<img src=images/image-20230222161009204.png style="width:1000px" />
+<p>There should also be some activity in vCenter deploying the edge. When ready head over to Edge Clusters and create a cluster to put the Edge in. We need an Edge cluster and the edges in an edge cluster before we can do anything with them, even if we only deploy one edge (labs etc).</p>
+<img src=images/image-20230222161249911.png style="width:400px" />
+<h3 id="the-t0">The T0</h3>
+<p>Now that at least one Edge is up, we should create a T0 so we can make some external connectivity happen (even though NSX have its own networking components and we can create full L3 topology, we cant talk outside NSX from overlay without the Edges). Head over to Network and create a VLAN segment. This time the segment should be placed in the edge-vlan-tz as it is use for T0 uplinks only. Select teaming policy and correct vlan for the T0 uplink 1. I will only use 1 uplink in my lab so I will only create 1 segment for this, I only have 1 upstream router to peer to also.</p>
+<img src=images/image-20230222161720436.png style="width:1000px" />
+<p>Next is heading over to Tier-0 and create a T0:</p>
+<img src=images/image-20230222161903685.png style="width:1000px" />
+<p>The selection is very limited at first, so give it a name and select HA mode, and edge cluster (the one that we created above).</p>
+<p>Click save and yes to continue edit:</p>
+<img src=images/image-20230222162037959.png style="width:800px" />
+<p>Now we need to add the interface(s) to the T0. The actual interfaces will be residing on the Edges, but we need to define them in the T0. Click on the 0 under <em>Interfaces</em> (its already two interfaces in the screenshot below).</p>
+<img src=images/image-20230222162141360.png style="width:700px" />
+<p>Give the interface a name, choose type External, give it the correct IP address to peer with the upstream router, and select the Edge VLAN segment created earlier which maps to the correct uplink (1 or 2). Then select the Edge node that shall have this interface configured.</p>
+<img src=images/image-20230223075114500.png style="width:800px" />
+<p>Click save. Now as an optional step SSH into the Edge selected above, go the correct vrf and ping the upstream router.</p>
+<img src=images/image-20230223075303942.png style="width:800px" />
+<p>Get the correct VRF (we are looking for the SR T0 part of the T0)</p>
+<img src=images/image-20230223075411959.png style="width:800px" />
+<p>Enter the vrf by typing <em>vrf</em> and the number, here it is <em>vrf 1</em>.</p>
+<img src=images/image-20230223075559112.png style="width:500px" />
+<p>Listing the interface with <em>get interfaces</em> one should see the interface we configured above, and we can ping the upstream router to verify L2 connectivity.</p>
+<img src=images/image-20230223075747057.png style="width:500px" />
+<p>Good, now configure BGP. Expand BGP in your T0 settings view (same place as we configure the interface) adjust your BGP settings accordingly. Click save, enter again and add your BGP peers/neighbors bly clicking on neighbors.</p>
+<img src=images/image-20230223080038311.png style="width:700px" />
+<p>Add the IP to the BGP peer you should use and adjust accordingly, like AS number. Click Save</p>
+<img src=images/image-20230223080336775.png style="width:800px" />
+<img src=images/image-20230223080427595.png style="width:700px" />
+<p>It will become green directly, then if you click refresh it will become red, then refresh again it should be green again if everything is correct BGP config wise on both sides. Clicking on the (i) will give you the status also:</p>
+<img src=images/image-20230223080644588.png style="width:500px" />
+<p>From your upstream routes you should see a new neighbor established:</p>
+<img src=images/image-20230223080803525.png style="width:600px" />
+<p>The last step on the T0 now is to configure it which networks it should advertise on BGP. That is done under <em>Route re-distribution</em>. In a Tanzu setup we need to advertise NAT, connected and LB VIP from our T1s. That is because Tanzu or NCP creates NAT rules, it creates some LB VIPS and we should also be able to reach our other Overlay segments we create under our T1 (which we have not created yet).</p>
+<img src=images/image-20230223081347065.png style="width:600px" />
+<p>Now that T0 is configured and peering with the upstream router, I can create segments directly under the T0, or create T1s and then segments connected to the T1 instead. If you do create segments directly attached to the T0 one must configure route advertisement accordingly. As the config above is not advertising any networks from T0, only T1.</p>
+<p>In NSX there is a neat map over the Network Topology in NSX:</p>
+<img src=images/image-20230223082517559.png style="width:1000px" />
+<h2 id="deploy-tanzu-with-nsx">Deploy Tanzu with NSX</h2>
+<p>Now that networking with NSX is configured and the foundation is ready. Its time to deploy the Supervisor cluster, or enable WCP, Workload Management. 
+Head over to the <em>hamburger</em> menu in top left corner in your vCenter and select * Workload Management*</p>
+<img src=images/image-20230223085130672.png style="width:300px" />
+<p>Click on <em>Get Started</em></p>
+<img src=images/image-20230223092325310.png style="width:500px" />
+<p>Then follow the wizard below:</p>
+<img src=images/image-20230223085544921.png style="width:800px" />
+<p>Select NSX and Next</p>
+<img src=images/image-20230223085703691.png style="width:800px" />
+<p>Select Cluster Deployment, choose your vCenter cluster, give the supervisor a name and below (not in picture above) enter a zone name.</p>
+<p>Next</p>
+<img src=images/image-20230223085842605.png style="width:600px" />
+<p>Select your storage policies, Next</p>
+<img src=images/image-20230223090004699.png style="width:800px" />
+<p>In Step 4 - Management Network we configure the network for the Supervisor Control Plane VMs. In my lab I have already created an overlay segment I call <em>ls-mgmt</em> with cidr 10.101.10.0/24 and gateway 10.101.10.1. So I will place my Supervisors also there. Not using DHCP, but just defining a start IP. The Supervisors will consist of three VMs, and a cluster IP. But it will use 5 IP addresses in total in this network. DNS, Search Domains and NTP should be your internal services. In screenshot above I have used an external NTP server. NEXT</p>
+<img src=images/image-20230223090637360.png style="width:900px" />
+<p>Above I define the workload network, which the supervisor control plane vms also will be part of, but also for the vSphere Pods. This a default workload network where your TKC cluster can be deployed in (if not overriden when creating a vSphere namespace (later on that topic) ). Select the VDS you have used and configured for NSX. Select your Edge cluster. Add your DNS server(s), select the T0 router you created earlier in NSX. Then leave NAT-Mode enabled, we can create vSphere namespaces later where we override these settings. Then you define the Namespace Network. This is the network your vSphere pods will use, the workload network interface of the Supervisor ControlPlane Nodes, and your TKC cluster nodes. The CIDR size define how many IPs you will have available for your TKC cluster nodes, meaning also the total amount of nodes in this workload network. But dont despair, we can create additional vSphere namespaces and add more networks. So in the above example I give it a /20 cidr (unnecessary big actually, but why not). This Namespace Network will not be exposed to the outside world as NCP creates route-map rules on the T0 not allowing these to be advertised (we have NAT enabled). The Service CIDR is Kubernetes internal network for services. When we deploy a TKC cluster later we define other Kubernetes cluster and pod cidrs. Define the Ingress CIDR, this is the IP address range NCP will use to carve out LoadBalancer VIPs for the Kubernetes API endpoints, for the Supervisor Control Plane, the TKC clusters K8s Api endpoint and even the Service Type LoadBalancer services you decide to created. So all access TO the Supervisor Cluster API endpoint will be accessed through the IP address assigned from this CIDR. When we have NAT enabled it will also ask you to define a Egress CIDR which will be used by NSX to create SNAT rules for the worker nodes to use when communicate OUT. These NAT rules will be created automatically in NSX-T.</p>
+<p>NEXT</p>
+<img src=images/image-20230223091944671.png style="width:600px" />
+<p>Select the size of your SVCP and give the SVCP API endpoint a name. This is something that can be registered in DNS when deployment is finished and we know the IP it gets.</p>
+<p>Finish and wait. Its the same (waiting) process as explained <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#enable-workload-management">here</a></p>
+<p>If everything goes well we should have a Supervisor cluster up and running in not that many minutes. 20-30 mins?</p>
+<p>When its done deploying you will see the green status here:
+<img src=images/image-20230223093416957.png style="width:900px" /></p>
+<p>Notice the Control Plane Node Address, this is our endpoint IP being served by Avi loadbalancer and the one we use to interact with the Supervisor cluster to create workloads etc..</p>
+<p>Enter the IP in your browser with https://10.101.11.2 and you should see this page:
+<img src=images/image-20230130194909087_1.png style="width:900px" /></p>
+<p>Download the cli tools for your operating system, deploy them so they are in your path. Will use both kubectl and kubectl-vsphere later on
+Next steps include creating namespace, deploy workload clusters.</p>
+<h3 id="nsx-components-configured-by-wcpncp">NSX components configured by WCP/NCP</h3>
+<p>Before heading over to next section, have a look in NSX and see what happended there:</p>
+<p>Under Networks -&gt; Segments you will notice networks like this:</p>
+<img src=images/image-20230223094304990.png style="width:800px" />
+<img src=images/image-20230224075650785.png style="width:800px" />
+<p>Notice the gateway ip and CIDR. These are created for each vSphere Namespace, the cidr 10.101.96.1/28 is carved out of the CIDR defined in the &quot;default&quot; network when deploying WCP.</p>
+<p>Under Networks -&gt; T-1 Gateways you will notice a couple of new T1 routers being created:</p>
+<img src=images/image-20230224075228814.png style="width:800px" />
+<p>Under Networks -&gt; Load Balancing:</p>
+<img src=images/image-20230224075926645.png style="width:800px" />
+<p>Here is all the L4 K8s API endpoints created, also the other Service Type Loadbalancer services you choose to expose in your TKC clusters.</p>
+<p>Under Networks -&gt; NAT and the &quot;domain&quot; T1 there will be auto-created NAT rules, depending on whether NAT is enabled or disabled pr Namespace.</p>
+<img src=images/image-20230224080335575.png style="width:800px" />
+<p>Then under Security -&gt; Distributed Firewall there will be a new section:</p>
+<img src=images/image-20230224081717088.png style="width:800px" />
+<h3 id="vsphere-namespace">vSphere Namespace</h3>
+<p>When Supervisor is up and running next step is to create a vSphere Namespace. I will go ahead and create that, but will also use the &quot;override network&quot; to create a separate network for this Namespace and also disable NAT as I want to use this cluster for Antrea Egress explained <a href="https://yikes.guzware.net/2023/02/20/antrea-egress/">here</a>.</p>
+<p>A vSphere is a construct in vSphere to adjust indidivual access settings/permissions, resources, network settings or different networks for IP separation. Click on Create Namespace and fill in relevant info. I am choosing to <em>Override Supervisor network settings</em>.</p>
+<img src=images/image-20230224082441383.png style="width:800px" />
+<p>Notice when I disable NAT Mode there will no longer be a Egress IP to populate. Thats because the TKC nodes under this namespace will not get a NAT rule applied to them in NSX and will be communicating &quot;externally&quot; with their own actual IP address. Ingress will still be relevant as the NSX-T Loadbalancer will create the K8s API endpoint to reach the control plane endpoint your respective TKC clusters.</p>
+<img src=images/image-20230224091207388.png style="width:600px" />
+<p>This option to adjust the networks in such a degree is a great flexibility with NSX. Tanzu with VDS does give you the option to select different VDS portgroups on separate vlans, but must be manually created, does not give you NAT, Ingress and Egress and VLAN/Routing must be in place in the physical environment. With NSX all the networking components are automatically created and it includes the NSX Distributed Firewall.</p>
+<p>After the vSphere Namespace has been created it is the same procedure to deploy TKC clusters regardless of using VDS or NSX. So instead of me repeating myself and saving the environment for digital ink I will refere to the process I have already described <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#vsphere-namespace">here</a></p>
+<h2 id="configure-avi-as-ingress-controller-l7-with-nsx-as-l4-lb">Configure Avi as Ingress controller (L7) with NSX as L4 LB</h2>
+<p>When using Antrea as the CNI in your TKC cluster (default in vSphere with Tanzu) make sure to enable NodePortLocal. This gives much better control and flexibility, follow how <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#antrea-nodeportlocal">here</a> and NodePortLocal explained <a href="https://antrea.io/docs/v1.10.0/docs/node-port-local/">here</a></p>
+<h3 id="configure-nsx-cloud-in-avi---network-preparations">Configure NSX cloud in Avi - network preparations</h3>
+<p>As this guide is using NSX as the underlaying networking platform instead of VDS as <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/">this</a> article is using, we also have the benefit of configuring the NSX cloud in Avi instead of the vCenter Cloud. This cloud do come with some additional benefits like automatic Security Group creation in NSX, VIP advertisement through the already configured T0, SE placement dataplane/data network on separate network and VRF context.</p>
+<p>But before we can consume the NSX cloud we need to configure it. Assuming the Avi controller has already been deployed and initial config is done (username and password, dns, etc) log in to the controller and head over to Administration -&gt; User Credentials:</p>
+<img src=images/image-20230224130149390.png style="width:1000px" />
+<p>Add the credentials you want to use for both vCenter and NSX-T.  The next step is involving NSX. Head over to NSX and create two new networks. One for SE management and one for SE dataplane (the network it will use to reach the backend servers they are loadbalancing). I will now just show a screenshot of three networks already created. One segment <em>ls-avi-se-mgmt</em> for SE mgmt, one segment <em>ls-avi-generic-se-data</em> for SE communication to backend pools, and one segment <em>ls-avi-dns-se-data</em> (I will get back to the last network later when enabling the Avi DNS service).</p>
+<img src=images/image-20230224131901828.png style="width:1000px" />
+<p>Then head over to vCenter and create a local Content Library and call it what you want.</p>
+<img src=images/image-20230224132822045.png style="width:400px" />
+<p>When networks and credentials have been created, back in the Avi gui head over to Infrastructure -&gt; Clouds:</p>
+<img src=images/image-20230224125522753.png style="width:1000px" />
+<p>Click <em>Create</em> and select <em>NSX-T</em></p>
+<img src=images/image-20230224130019543.png style="width:300px" />
+<p>Start by giving the NSX cloud a meaningfull name and give a prefix name for the objects being created in NSX by Avi. If you have several Avi controllers using same NSX manager etc. Easier to identify when looking in the NSX manager ui:</p>
+<img src=images/image-20230224130918439.png deploy="width:700px" />
+<p>Then proceed (scroll down if needed) to connect to you NSX manager:</p>
+<img src=images/image-20230224130349625.png style="width:800px" />
+<p>Enter the IP of your NSX manager, if you created a Cluster IP in the NSX manager use that one, and select the credentials for NSX manager create in the Avi earlier.</p>
+<p>Connect.</p>
+<p><strong>!Note</strong> Before being able to continue this step we need to have defined some networks in NSX as explained above...</p>
+<img src=images/image-20230224130538615.png style="width:800px" />
+<p>Fill in the Transport zone where you have defined the segment for the management network, select the T1 this segment is attached to and then the segment. This network is created in NSX for the SE management interface. Then go to Data Networks and select the Overlay Transport Zone where the <em>ls-avi-generic-se-data</em> segment is created the ADD the T1 router for this segment from the dropdown list and the corresponding segment. (Ignore the second netowork in the screenshot above.)
+Then under vCenter Server click add and fill in relevant info to connect the vCenter server your NSX manager is using.</p>
+<img src=images/image-20230224132925232.png style="width:500px" />
+<p>Give it a meaningful name, it will either already have selected your NSX cloud otherwise select it from the list. Then the credentials and the Content Library from the dropdown.</p>
+<p>The last section IPAM/DNS we will fill out later (click save):</p>
+<img src=images/image-20230224133143425.png style="width:700px" />
+<p>Now the cloud should be created.</p>
+<h3 id="se-groups">SE Groups</h3>
+<p>Head over to Cloud Resources -&gt; Service Engine Groups and create a custom SE-group.</p>
+<img src=images/image-20230224133532826.png style="width:1000px" />
+<p>Select your newly created cloud from the dropdown list above next to <em>Select Cloud</em>.
+Click create blue button right side.</p>
+<img src=images/image-20230224134508138.png style="width:1000px" />
+<p>Change the fields marked by a red line. And optionally adjust the Max. Number of Service Engines. This is just to restrict Avi to not deploy too many SE's if it sees fit. Adjust the Virtual Services pr Service Engine to a higher number than 10 (if that is default). This all comes down to performance.</p>
+<p>Jump to advanced:</p>
+<img src=images/image-20230224134747396.png style="width:1000px" />
+<p>Change the Service Engine Name Prefix to something useful, then select the vCenter, cluster and datastore. Save</p>
+<h3 id="avi-networks">Avi Networks</h3>
+<p>Now head over to Infrastructure -&gt; VRF Contexts (below Service engine Groups) select correct cloud from dropdown and add a default gateway for the SE dataplane network.</p>
+<img src=images/image-20230224135109382.png style="width:1000px" />
+<p>Click the pencil</p>
+<img src=images/image-20230224135202476.png style="width:800px" />
+<p>Add a default route under Static Route and point to the gateway used for the SE dataplane <em>ls-avi-generic-se-data</em> . This is used for the SE's to know where to go to reach the different pools it will loadbalance.</p>
+<p>Next we need to define the different networks for the SE's to use (the dataplane network). Head over to Infrastructure -&gt; Networks (again select correct cloud from dropdown)</p>
+<p>If there is workload running in these networks they can already be auto-detected, if not you need to create them. 
+<img src=images/image-20230224135608366.png style="width:800px" /></p>
+<p>In my lab I rely on Avi as the IPAM provider for my different services, a very useful feature in Avi. So the two networks we need to create/and or edit is the <em>ls-avi-se-mgmt</em> and the <em>ls-avi-generic-se-data</em></p>
+<p>First out is the <em>ls-avi-se-mgmt</em></p>
+<img src=images/image-20230224140044149.png style="width:800px" />
+<p>Deselect DHCP, we want to use Avi IPAM instead (and I dont have DHCP in these networks).
+Then fill in the CIDR (IP Subnet), deselect <em>Use Static IP Address for VIPs and Service Engine</em> add a range for the SE to be allow to get an IP from. Then select the <em>Use for Service Engines</em>. This will configure the IPAM pool to only be used for the dataplane for the SE's in the management network. We dont want to have any VIPs here as it will only be used for the SE's to talk to the Avi controller.</p>
+<p>Then it is the <em>ls-avi-generic-se-data</em> network</p>
+<img src=images/image-20230224140442382.png style="width:800px" />
+<p>Same as above just a different subnet, using the same T1 router defined in NSX.</p>
+<p>The two above networks will only be used as dataplane network. Meaning they will not be used for any Virtual Service VIP. We also need to define 1 or more VIP networks.  Create one more network:</p>
+<p>Here I specify a network which is only used for VS VIP</p>
+<img src=images/image-20230228080445374.png style="width:800px" />
+<h3 id="avi-ipamdns-template">Avi IPAM/DNS template</h3>
+<p>Now we need to inform our cloud which VIP networks we can use, that is done under Templates -&gt; IPAM/DNS Profiles</p>
+<img src=images/image-20230228082522164.png style="width:300px" />
+<p>While we are here we create two profiles, one for DNS (for the DNS service) and IPAM profile for the VIP networks.
+Lets start with the IPAM profile. Click create right corner and select IPAM Profile:</p>
+<img src=images/image-20230228082744020.png style="width:200px" />
+<p>Fill in name, select allocate IP in VRF and select your NSX cloud. Then click add and select your VIP networks defined above. Screenshot below also include a <em>DNS-VIP</em> network which I will use later. Click save.</p>
+<img src=images/image-20230228082951617.png style="width:800px" />
+<p>Now click create again and select DNS profile:</p>
+<img src=images/image-20230228083301601.png style="width:800px" />
+<p>Give it a name and type in the domain name you want Avi to use.</p>
+<p>Now go back to Infrastructure -&gt; Clouds and edit your NSX cloud and add the newly added Profiles here:</p>
+<img src=images/image-20230228083509655.png style="width:800px" />
+<p>Save</p>
+<p>Now Avi is prepared and configured to handle requests from AKO on L7 service Ingress. Next step will be to deploy configure and deploy AKO in our TKC cluster. But first some short words around Avi DNS service.</p>
+<h3 id="avi-dns-service">Avi DNS service</h3>
+<p>Getting a virtual service with a VIP is easy with Avi, but often we need a DNS record on these VS'es. Avi has a built in DNS service which automatically register a DNS record for your services. The simplest way to make this work out of the box is to create a Forward Zone in your DNS server to the DNS Service IP for a specific subdomain or domain. Then Avi will handle the DNS requests for these specific domains. To make use of Avi DNS service we should dedicate a SE group for this service, and create a dedicated VIP network for it. As we should use a dedicated SE group for the DNS service it would be nice to also have a dedicated SE dataplane network for these SE's. So follow the steps I have done above to create a SE network for the SE service SE's  and add this to your cloud. The VIP network also needs to be added to the IPAM Profile created earlier. A note on the additional SE network, this also requires a dedicated T1 router in the NSX environment. So in your NSX environment create an additional T1 router, create segment for the DNS SE datanetwork. 
+This is how to enable the DNS service in Avi after you have prepared the networks, and IPAM profile:</p>
+<p>Head over to Administration -&gt; Settings -&gt; DNS Service:</p>
+<img src=images/image-20230301082948513.png style="width:400px" />
+<p>Then create virtual service:</p>
+<img src=images/image-20230301083044610.png style="width:600px" />
+<p>Select your cloud and configure the DNS service:</p>
+<img src=images/image-20230301083722685.png style="width:1000px" />
+<p>The VS VIP is configured with a static IP (outside of the DNS VIP IPAM range you have created)</p>
+<img src=images/image-20230301083852484.png style="width:1000px" />
+<img src=images/image-20230301083932412.png style="width:1000px" />
+<p>Under advanced select the SE group:</p>
+<img src=images/image-20230301084046172.png style="width:1000px" />
+<p>Save. Now the DNS VS is configured, go to templates and add a DNS profile:</p>
+<img src=images/image-20230301084152057.png style="width:1000px" />
+<p>Give it a name, add your domain(s) here. Save</p>
+<p>Head over to the cloud and add your DNS profile.</p>
+<img src=images/image-20230301084316776.png style="width:1000px" />
+<p>Now you just need to configure your backend DNS server to forward the requests for these domains to the Avi DNS VS IP. Using bind this can be done like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">zone <span class="s2">&#34;you-have.your-domain.here&#34;</span> <span class="o">{</span>
+</span></span><span class="line"><span class="ln">2</span><span class="cl">    <span class="nb">type</span> forward<span class="p">;</span>
+</span></span><span class="line"><span class="ln">3</span><span class="cl">    forward only<span class="p">;</span>
+</span></span><span class="line"><span class="ln">4</span><span class="cl">    forwarders <span class="o">{</span> 10.101.211.9<span class="p">;</span> <span class="o">}</span><span class="p">;</span>
+</span></span><span class="line"><span class="ln">5</span><span class="cl"><span class="o">}</span><span class="p">;</span>
+</span></span></code></pre></div><h2 id="ako-in-tkc">AKO in TKC</h2>
+<p>I have already deployed a TKC cluster, which is described <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#create-workload-cluster">here</a></p>
+<p>Also make sure Antrea is configured with NodePortLocal as described also in the link above.</p>
+<p>So for Avi to work as Ingress controller we need to deploy AKO (Avi Kubernetes Operator). I have also explained these steps <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#configure-avi-as-ingress-controller-l7">here</a>
+the only difference is how the value.yaml for AKO is configured. Below is how I have configured it to work in my NSX enabled environment with explanations:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="c"># this file has been edited by me to easier reflect the changes I have done. So all default comments have been removed, and contains only my comments.</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">replicaCount</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w"></span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l">projects.registry.vmware.com/ako/ako</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">pullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w"></span><span class="nt">AKOSettings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">  </span><span class="nt">primaryInstance</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">  </span><span class="nt">enableEvents</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="w">  
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">  </span><span class="nt">logLevel</span><span class="p">:</span><span class="w"> </span><span class="l">WARN   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">  </span><span class="nt">fullSyncFrequency</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;1800&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">  </span><span class="nt">apiServerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">  </span><span class="nt">deleteConfig</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">  </span><span class="nt">disableStaticRouteSync</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-tkc-cluster-1-nsx  </span><span class="w"> </span><span class="c"># Here we need to define a name for our specific TKC cluster. This must not be the exact names as the cluster itself, but why not, it MUST be unique across all your TKC clusters if you have multiple AKO enabled TKC/K8s clusters on same Avi controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">  </span><span class="nt">cniPlugin</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;antrea&#39;</span><span class="w"> </span><span class="c">#This needs to be set to Antrea, the reason is that you would like to configure NodePortLocal.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">  </span><span class="nt">enableEVH</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">  </span><span class="nt">layer7Only</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="c"># This is very important to set to true as we already have an other AKO instance managing L4 for our k8s api endpoints. We will only configure this instance to use L7. </span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">  </span><span class="nt">namespaceSelector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">    </span><span class="nt">labelKey</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">    </span><span class="nt">labelValue</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">  </span><span class="nt">servicesAPI</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">  </span><span class="nt">vipPerNamespace</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">27</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">28</span><span class="cl"><span class="w"></span><span class="nt">NetworkSettings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">29</span><span class="cl"><span class="w">  </span><span class="nt">nodeNetworkList</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">30</span><span class="cl"><span class="w">  </span><span class="c"># nodeNetworkList:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">31</span><span class="cl"><span class="w">    </span>- <span class="nt">networkName</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;vnet-domain-c8:dd5825a9-8f62-4823-9347-a9723b6800d5-ns-wdc-1-tkc-cluste-62397-0&#34;</span><span class="w"> </span><span class="c"># this is the NSX segment created for your specific TKC cluster workers running in. In my case the defined portgroup name above. You can see this in vCenter</span><span class="w">
+</span></span></span><span class="line"><span class="ln">32</span><span class="cl"><span class="w">      </span><span class="nt">cidrs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">33</span><span class="cl"><span class="w">      </span>- <span class="m">10.101.112.32</span><span class="l">/27</span><span class="w"> </span><span class="c"># this is the CIDR for your current TKC cluster (make sure you are using right CIDR, seen from NSX)</span><span class="w">
+</span></span></span><span class="line"><span class="ln">34</span><span class="cl"><span class="w">  </span><span class="nt">enableRHI</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">35</span><span class="cl"><span class="w">  </span><span class="nt">nsxtT1LR</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Da-Tier-1&#39;</span><span class="w"> </span><span class="c">#The T1 router in NSX you have defined for the avi-se-dataplane network</span><span class="w">
+</span></span></span><span class="line"><span class="ln">36</span><span class="cl"><span class="w">  </span><span class="nt">bgpPeerLabels</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">37</span><span class="cl"><span class="w">  </span><span class="c"># bgpPeerLabels:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">38</span><span class="cl"><span class="w">  </span><span class="c">#   - peer1</span><span class="w">
+</span></span></span><span class="line"><span class="ln">39</span><span class="cl"><span class="w">  </span><span class="c">#   - peer2</span><span class="w">
+</span></span></span><span class="line"><span class="ln">40</span><span class="cl"><span class="w">  </span><span class="nt">vipNetworkList</span><span class="p">:</span><span class="w">  
+</span></span></span><span class="line"><span class="ln">41</span><span class="cl"><span class="w">    </span>- <span class="nt">networkName</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;vip-tkc-cluster-1-nsx-wdc-l7&#34;</span><span class="w"> </span><span class="c"># This can be the same VIP network you have configured in previously for api endpint or it can be a completely new one. I am going the easy route using the same. It can be shared across multiple cluster (is using NodePortLocal), or can be specific for each tkc cluster. </span><span class="w">
+</span></span></span><span class="line"><span class="ln">42</span><span class="cl"><span class="w">      </span><span class="nt">cidr</span><span class="p">:</span><span class="w"> </span><span class="m">10.101.210.0</span><span class="l">/24</span><span class="w">
+</span></span></span><span class="line"><span class="ln">43</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">44</span><span class="cl"><span class="w"></span><span class="nt">L7Settings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">45</span><span class="cl"><span class="w">  </span><span class="nt">defaultIngController</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="w"> </span><span class="c"># Specify if this is the only Ingress controller you have or default if using several others.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">46</span><span class="cl"><span class="w">  </span><span class="nt">noPGForSNI</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">47</span><span class="cl"><span class="w">  </span><span class="nt">serviceType</span><span class="p">:</span><span class="w"> </span><span class="l">NodePortLocal</span><span class="w"> </span><span class="c"># Here we select nodeportlocal - verify that Antrea is configured to use NodePortLocal</span><span class="w">
+</span></span></span><span class="line"><span class="ln">48</span><span class="cl"><span class="w">  </span><span class="nt">shardVSSize</span><span class="p">:</span><span class="w"> </span><span class="l">SMALL  </span><span class="w"> </span><span class="c"># I am setting this to small so I can run more services using same IP.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">49</span><span class="cl"><span class="w">  </span><span class="nt">passthroughShardSize</span><span class="p">:</span><span class="w"> </span><span class="l">SMALL   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">50</span><span class="cl"><span class="w">  </span><span class="nt">enableMCI</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;false&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">51</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">52</span><span class="cl"><span class="w"></span><span class="nt">L4Settings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">53</span><span class="cl"><span class="w">  </span><span class="nt">defaultDomain</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">54</span><span class="cl"><span class="w">  </span><span class="nt">autoFQDN</span><span class="p">:</span><span class="w"> </span><span class="l">default   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">55</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">56</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">57</span><span class="cl"><span class="w"></span><span class="nt">ControllerSettings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">58</span><span class="cl"><span class="w">  </span><span class="nt">serviceEngineGroupName</span><span class="p">:</span><span class="w"> </span><span class="l">nsx-se-generic-group  </span><span class="w"> </span><span class="c"># If you dont decide to use the same VIP as k8s api endpoint you could decide to create an additional ServiceEngineGroup for your L7 services (IP separation etc). </span><span class="w">
+</span></span></span><span class="line"><span class="ln">59</span><span class="cl"><span class="w">  </span><span class="nt">controllerVersion</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;22.1.1&#39;</span><span class="w"> </span><span class="c"># AKO version 1.8.2 supports Avi 22.1.2</span><span class="w">
+</span></span></span><span class="line"><span class="ln">60</span><span class="cl"><span class="w">  </span><span class="nt">cloudName</span><span class="p">:</span><span class="w"> </span><span class="l">wdc-1-nsx  </span><span class="w"> </span><span class="c"># The configured cloud name on the Avi controller.</span><span class="w">
+</span></span></span><span class="line"><span class="ln">61</span><span class="cl"><span class="w">  </span><span class="nt">controllerHost</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;172.21.101.50&#39;</span><span class="w"> </span><span class="c"># IP address or Hostname of Avi Controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">62</span><span class="cl"><span class="w">  </span><span class="nt">tenantName</span><span class="p">:</span><span class="w"> </span><span class="l">admin   </span><span class="w">
+</span></span></span><span class="line"><span class="ln">63</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">64</span><span class="cl"><span class="w"></span><span class="nt">nodePortSelector</span><span class="p">:</span><span class="w"> 
+</span></span></span><span class="line"><span class="ln">65</span><span class="cl"><span class="w">  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">66</span><span class="cl"><span class="w">  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">67</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">68</span><span class="cl"><span class="w"></span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">69</span><span class="cl"><span class="w">  </span><span class="nt">limits</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">70</span><span class="cl"><span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l">350m</span><span class="w">
+</span></span></span><span class="line"><span class="ln">71</span><span class="cl"><span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l">400Mi</span><span class="w">
+</span></span></span><span class="line"><span class="ln">72</span><span class="cl"><span class="w">  </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">73</span><span class="cl"><span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l">200m</span><span class="w">
+</span></span></span><span class="line"><span class="ln">74</span><span class="cl"><span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l">300Mi</span><span class="w">
+</span></span></span><span class="line"><span class="ln">75</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">76</span><span class="cl"><span class="w"></span><span class="nt">podSecurityContext</span><span class="p">:</span><span class="w"> </span>{}<span class="w">
+</span></span></span><span class="line"><span class="ln">77</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">78</span><span class="cl"><span class="w"></span><span class="nt">rbac</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">79</span><span class="cl"><span class="w">  </span><span class="nt">pspEnable</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="ln">80</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">81</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">82</span><span class="cl"><span class="w"></span><span class="nt">avicredentials</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">83</span><span class="cl"><span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;admin&#39;</span><span class="w"> </span><span class="c"># username for the Avi controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">84</span><span class="cl"><span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;password&#39;</span><span class="w"> </span><span class="c"># password for the Avi controller</span><span class="w">
+</span></span></span><span class="line"><span class="ln">85</span><span class="cl"><span class="w">  </span><span class="nt">authtoken</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">86</span><span class="cl"><span class="w">  </span><span class="nt">certificateAuthorityData</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">87</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">88</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln">89</span><span class="cl"><span class="w"></span><span class="nt">persistentVolumeClaim</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="ln">90</span><span class="cl"><span class="w"></span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l">/log</span><span class="w">
+</span></span></span><span class="line"><span class="ln">91</span><span class="cl"><span class="w"></span><span class="nt">logFile</span><span class="p">:</span><span class="w"> </span><span class="l">avi.log</span><span class="w">
+</span></span></span></code></pre></div><p>Install AKO with this command:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">helm install ako/ako --generate-name --version 1.8.2 -f values.yaml --namespace<span class="o">=</span>avi-system
+</span></span></code></pre></div><p>Check the logs of the AKO pod if it encountered some issues or not by issuing the command:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="ln">1</span><span class="cl">kubectl logs -n avi-system ako-o
+</span></span></code></pre></div><p>If there is no errors there its time to deploy a couple of test applications and the Ingress itself. This is already described <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#configure-avi-as-ingress-controller-l7---continue">here</a></p>
+<p>Thats it. Now L7 is enabled on your TKC cluster with Avi as Ingress controller. There is much that can be configured with AKO CRDs. I will try to update my post <a href="https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/">here</a> to go through the different possibilites. In the meantime much information is described <a href="https://avinetworks.com/docs/ako/1.8/custom-resource-definitions/">here</a></p>
+<h3 id="aviinfrasetting">AviInfraSetting</h3>
+<p>If you need to have separate VIPs/different subnets for certain applications we can use AviInfraSetting to override the &quot;default&quot; settings configured in our values.yaml above. This is a nice feature to override some settings very easy. There is also the option to run several AKO instances pr TKC/k8s cluster like described <a href="https://avinetworks.com/docs/ako/1.8/multiple-ako-instances-in-a-cluster/">here</a> which I will go through another time. But now quickly <a href="https://avinetworks.com/docs/ako/1.8/custom-resource-definitions/">AviInfraSetting</a></p>
+<img src=images/image-20230301134236822.png style="width:1000px" />
+<p>Lets say I want to enable BPG on certain services or adjust my Ingress to be exposed on a different VIP network.</p>
+<p>Create a yaml definition for AviInfraSetting:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">ako.vmware.com/v1alpha1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">AviInfraSetting</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">enable-bgp-fruit</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">seGroup</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Default-Group</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">  </span><span class="nt">network</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">    </span><span class="nt">vipNetworks</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">      </span>- <span class="nt">networkName</span><span class="p">:</span><span class="w"> </span><span class="l">vds-tkc-frontend-l7-vlan-1028</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">        </span><span class="nt">cidr</span><span class="p">:</span><span class="w"> </span><span class="m">10.102.8.0</span><span class="l">/24</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">    </span><span class="nt">nodeNetworks</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">      </span>- <span class="nt">networkName</span><span class="p">:</span><span class="w"> </span><span class="l">vds-tkc-workload-vlan-1026</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">        </span><span class="nt">cidrs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">        </span>- <span class="m">10.102.6.0</span><span class="l">/24</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">    </span><span class="nt">enableRhi</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">    </span><span class="nt">bgpPeerLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">      </span>- <span class="l">cPodRouter</span><span class="w">
+</span></span></span></code></pre></div><p>In the example above I define the VIP network (here I can override the default confgured from value.yaml), the nodNetwork. Enable RHI, and define a label to be used for BGP (label is from BGP settings here):</p>
+<img src=images/image-20230301134649021.png style="width:1000px" />
+<p>Peer:</p>
+<img src=images/image-20230301134726037.png style="width:400px" />
+<p>Apply the above yaml. To use it, create an additional IngressClass like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">IngressClass</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">avi-lb-bgp</span><span class="w"> </span><span class="c">#name the IngressClass</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">  </span><span class="nt">controller</span><span class="p">:</span><span class="w"> </span><span class="l">ako.vmware.com/avi-lb</span><span class="w"> </span><span class="c">#default ingressclass from ako</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w">  </span><span class="nt">parameters</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">    </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l">ako.vmware.com</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">AviInfraSetting</span><span class="w"> </span><span class="c">#refer to the AviInfraSetting</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">enable-bgp-fruit</span><span class="w"> </span><span class="c">#the name of your AviInfraSetting applied</span><span class="w">
+</span></span></span></code></pre></div><p>Apply it, then when you apply your Ingress or update it refer to this ingressClass like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="ln"> 1</span><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 2</span><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Ingress</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 3</span><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 4</span><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">ingress-example</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 5</span><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">fruit</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 6</span><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="ln"> 7</span><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 8</span><span class="cl"><span class="w">  </span><span class="nt">ingressClassName</span><span class="p">:</span><span class="w"> </span><span class="l">avi-lb-bgp</span><span class="w"> </span><span class="c">#Here you choose your specific IngressClass</span><span class="w">
+</span></span></span><span class="line"><span class="ln"> 9</span><span class="cl"><span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">10</span><span class="cl"><span class="w">    </span>- <span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">fruit-tkgs.you-have.your-domain.here</span><span class="w">
+</span></span></span><span class="line"><span class="ln">11</span><span class="cl"><span class="w">      </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">12</span><span class="cl"><span class="w">        </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">13</span><span class="cl"><span class="w">        </span>- <span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/apple</span><span class="w">
+</span></span></span><span class="line"><span class="ln">14</span><span class="cl"><span class="w">          </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l">Prefix</span><span class="w">
+</span></span></span><span class="line"><span class="ln">15</span><span class="cl"><span class="w">          </span><span class="nt">backend</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">16</span><span class="cl"><span class="w">            </span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">17</span><span class="cl"><span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">apple-service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">18</span><span class="cl"><span class="w">              </span><span class="nt">port</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">19</span><span class="cl"><span class="w">                </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="m">5678</span><span class="w">
+</span></span></span><span class="line"><span class="ln">20</span><span class="cl"><span class="w">        </span>- <span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/banana</span><span class="w">
+</span></span></span><span class="line"><span class="ln">21</span><span class="cl"><span class="w">          </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l">Prefix</span><span class="w">
+</span></span></span><span class="line"><span class="ln">22</span><span class="cl"><span class="w">          </span><span class="nt">backend</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">23</span><span class="cl"><span class="w">            </span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">24</span><span class="cl"><span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">banana-service</span><span class="w">
+</span></span></span><span class="line"><span class="ln">25</span><span class="cl"><span class="w">              </span><span class="nt">port</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="ln">26</span><span class="cl"><span class="w">                </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="m">5678</span><span class="w">
+</span></span></span></code></pre></div>
+    </div>
+
+
+
+
+  </article>
+<aside class="sidebar">
+  <section class="sidebar_inner">
+    <br>
+    
+  
+  <div class="search">
+    <input type="search" class="search_field form_field" placeholder='Search...' id="find" autocomplete="off" data-scope='post'>
+    <label for="find" class="search_label"><svg class="icon">
+  <title>search</title>
+  <use xlink:href="#search"></use>
+</svg>
+
+    </label>
+    
+    <div class="search_results results"></div>
+  </div>
+
+        <h2>Hi there</h2>
+      <div class="author_bio">
+        This blog is a WIP, sometimes I just throw up some topics for myself to remember to be finished later. Stay tuned...
+      </div>
+      <a href='https://yikes.guzware.net/about/' class="button mt-1" role="button" title='Read More'>Read More</a>
+
+    
+    
+    <h2 class="mt-4">Recent Posts</h2>
+    <ul class="flex-column">
+      <li>
+        <a href="https://yikes.guzware.net/2021/07/10/antrea-network-policies/" class="nav-link" title="Antrea Network Policies">Antrea Network Policies</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2023/02/20/antrea-egress/" class="nav-link" title="Antrea Egress">Antrea Egress</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/" class="nav-link" title="vSphere 8 with Tanzu using VDS and Avi Loadbalancer">vSphere 8 with Tanzu using VDS and Avi Loadbalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/" class="nav-link" title="vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer">vSphere 8 with Tanzu using NSX-T &amp; Avi LoadBalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/26/ako-explained/" class="nav-link" title="AKO Explained">AKO Explained</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/" class="nav-link" title="GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer">GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/" class="nav-link" title="We Take a Look at the AKO Crds">We Take a Look at the AKO Crds</a>
+      </li>
+      <li>
+        <a href="https://yikes.guzware.net/2022/10/23/running-the-unifi-controller-in-kubernetes/" class="nav-link" title="Running the Unifi Controller in Kubernetes">Running the Unifi Controller in Kubernetes</a>
+      </li>
+    </ul>
+    <div>
+      <h2 class="mt-4 taxonomy" id="categories-section">Categories</h2>
+      <nav class="tags_nav">
+        <a href='https://yikes.guzware.net/categories/kubernetes/' class="post_tag button button_translucent" title="kubernetes">
+          KUBERNETES
+          <span class="button_tally">19</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/vmware-nsx/' class="post_tag button button_translucent" title="vmware-nsx">
+          VMWARE-NSX
+          <span class="button_tally">7</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx/' class="post_tag button button_translucent" title="nsx">
+          NSX
+          <span class="button_tally">6</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/antrea/' class="post_tag button button_translucent" title="antrea">
+          ANTREA
+          <span class="button_tally">5</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx-advanced-loadbalancer/' class="post_tag button button_translucent" title="nsx-advanced-loadbalancer">
+          NSX-ADVANCED-LOADBALANCER
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/tanzu/' class="post_tag button button_translucent" title="tanzu">
+          TANZU
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/avi/' class="post_tag button button_translucent" title="avi">
+          AVI
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/nsx-t/' class="post_tag button button_translucent" title="nsx-t">
+          NSX-T
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/ako/' class="post_tag button button_translucent" title="ako">
+          AKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/blog/' class="post_tag button button_translucent" title="blog">
+          BLOG
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/docker/' class="post_tag button button_translucent" title="docker">
+          DOCKER
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/gslb/' class="post_tag button button_translucent" title="gslb">
+          GSLB
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/harbor/' class="post_tag button button_translucent" title="harbor">
+          HARBOR
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/categories/helm/' class="post_tag button button_translucent" title="helm">
+          HELM
+          <span class="button_tally">1</span>
+        </a>
+        
+        
+        <br>
+        <div class="post_tags_toggle button">All Categories</div>
+        <div class="post_tags">
+          <div class="tags_list">
+            
+            <a href='https://yikes.guzware.net/categories/ako/' class=" post_tag button button_translucent" data-position=1 title="ako">AKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/antrea/' class=" post_tag button button_translucent" data-position=5 title="antrea">ANTREA<span class="button_tally">5</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/avi/' class=" post_tag button button_translucent" data-position=2 title="avi">AVI<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/blog/' class=" post_tag button button_translucent" data-position=1 title="blog">BLOG<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/docker/' class=" post_tag button button_translucent" data-position=1 title="docker">DOCKER<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/gslb/' class=" post_tag button button_translucent" data-position=1 title="gslb">GSLB<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/harbor/' class=" post_tag button button_translucent" data-position=1 title="harbor">HARBOR<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/helm/' class=" post_tag button button_translucent" data-position=1 title="helm">HELM<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/homeautomation/' class=" post_tag button button_translucent" data-position=1 title="homeautomation">HOMEAUTOMATION<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/hugo/' class=" post_tag button button_translucent" data-position=1 title="hugo">HUGO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/ingress/' class=" post_tag button button_translucent" data-position=1 title="ingress">INGRESS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/kubernetes/' class=" post_tag button button_translucent" data-position=19 title="kubernetes">KUBERNETES<span class="button_tally">19</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/kubernetesnetworking/' class=" post_tag button button_translucent" data-position=1 title="kubernetesnetworking">KUBERNETESNETWORKING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/logging/' class=" post_tag button button_translucent" data-position=1 title="logging">LOGGING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/monitoring/' class=" post_tag button button_translucent" data-position=1 title="monitoring">MONITORING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/networking/' class=" post_tag button button_translucent" data-position=1 title="networking">NETWORKING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx/' class=" post_tag button button_translucent" data-position=6 title="nsx">NSX<span class="button_tally">6</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-advanced-loadbalancer/' class=" post_tag button button_translucent" data-position=3 title="nsx-advanced-loadbalancer">NSX-ADVANCED-LOADBALANCER<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-application-platform/' class=" post_tag button button_translucent" data-position=1 title="nsx-application-platform">NSX-APPLICATION-PLATFORM<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/nsx-t/' class=" post_tag button button_translucent" data-position=2 title="nsx-t">NSX-T<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/pinniped/' class=" post_tag button button_translucent" data-position=1 title="pinniped">PINNIPED<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/security/' class=" post_tag button button_translucent" data-position=1 title="security">SECURITY<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/tanzu/' class=" post_tag button button_translucent" data-position=3 title="tanzu">TANZU<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmare-nsx-intelligence/' class=" post_tag button button_translucent" data-position=1 title="vmare-nsx-intelligence">VMARE-NSX-INTELLIGENCE<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmware-cloud/' class=" post_tag button button_translucent" data-position=1 title="vmware-cloud">VMWARE-CLOUD<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vmware-nsx/' class=" post_tag button button_translucent" data-position=7 title="vmware-nsx">VMWARE-NSX<span class="button_tally">7</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/categories/vsphere/' class=" post_tag button button_translucent" data-position=1 title="vsphere">VSPHERE<span class="button_tally">1</span>
+            </a>
+            
+            <div class="tags_sort"><span title="sort alphabetically">[A~Z]</span><span title="sort by count">[0~9]</span>
+            </div>
+            <span class="tags_hide"><svg class="icon">
+            <use xlink:href="#closeme"></use>
+          </svg></span>
+          </div>
+        </div>
+      </nav>
+    </div>
+    <div>
+      <h2 class="mt-4 taxonomy" id="tags-section">Tags</h2>
+      <nav class="tags_nav">
+        <a href='https://yikes.guzware.net/tags/informational/' class="post_tag button button_translucent" title="informational">
+          INFORMATIONAL
+          <span class="button_tally">8</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/howto/' class="post_tag button button_translucent" title="howto">
+          HOWTO
+          <span class="button_tally">5</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/configurations/' class="post_tag button button_translucent" title="configurations">
+          CONFIGURATIONS
+          <span class="button_tally">4</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/authentication/' class="post_tag button button_translucent" title="authentication">
+          AUTHENTICATION
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/cert-manager/' class="post_tag button button_translucent" title="cert-manager">
+          CERT-MANAGER
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/kubernetes/' class="post_tag button button_translucent" title="kubernetes">
+          KUBERNETES
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/rbac/' class="post_tag button button_translucent" title="rbac">
+          RBAC
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/tanzu/' class="post_tag button button_translucent" title="tanzu">
+          TANZU
+          <span class="button_tally">3</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/deployment/' class="post_tag button button_translucent" title="deployment">
+          DEPLOYMENT
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/issues/' class="post_tag button button_translucent" title="issues">
+          ISSUES
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/troubleshooting/' class="post_tag button button_translucent" title="troubleshooting">
+          TROUBLESHOOTING
+          <span class="button_tally">2</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/ako/' class="post_tag button button_translucent" title="ako">
+          AKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/amko/' class="post_tag button button_translucent" title="amko">
+          AMKO
+          <span class="button_tally">1</span>
+        </a>
+        
+        <a href='https://yikes.guzware.net/tags/antrea/' class="post_tag button button_translucent" title="antrea">
+          ANTREA
+          <span class="button_tally">1</span>
+        </a>
+        
+        
+        <br>
+        <div class="post_tags_toggle button">All Tags</div>
+        <div class="post_tags">
+          <div class="tags_list">
+            
+            <a href='https://yikes.guzware.net/tags/ako/' class=" post_tag button button_translucent" data-position=1 title="ako">AKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/amko/' class=" post_tag button button_translucent" data-position=1 title="amko">AMKO<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/antrea/' class=" post_tag button button_translucent" data-position=1 title="antrea">ANTREA<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/authentication/' class=" post_tag button button_translucent" data-position=3 title="authentication">AUTHENTICATION<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/avi/' class=" post_tag button button_translucent" data-position=1 title="avi">AVI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/cert-manager/' class=" post_tag button button_translucent" data-position=3 title="cert-manager">CERT-MANAGER<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/cni/' class=" post_tag button button_translucent" data-position=1 title="cni">CNI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/configuration/' class=" post_tag button button_translucent" data-position=1 title="configuration">CONFIGURATION<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/configurations/' class=" post_tag button button_translucent" data-position=4 title="configurations">CONFIGURATIONS<span class="button_tally">4</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/deployment/' class=" post_tag button button_translucent" data-position=2 title="deployment">DEPLOYMENT<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/fails/' class=" post_tag button button_translucent" data-position=1 title="fails">FAILS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/grafana/' class=" post_tag button button_translucent" data-position=1 title="grafana">GRAFANA<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/howto/' class=" post_tag button button_translucent" data-position=5 title="howto">HOWTO<span class="button_tally">5</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/informational/' class=" post_tag button button_translucent" data-position=8 title="informational">INFORMATIONAL<span class="button_tally">8</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/ingress/' class=" post_tag button button_translucent" data-position=1 title="ingress">INGRESS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/issues/' class=" post_tag button button_translucent" data-position=2 title="issues">ISSUES<span class="button_tally">2</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/just-for-fun/' class=" post_tag button button_translucent" data-position=1 title="just-for-fun">JUST-FOR-FUN<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/k8s/' class=" post_tag button button_translucent" data-position=1 title="k8s">K8S<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/kubernetes/' class=" post_tag button button_translucent" data-position=3 title="kubernetes">KUBERNETES<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/loadbalancing/' class=" post_tag button button_translucent" data-position=1 title="loadbalancing">LOADBALANCING<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/loki/' class=" post_tag button button_translucent" data-position=1 title="loki">LOKI<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/network-policies/' class=" post_tag button button_translucent" data-position=1 title="network-policies">NETWORK-POLICIES<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/nsx/' class=" post_tag button button_translucent" data-position=1 title="nsx">NSX<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/nsx-advanced-loadbalancer/' class=" post_tag button button_translucent" data-position=1 title="nsx-advanced-loadbalancer">NSX-ADVANCED-LOADBALANCER<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/prometheus/' class=" post_tag button button_translucent" data-position=1 title="prometheus">PROMETHEUS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/promtail/' class=" post_tag button button_translucent" data-position=1 title="promtail">PROMTAIL<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/rbac/' class=" post_tag button button_translucent" data-position=3 title="rbac">RBAC<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/security/' class=" post_tag button button_translucent" data-position=1 title="security">SECURITY<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/tanzu/' class=" post_tag button button_translucent" data-position=3 title="tanzu">TANZU<span class="button_tally">3</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/tipstricks/' class=" post_tag button button_translucent" data-position=1 title="tipstricks">TIPSTRICKS<span class="button_tally">1</span>
+            </a>
+            
+            
+            <a href='https://yikes.guzware.net/tags/troubleshooting/' class=" post_tag button button_translucent" data-position=2 title="troubleshooting">TROUBLESHOOTING<span class="button_tally">2</span>
+            </a>
+            
+            <div class="tags_sort"><span title="sort alphabetically">[A~Z]</span><span title="sort by count">[0~9]</span>
+            </div>
+            <span class="tags_hide"><svg class="icon">
+            <use xlink:href="#closeme"></use>
+          </svg></span>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </section>
+</aside>
+
+  
+</div>
+    </main><svg width="0" height="0" class="hidden">
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="facebook">
+    <path d="M437 0H75C33.648 0 0 33.648 0 75v362c0 41.352 33.648 75 75 75h151V331h-60v-90h60v-61c0-49.629 40.371-90 90-90h91v90h-91v61h91l-15 90h-76v181h121c41.352 0 75-33.648 75-75V75c0-41.352-33.648-75-75-75zm0 0"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18.001 18.001" id="twitter">
+    <path d="M15.891 4.013c.808-.496 1.343-1.173 1.605-2.034a8.68 8.68 0 0 1-2.351.861c-.703-.756-1.593-1.14-2.66-1.14-1.043 0-1.924.366-2.643 1.078a3.56 3.56 0 0 0-1.076 2.605c0 .309.039.585.117.819-3.076-.105-5.622-1.381-7.628-3.837-.34.601-.51 1.213-.51 1.846 0 1.301.549 2.332 1.645 3.089-.625-.053-1.176-.211-1.645-.47 0 .929.273 1.705.82 2.388a3.623 3.623 0 0 0 2.115 1.291c-.312.08-.641.118-.979.118-.312 0-.533-.026-.664-.083.23.757.664 1.371 1.291 1.841a3.652 3.652 0 0 0 2.152.743C4.148 14.173 2.625 14.69.902 14.69c-.422 0-.721-.006-.902-.038 1.697 1.102 3.586 1.649 5.676 1.649 2.139 0 4.029-.542 5.674-1.626 1.645-1.078 2.859-2.408 3.639-3.974a10.77 10.77 0 0 0 1.172-4.892v-.468a7.788 7.788 0 0 0 1.84-1.921 8.142 8.142 0 0 1-2.11.593z"
+      ></path>
+  </symbol>
+  <symbol aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="mail">
+    <path  d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="calendar">
+    <path d="M452 40h-24V0h-40v40H124V0H84v40H60C26.916 40 0 66.916 0 100v352c0 33.084 26.916 60 60 60h392c33.084 0 60-26.916 60-60V100c0-33.084-26.916-60-60-60zm20 412c0 11.028-8.972 20-20 20H60c-11.028 0-20-8.972-20-20V188h432v264zm0-304H40v-48c0-11.028 8.972-20 20-20h24v40h40V80h264v40h40V80h24c11.028 0 20 8.972 20 20v48z"></path>
+    <path d="M76 230h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zM76 310h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zM76 390h40v40H76zm80 0h40v40h-40zm80 0h40v40h-40zm80 0h40v40h-40zm80-80h40v40h-40z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="github">
+    <path d="M255.968 5.329C114.624 5.329 0 120.401 0 262.353c0 113.536 73.344 209.856 175.104 243.872 12.8 2.368 17.472-5.568 17.472-12.384 0-6.112-.224-22.272-.352-43.712-71.2 15.52-86.24-34.464-86.24-34.464-11.616-29.696-28.416-37.6-28.416-37.6-23.264-15.936 1.728-15.616 1.728-15.616 25.696 1.824 39.2 26.496 39.2 26.496 22.848 39.264 59.936 27.936 74.528 21.344 2.304-16.608 8.928-27.936 16.256-34.368-56.832-6.496-116.608-28.544-116.608-127.008 0-28.064 9.984-51.008 26.368-68.992-2.656-6.496-11.424-32.64 2.496-68 0 0 21.504-6.912 70.4 26.336 20.416-5.696 42.304-8.544 64.096-8.64 21.728.128 43.648 2.944 64.096 8.672 48.864-33.248 70.336-26.336 70.336-26.336 13.952 35.392 5.184 61.504 2.56 68 16.416 17.984 26.304 40.928 26.304 68.992 0 98.72-59.84 120.448-116.864 126.816 9.184 7.936 17.376 23.616 17.376 47.584 0 34.368-.32 62.08-.32 70.496 0 6.88 4.608 14.88 17.6 12.352C438.72 472.145 512 375.857 512 262.353 512 120.401 397.376 5.329 255.968 5.329z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 212" id="gitlab">
+    <path d="M12.3 74.7h54L43.3 3c-1-3.6-6.4-3.6-7.6 0L12.3 74.8z" />
+    <path d="M12.3 74.7L.5 111c-1 3.2 0 6.8 3 8.8l101.6 74-92.5-119z"/>
+    <path d="M105 193.7l-38.6-119h-54l92.7 119z"/>
+    <path d="M105 193.7l38.7-119H66.4l38.7 119z"/>
+    <path d="M105 193.7l38.7-119H198l-93 119z"/>
+    <path d="M198 74.7l11.6 36.2c1 3 0 6.6-3 8.6l-101.5 74 93-119z"/>
+    <path d="M198 74.7h-54.3L167 3c1.2-3.6 6.4-3.6 7.6 0L198 74.8z"/> 
+  </symbol>
+  <symbol viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="rss">
+    <circle cx="3.429" cy="20.571" r="3.429"></circle>
+    <path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8v4.572c6.302.001 11.429 5.126 11.429 11.428z"></path>
+    <path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.43 8.714 19.43 19.429z"></path>
+  </symbol>
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="linkedin">
+    <path d="M437 0H75C33.648 0 0 33.648 0 75v362c0 41.352 33.648 75 75 75h362c41.352 0 75-33.648 75-75V75c0-41.352-33.648-75-75-75zM181 406h-60V196h60zm0-240h-60v-60h60zm210 240h-60V286c0-16.54-13.46-30-30-30s-30 13.46-30 30v120h-60V196h60v11.309C286.719 202.422 296.93 196 316 196c40.691.043 75 36.547 75 79.688zm0 0"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 612 612" id="to-top">
+    <path d="M604.501 440.509L325.398 134.956c-5.331-5.357-12.423-7.627-19.386-7.27-6.989-.357-14.056 1.913-19.387 7.27L7.499 440.509c-9.999 10.024-9.999 26.298 0 36.323s26.223 10.024 36.222 0l262.293-287.164L568.28 476.832c9.999 10.024 26.222 10.024 36.221 0 9.999-10.023 9.999-26.298 0-36.323z"></path>
+  </symbol>
+  <symbol viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="carly">
+    <path d="M504.971 239.029L448 182.059V84c0-46.317-37.682-84-84-84h-44c-13.255 0-24 10.745-24 24s10.745 24 24 24h44c19.851 0 36 16.149 36 36v108c0 6.365 2.529 12.47 7.029 16.971L454.059 256l-47.029 47.029A24.002 24.002 0 0 0 400 320v108c0 19.851-16.149 36-36 36h-44c-13.255 0-24 10.745-24 24s10.745 24 24 24h44c46.318 0 84-37.683 84-84v-98.059l56.971-56.971c9.372-9.372 9.372-24.568 0-33.941zM112 192V84c0-19.851 16.149-36 36-36h44c13.255 0 24-10.745 24-24S205.255 0 192 0h-44c-46.318 0-84 37.683-84 84v98.059l-56.971 56.97c-9.373 9.373-9.373 24.568 0 33.941L64 329.941V428c0 46.317 37.682 84 84 84h44c13.255 0 24-10.745 24-24s-10.745-24-24-24h-44c-19.851 0-36-16.149-36-36V320c0-6.365-2.529-12.47-7.029-16.971L57.941 256l47.029-47.029A24.002 24.002 0 0 0 112 192z"></path>
+  </symbol>
+  <symbol viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="copy">
+    <path d="M23 2.75A2.75 2.75 0 0 0 20.25 0H8.75A2.75 2.75 0 0 0 6 2.75v13.5A2.75 2.75 0 0 0 8.75 19h11.5A2.75 2.75 0 0 0 23 16.25zM18.25 14.5h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5zm0-3h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5zm0-3h-7.5a.75.75 0 0 1 0-1.5h7.5a.75.75 0 0 1 0 1.5z"></path>
+    <path d="M8.75 20.5a4.255 4.255 0 0 1-4.25-4.25V2.75c0-.086.02-.166.025-.25H3.75A2.752 2.752 0 0 0 1 5.25v16A2.752 2.752 0 0 0 3.75 24h12a2.752 2.752 0 0 0 2.75-2.75v-.75z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.001 512.001" id="closeme">
+    <path d="M284.286 256.002L506.143 34.144c7.811-7.811 7.811-20.475 0-28.285-7.811-7.81-20.475-7.811-28.285 0L256 227.717 34.143 5.859c-7.811-7.811-20.475-7.811-28.285 0-7.81 7.811-7.811 20.475 0 28.285l221.857 221.857L5.858 477.859c-7.811 7.811-7.811 20.475 0 28.285a19.938 19.938 0 0 0 14.143 5.857 19.94 19.94 0 0 0 14.143-5.857L256 284.287l221.857 221.857c3.905 3.905 9.024 5.857 14.143 5.857s10.237-1.952 14.143-5.857c7.811-7.811 7.811-20.475 0-28.285L284.286 256.002z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="open-menu">
+    <path d="M492 236H20c-11.046 0-20 8.954-20 20s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20zm0-160H20C8.954 76 0 84.954 0 96s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20zm0 320H20c-11.046 0-20 8.954-20 20s8.954 20 20 20h472c11.046 0 20-8.954 20-20s-8.954-20-20-20z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="instagram">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id=youtube>
+    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="stackoverflow">
+    <path d="M21 27v-8h3v11H0V19h3v8h18z"></path><path d="M17.1.2L15 1.8l7.9 10.6 2.1-1.6L17.1.2zm3.7 14.7L10.6 6.4l1.7-2 10.2 8.5-1.7 2zM7.2 12.3l12 5.6 1.1-2.4-12-5.6-1.1 2.4zm-1.8 6.8l13.56 1.96.17-2.38-13.26-2.55-.47 2.97zM19 25H5v-3h14v3z"></path>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="xing">
+    <path d="M18.188 0c-.517 0-.741.325-.927.66 0 0-7.455 13.224-7.702 13.657.015.024 4.919 9.023 4.919 9.023.17.308.436.66.967.66h3.454c.211 0 .375-.078.463-.22.089-.151.089-.346-.009-.536l-4.879-8.916c-.004-.006-.004-.016 0-.022L22.139.756c.095-.191.097-.387.006-.535C22.056.078 21.894 0 21.686 0h-3.498zM3.648 4.74c-.211 0-.385.074-.473.216-.09.149-.078.339.02.531l2.34 4.05c.004.01.004.016 0 .021L1.86 16.051c-.099.188-.093.381 0 .529.085.142.239.234.45.234h3.461c.518 0 .766-.348.945-.667l3.734-6.609-2.378-4.155c-.172-.315-.434-.659-.962-.659H3.648v.016z"/>
+  </symbol>
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 71 55" id="discord">
+    <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z"/>
+  </symbol>
+</svg>
+
+
+<footer class="footer">
+  <div class="footer_inner wrap pale">
+    <img src='https://yikes.guzware.net/icons/apple-touch-icon.png' class="icon icon_2 transparent" alt="From 0.985mhz... to several Ghz">
+    <p>Copyright&nbsp;2016-&nbsp;<span class="year"></span>&nbsp;FROM 0.985MHZ... TO SEVERAL GHZ. All Rights Reserved</p><a class="to_top" href="#documentTop">
+  <svg class="icon">
+  <title>to-top</title>
+  <use xlink:href="#to-top"></use>
+</svg>
+
+</a>
+
+  </div>
+</footer>
+
+<script type="text/javascript" src="https://yikes.guzware.net/en/js/bundle.597a98a0532def1db904a0a3d3c07e7f9d783e74aca99a317bb98a2c3a0889eacc7a71bc353347f2604d4d61e00d90babdc933cc1fa4a3bdcee857c1e2237b27.js" integrity="sha512-WXqYoFMt7x25BKCj08B&#43;f514PnSsqZoxe7mKLDoIierMenG8NTNH8mBNTWHgDZC6vckzzB&#43;ko73O6FfB4iN7Jw==" crossorigin="anonymous"></script>
+
+  <script src="https://yikes.guzware.net/js/search.min.df4d84e4983f0c71dd495e07a09815d920553c3ddf3d0767801c73373573aa17e1b489e4453272dbf4ce2a38a3d01a10b170744e50dd6bec85a598221867ba9a.js"></script>
+
+  </body>
+</html>

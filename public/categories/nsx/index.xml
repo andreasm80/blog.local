@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>nsx on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/categories/nsx/</link>
+    <description>Recent content in nsx on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Tue, 11 Oct 2022 21:38:27 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/categories/nsx/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>NSX Antrea Integration</title>
+      <link>https://yikes.guzware.net/2022/10/11/nsx-antrea-integration/</link>
+      <pubDate>Tue, 11 Oct 2022 21:38:27 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/11/nsx-antrea-integration/</guid>
+      <description>
+        
+          
+            What is the NSX Antrea integration Assumptions: I assume that the reader is aware of what Antrea is, and what a CNI is and also what NSX is. If not head over here to read more on Antrea and here to read more on NSX.
+For many years VMware NSX has help many customer secure their workload by using the NSX Distributed Firewall. As NSX has evolved over the years the different platform it supports has also broadened, from virtual machines, bare metal server, cloud workload and kubernetes pods.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>Managing your Antrea K8s clusters running in VMC from your on-prem NSX Manager</title>
+      <link>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</link>
+      <pubDate>Sun, 13 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/03/13/managing-your-antrea-k8s-clusters-running-in-vmc-from-your-on-prem-nsx-manager/</guid>
+      <description>
+        
+          
+            This week I was fortunate to get hold of a VMC on AWS environment and wanted to test out the possibility of managing my K8s security policies from my on-prem NSX manager by utilizing the integration of Antrea in NSX. I haven&#39;t covered that specific integration part in a blog yet, but in short: by using Antrea as your CNI and you are running NSX-T 3.2 you can manage all your K8s policies from the NSX manager GUI.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware NSX Application Platform</title>
+      <link>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</link>
+      <pubDate>Tue, 18 Jan 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/01/18/vmware-nsx-application-platform/</guid>
+      <description>
+        
+          
+            VMware NSX 3.2 is out and packed with new features. One of them is the NSX Application Platform which runs on Kubernetes to provide the NSX ATP (Advanced Threat Protection) functionality such as NSX Intelligence (covered in a previous post), NSX Network Detection and Response (NDR) and NSX Malware. This post will go through how to spin up a K8s cluster for this specific scenario covering the pre-reqs from start to finish.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>VMware NSX IDS &amp; IPS</title>
+      <link>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</link>
+      <pubDate>Tue, 19 Oct 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/10/19/vmware-nsx-ids-ips/</guid>
+      <description>
+        
+          
+            This post will go through the IDS/IPS built-in feature of the NSX distributed firewall.
+Abbreviations used in this article:
+IDS = Intrusion Detection System IPS = Intrusion Prevention System Introduction to VMware NSX distributed IDS &amp;amp; IPS Before we dive into how to configure and use the distributed IDS and IPS feature in NSX let me just go through the basics where I compare the traditional approach with IDS/IPS and the NSX distributed IDS/IPS.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>NSX Intelligence - quick overview</title>
+      <link>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</link>
+      <pubDate>Sat, 10 Jul 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2021/07/10/nsx-intelligence-quick-overview/</guid>
+      <description>
+        
+          
+            When starting out a microsegmentation journey with VMware NSX it will be very important to have a tool that gives you all the visibility and insight you need. This is crucial if you dont know your applications requirements in detail and to make the right decisions in defining your NSX security policies.
+NSX Intelligence is your tool for that. This post is just to show a couple of screenshots of how it looks, and the next post will go more into detail how it works and how to use it.
+          
+          
+        
+      </description>
+    </item>
+    
+    <item>
+      <title>&#34;General Error&#34; NSX-T Manager Firewall Section</title>
+      <link>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</link>
+      <pubDate>Wed, 05 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://yikes.guzware.net/2018/09/05/general-error-nsx-t-manager-firewall-section/</guid>
+      <description>
+        
+          
+            If you have missing objects in the firewall section before upgrading from NSX-T 2.1 to 2.2 you will experience a General Error in the GUI, on the Dashboard, and in the Firewall section of the GUI. You will even get general error when doing API calls to list the DFW sections https://NSXMGRIP/api/v1/firewall/sections: { &amp;quot;module\_name&amp;quot; : &amp;quot;common-services&amp;quot;, &amp;quot;error\_message&amp;quot; : &amp;quot;General error has occurred.&amp;quot;, &amp;quot;details&amp;quot; : &amp;quot;java.lang.NullPointerException&amp;quot;, &amp;quot;error\_code&amp;quot; : &amp;quot;100&amp;quot; }
+If you have upgraded the fix is straight forward.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

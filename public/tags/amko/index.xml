@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>AMKO on From 0.985mhz... to several Ghz</title>
+    <link>https://yikes.guzware.net/tags/amko/</link>
+    <description>Recent content in AMKO on From 0.985mhz... to several Ghz</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>guzware.net</copyright>
+    <lastBuildDate>Sun, 23 Oct 2022 08:22:35 +0200</lastBuildDate><atom:link href="https://yikes.guzware.net/tags/amko/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>GSLB With AKO &amp; AMKO - NSX Advanced LoadBalancer</title>
+      <link>https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/</link>
+      <pubDate>Sun, 23 Oct 2022 08:22:35 +0200</pubDate>
+      
+      <guid>https://yikes.guzware.net/2022/10/23/gslb-with-ako-amko-nsx-advanced-loadbalancer/</guid>
+      <description>
+        
+          
+            Global Server LoadBalancing in VMware Tanzu with AMKO This post will go through how to configure AVI (NSX ALB) with GSLB in vSphere with Tanzu (TKGs) and an upstream k8s cluster in two different physical locations. I have already covered AKO in my previous posts, this post will assume knowledge of AKO (Avi Kubernetes Operator) and extend upon that with the use of AMKO (Avi Multi-Cluster Kubernetes Operator). The goal is to have the ability to scale my k8s applications between my &amp;quot;sites&amp;quot; and make them geo-redundant.
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>
