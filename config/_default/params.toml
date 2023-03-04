@@ -14,7 +14,7 @@ toc = true
 #enableEmoji = true
 # Google analytics Id
 ga_analytics = "G-TVPYDVE8KR"
-
+google_tag_manager_id = "GT-MJSZF9W"
 # Baidu analytics Id
 # baidu_analytics = "XXXXXXXX"
 
