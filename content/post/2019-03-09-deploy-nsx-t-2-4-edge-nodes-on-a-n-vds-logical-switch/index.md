@@ -3,10 +3,10 @@ title: "Deploy NSX-T 2.4 Edge Nodes on a N-VDS Logical Switch"
 date: "2019-03-09"
 thumbnail: "/images/VMW-NSX-Logo1.jpg"
 categories: 
-  - "nsx-t"
-  - "vmware nsx"
+  - Networking
+  - Troubleshooting
 tags: 
-  - "configurations"
+  - nsx
   
 ---
 

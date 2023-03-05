@@ -3,11 +3,11 @@ title: "vSphere Replication 6.1.2 vCenter plugin fails after upgrade (vCenter 6.
 date: "2017-04-10"
 thumbnail: "/images/vmware-vsphere-6.png"
 categories: 
-  - "vSphere"
+  - Virtualization
 tags: 
-  - "troubleshooting"
-  - "issues"
-  - "fails"
+  - troubleshooting
+  - vsphere
+  - vsphere-replication
 ---
 
 After upgrading vCenter (VCSA) to 6.0 U3 and upgrading the vSphere Replication Appliance to 6.1.2 the plugin in vCenter stops working. Follow this [KB](https://kb.vmware.com/selfservice/microsites/search.do?language=en\_US&cmd=displayKC&externalId=2149560)

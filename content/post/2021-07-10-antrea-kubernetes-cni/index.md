@@ -3,10 +3,12 @@ title: "Antrea - Kubernetes CNI"
 date: "2021-07-10"
 thumbnail: "/images/antrea-stacked-color.webp"
 categories: 
-  - "antrea"
-  - "kubernetesnetworking"
+  - Kubernetes
+  - Networking
+  - CNI
 tags:
-  - informational
+  - antrea
+  - kubernetes
 ---
 
 ![Antrea Overview](images/antrea_overview.svg.png)

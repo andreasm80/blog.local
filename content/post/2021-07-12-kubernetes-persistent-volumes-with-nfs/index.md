@@ -4,9 +4,13 @@ date: "2021-07-12"
 thumbnail: "/images/k8sfavicon.png"
 toc: true
 categories: 
-  - "kubernetes"
+  - Kubernetes
+  - Storage
 tags: 
-  - "configurations"
+  - persistent-storage
+  - kubernetes
+  - nfs
+  - pvc
 ---
 
 ## Use NFS for your PVC needs

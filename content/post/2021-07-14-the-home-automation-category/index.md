@@ -3,9 +3,11 @@ title: "The Home Automation category"
 date: "2021-07-14"
 thumbnail: "/images/home-assistant.png"
 categories: 
-  - "homeautomation"
+  - Home-Automation
 tags:
-  - tips&tricks
+  - home-assistant
+  - zwave
+  - automation
 
 ---
 

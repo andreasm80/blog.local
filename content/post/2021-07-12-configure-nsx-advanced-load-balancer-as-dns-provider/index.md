@@ -3,11 +3,14 @@ title: "Configure NSX Advanced Load Balancer (NSX-ALB) as DNS provider"
 date: "2021-07-12"
 thumbnail: "/images/avi-networks-now-part-of-vmware.png"
 categories: 
-  - "nsx advanced loadbalancer"
-  - "kubernetes"
+  - Networking
+  - Kubernetes
+  - Loadbalancing
 tags: 
-  - "informational"
-  - "configurations"
+  - avi
+  - ako
+  - loadbalancing
+  - dns-service
 ---
 
 NSX ALB has a very useful feature built-in, to function as DNS server for your domains defined in your NSX-ALB environment. Meaning that all host-records will be automatically resolved by fqdn as soon as the service is created.
@@ -20,7 +23,7 @@ Create a profile (if you dont already have one) give it a name and add one or mo
 
 ![](images/image-8-1024x478.png)
 
-  
+
 After you have configured a DNS profile head over to -> Administration -> Settings -> DNS Service in the controller GUI to create the DNS Virtual Service:  
 
 ![](images/image-1024x339.png)
@@ -35,7 +38,7 @@ Give the service a name, and adjust accordingly. I have done some adjustment to 
 
 ![](images/image-2-1024x529.png)
 
-  
+
 Leave Policies and Analytics as is. Under Advanced you choose your SE pool where your DNS VS should live. As a best practice the DNS SE should not be shared with other VS'es. So create a dedicated pool for the DNS-VS and if resources are scarce you can defined the SE group to only contain one SE (no redundancy for DNS VS though).  
 
 ![](images/image-3-1024x305.png)
@@ -51,5 +54,5 @@ Ping the dns name
 
 ![](images/image-6-1024x104.png)
 
-  
+
 That's it. Now NSX-ALB handles all your DNS records for you. If you want your backend DNS servers to forward the request to NSX-ALB head over to your DNS servers and either add a Conditional forwarder for your domains or add a Delegated zone as a sub-domain and point to your DNS-VS VIP.

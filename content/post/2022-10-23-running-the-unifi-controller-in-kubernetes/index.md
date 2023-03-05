@@ -9,10 +9,11 @@ toc: true
 thumbnail: "/images/unifi_small.png" # Sets thumbnail image appearing inside card on homepage.
 categories:
   - Kubernetes
+  - Networking
 tags:
-  - cert-manager
-  - Authentication
-  - RBAC 
+  - unifi
+  - loadbalancer
+  - docker
 
 comment: false # Disable comment if false.
 ---

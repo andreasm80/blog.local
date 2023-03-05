@@ -9,9 +9,12 @@ toc: true
 thumbnail: "/images/logo-vmware-tanzu.png" # Sets thumbnail image appearing inside card on homepage.
 categories:
   - Tanzu
+  - AVI
 tags:
-  - K8s
-  - Tanzu
+  - kubernetes
+  - tanzu
+  - loadbalancing
+  - ingress
 
 comment: false # Disable comment if false.
 ---

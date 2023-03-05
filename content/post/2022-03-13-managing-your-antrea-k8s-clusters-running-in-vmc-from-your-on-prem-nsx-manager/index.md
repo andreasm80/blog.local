@@ -4,13 +4,15 @@ date: "2022-03-13"
 toc: true
 thumbnail: "/images/VMware-on-AWS-3-2_transp.png"
 categories: 
-  - "vmware cloud"
-  - "antrea"
-  - "nsx"
-  - "vmware nsx"
-  - "kubernetes"
+  - VMware-Cloud
+  - Networking
+  - Kubernetes
+  - Security
 tags:
-  - "informational"
+  - antrea
+  - nsx
+  - vmconaws
+  - security
 ---
 
 This week I was fortunate to get hold of a VMC on AWS environment and wanted to test out the possibility of managing my K8s security policies from my on-prem NSX manager by utilizing the integration of Antrea in NSX. I haven't covered that specific integration part in a blog yet, but in short: by using Antrea as your CNI and you are running NSX-T 3.2 you can manage all your K8s policies from the NSX manager GUI. Thats a big thing. Manage your k8s policies from the same place where you manage all your other critical security policies. Your K8s clusters does not have to be in the same datacenter as your NSX manager. You can utilize VMC on AWS as your scale-out, prod/test/dev platform and still manage your K8s security policies centrally from the same NSX manager.  

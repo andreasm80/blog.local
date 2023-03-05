@@ -9,8 +9,12 @@ thumbnail: "/images/Pinniped-logo-2.png"
 categories:
   - Kubernetes
   - Pinniped
+  - RBAC
 tags:
-  - howto
+  - rbac
+  - authentication
+  - pinniped
+  - kubernetes
 
 comment: false # Disable comment if false.
 ---

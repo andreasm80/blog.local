@@ -12,8 +12,10 @@ categories:
   - Blog
   - hugo
 tags:
-  - "howto"
-  - "just for fun"
+  - hugo
+  - static-content-generator
+  - docker
+  - kubernetes
 
 
 comment: false # Disable comment if false.

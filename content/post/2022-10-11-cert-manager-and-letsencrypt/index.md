@@ -8,8 +8,11 @@ toc: true
 thumbnail: "/images/cert.crypt3.png"
 categories:
   - Kubernetes
+  - Certificate
 tags:
-  - howto
+  - cert-manager
+  - certificate
+  - kubernetes
  
 
 comment: false # Disable comment if false.

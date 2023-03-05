@@ -4,13 +4,15 @@ date: "2020-10-08"
 thumbnail: "/images/avi-networks-now-part-of-vmware.png"
 toc: true
 categories: 
-  - "avi"
-  - "nsx-advanced-loadbalancer"
-  - "kubernetes"
-  - "antrea"
+  - Networking
+  - Loadbalancing
+  - Kubernetes
+  - CNI
 tags: 
-  - "deployment"
-  - "howto"
+  - kubernetes
+  - avi
+  - ako
+  - antrea
 ---
 
 This post will cover the steps to bring up a Kubernetes cluster in Ubuntu, then how to install and configure Antrea as CNI and how to install and configure NSX Advanced Load Balancer to use as a servicetype Load Balancer in the k8s environment with the use of Avi Kubernetes Operator.  

@@ -8,12 +8,13 @@ toc: true
 thumbnail: "/images/ant.nsx_transp1.png"
 categories:
   - Kubernetes
-  - NSX
-  - Antrea
+  - Networking
+  - CNI
 tags:
   - security
-  - network policies
-  - cni
+  - network-policies
+  - antrea
+  - nsx
 
 comment: false # Disable comment if false.
 ---

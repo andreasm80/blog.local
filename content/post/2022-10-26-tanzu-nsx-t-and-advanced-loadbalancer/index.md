@@ -10,11 +10,15 @@ thumbnail: "/images/logo-vmware-tanzu.png" # Sets thumbnail image appearing insi
 categories:
   - Kubernetes
   - Tanzu
-tags:
-  - Tanzu
-  - Kubernetes
+  - Networking
   - NSX
-  - Avi
+  - AVI
+tags:
+  - tanzu
+  - kubernetes
+  - network
+  - lodbalancing
+  - ingress
 
 comment: false # Disable comment if false.
 ---

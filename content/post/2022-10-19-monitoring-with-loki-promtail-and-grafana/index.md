@@ -8,9 +8,9 @@ toc: true
 featureimage: "/images/loki.png"
 thumbnail: "/images/loki.png" # Sets thumbnail image appearing inside card on homepage.
 categories:
-  - kubernetes
-  - monitoring
-  - logging
+  - Kubernetes
+  - Monitoring
+  - Logging
 tags:
   - loki
   - grafana

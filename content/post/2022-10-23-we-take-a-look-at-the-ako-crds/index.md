@@ -9,10 +9,12 @@ toc: true
 thumbnail: "/images/avi_networks.png" # Sets thumbnail image appearing inside card on homepage.
 categories:
   - Kubernetes
+  - AVI
+  - Loadbalancing
 tags:
-  - cert-manager
-  - Authentication
-  - RBAC 
+  - ako
+  - custom-resource-definitions
+  - kubernetes
 
 comment: false # Disable comment if false.
 ---

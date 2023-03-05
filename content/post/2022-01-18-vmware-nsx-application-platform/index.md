@@ -4,12 +4,13 @@ date: "2022-01-18"
 thumbnail: "/images/icon-prod-nsx-service-defined-firewall-rgb-400px.svg"
 toc: true
 categories: 
-  - "nsx"
-  - "vmware nsx"
-  - "nsx application platform"
+  - Kubernetes
+  - Networking
+  - NSX
 tags: 
-  - "deployment"
-  - "configuration"
+  - nsx
+  - nsx-application-platform
+  - security
 
 ---
 

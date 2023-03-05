@@ -9,13 +9,13 @@ toc: true
 thumbnail: "/images/harbor-icon-color.png" 
 toc: true
 categories:
-  - harbor
-  - kubernetes
-  - helm
-  - docker
+  - Harbor
+  - Kubernetes
+  - Helm
+  - Docker
 tags:
-  - informational
-  - howto
+  - harbor
+  - registry
 
 comment: false # Disable comment if false.
 ---

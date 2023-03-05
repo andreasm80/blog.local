@@ -4,10 +4,13 @@ date: "2021-10-19"
 toc: true
 thumbnail: "/images/icon-prod-nsx-ids-ips-rgb-400px.svg"
 categories: 
-  - "nsx"
-  - "vmware nsx"
+  - Netowkring
+  - Security
 tags: 
-  - "informational"
+  - nsx
+  - ids
+  - ips
+  - security
 ---
 
 This post will go through the IDS/IPS built-in feature of the NSX distributed firewall.

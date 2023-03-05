@@ -4,12 +4,15 @@ date: "2021-07-11"
 thumbnail: "/images/avi-networks-now-part-of-vmware.png"
 toc: true
 categories: 
-  - "avi"
-  - "nsx advanced loadbalancer"
-  - "kubernetes"
-  - "ako"
+  - Networking
+  - Loadbalancing
+  - Kubernetes
 tags: 
-  - "configurations"
+  - avi
+  - ako
+  - ingress
+  - kubernetes
+
 ---
 
 **Abbreviations used in this article:**  

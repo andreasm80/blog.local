@@ -8,7 +8,6 @@ toc: true
 #featureimage: ""
 thumbnail: "/images/GitHub-Logo300px.png" # Sets thumbnail image appearing inside card on homepage.
 categories:
-  - Hugo
   - Blog
   - Github
 tags:

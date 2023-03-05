@@ -4,11 +4,13 @@ date: "2021-07-10"
 thumbnail: "/images/antrea-stacked-color3.webp"
 toc: true
 categories: 
-  - "antrea"
-  - "kubernetes"
-  - "security"
+  - Networking
+  - Kubernetes
+  - Security
 tags:
-  - "informational"
+  - network-policies
+  - antrea
+  - security
 weight: 1
 ---
 

@@ -10,10 +10,11 @@ thumbnail: "/images/antrea-stacked-color3.webp" # Sets thumbnail image appearing
 categories:
   - Kubernetes
   - Networking
+  - CNI
 tags:
-  - Antrea
-  - Kubernetes
-  - Tanzu
+  - antrea
+  - kubernetes
+  - tanzu
 
 comment: false # Disable comment if false.
 ---

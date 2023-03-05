@@ -9,11 +9,13 @@ toc: true
 thumbnail: "/images/avi_networks.png" # Sets thumbnail image appearing inside card on homepage.
 categories:
   - Kubernetes
-  - Ingress
+  - LoadBalancing
+  - AVI
 tags:
-  - Kubernetes
-  - Ingress
-  - Loadbalancing
+  - kubernetes
+  - ingress
+  - loadbalancing
+  - ako
 
 comment: false # Disable comment if false.
 ---

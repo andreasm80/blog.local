@@ -10,11 +10,12 @@ thumbnail: "/images/avi_networks.png" # Sets thumbnail image appearing inside ca
 categories:
   - Kubernetes
   - Tanzu
-  - GSLB
+  - Networking
+  - Loadbalancing
 tags:
-  - NSX Advanced LoadBalancer
-  - AKO
-  - AMKO 
+  - gslb
+  - ako
+  - amko 
 
 comment: false # Disable comment if false.
 ---

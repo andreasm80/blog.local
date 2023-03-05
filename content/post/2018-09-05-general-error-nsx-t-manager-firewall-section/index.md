@@ -3,11 +3,12 @@ title: "\"General Error\" NSX-T Manager Firewall Section"
 date: "2018-09-05"
 thumbnail: "/images/VMW-NSX-Logo1.jpg"
 categories: 
-  - "vmware nsx"
-  - "nsx"
+  - Networking
+  - Security
 tags:
-  - "issues" 
-  - "troubleshooting"
+  - distributed-firewall 
+  - nsx
+  - troubleshooting
 
 ---
 
