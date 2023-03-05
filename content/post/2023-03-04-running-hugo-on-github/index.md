@@ -330,5 +330,37 @@ git push
 
 ## Custom domain - Github Pages
 
-If you head over to settings in your Github Pages repository:
+If you would like to present your Github Page (aka blog page) on a different domain you happen to own head over to settings in your Github Pages repository:
+
+<img src=images/image-20230305212330371.png style="width:600px" />
+
+The on the left side click on *Pages*
+
+<img src=images/image-20230305212538007.png style="width:300px" />
+
+And in *Pages* type in your custom domain here and enable Enforce HTTPS:
+
+<img src=images/image-20230305213002385.png style="width:800px" />
+
+When you click save Github will place a file called CNAME in the root of your Github pages repository (mine andreasm80.github.io)  where the content is the dns record you have entered in the Custom Domain field above. So you would need to fetch this locally with git to be in sync again. 
+
+```bash
+# you can either enter your submodule(s) directory and run:
+git fetch 
+# or you can stay in the "root" folder and enter:
+git submodule foreach 'git fetch' 
+#which will do a fetch on all submodules
+```
+
+Now you need to go to your DNS provider and add a CNAME pointing to your Gitub pages repository name, in my case that is andreasm80.github.io. So I have created this cname record:
+
+<img src=images/image-20230305213919671.png style="width:700px" />
+
+Github will manage the certificate for your Github Page, so you dont have to worry about that either. After some minutes/hours (depending on how fast DNS is updated) your blog page will be resolved on the custom domain. Mine is https://blog.andreasm.io
+
+
+
+
+
+
 
