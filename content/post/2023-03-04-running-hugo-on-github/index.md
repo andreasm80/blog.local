@@ -264,6 +264,25 @@ Run the following commands:
 
 ```bash
 git add .
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/GitHub-Logo300px.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305091118809.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305091558280.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305092142364.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305094906285.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305100514339.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305100657366.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305100847587.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305101357702.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305112013507.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305112521903.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305113016848.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/images/image-20230305113102660.png
+	new file:   content/post/2023-03-04-running-hugo-on-github/index.md
+	modified:   public
+
+
 git commit -s -m "added content"
 git push
 ```
