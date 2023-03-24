@@ -528,7 +528,7 @@ spec:
     - name: user
       value:
         sshAuthorizedKeys:
-        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/mavk4j/oS88qv2fowMT65qwpBHUIybHz5Ra2L53zwsv/5yvUej48QLmyAalSNNeH+FIKTkFiuX/WjsHiCI0JoMeVLx5CFwmpSiNzF5ITZ9MFisn5dqpc/6x8=
+        - ssh-rsa 88qv2fowMT65qwpBHUIybHz5Ra2L53zwsv/5yvUej48QLmyAalSNNeH+FIKTkFiuX/WjsHiCIMFisn5dqpc/6x8=
     - name: controlPlane
       value:
         machine:
