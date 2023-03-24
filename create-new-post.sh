@@ -40,7 +40,7 @@ if [[ $1 = "post" ]]; then
 
 	mkdir -p content/post/$DATE-$SLUG/images/;
 
-	xdg-open content/post/$DATE-$SLUG/; $EDITOR content/post/$DATE-$SLUG/; cd content/post/$DATE-$SLUG/;
+	open content/post/$DATE-$SLUG/; $EDITOR content/post/$DATE-$SLUG/; cd content/post/$DATE-$SLUG/;
 fi
 
 # I think Hugo now does this on it's own.
