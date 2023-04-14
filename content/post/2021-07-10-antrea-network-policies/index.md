@@ -11,7 +11,7 @@ tags:
   - network-policies
   - antrea
   - security
-weight: 1
+#weight: 1
 ---
 
 This post will go through the Antrea-native policy resources and how to use them to secure your Kubernetes environment combined with K8s network policies.
