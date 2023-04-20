@@ -336,7 +336,7 @@ Let us get back to this picture when we have deployed a TKC cluster on it.
 
 ### Create a vSphere Namespace to use our new VRF Tier-0
 
-This will be the same approach as above [here]() only difference is we are selecting a VRF Tier0 instead.
+This will be the same approach as above [here](https://blog.andreasm.io/2023/04/14/tanzu-with-vsphere-and-different-tier-0s/#create-a-vsphere-namespace-to-use-our-new-tier-0) only difference is we are selecting a VRF Tier0 instead.
 <img src=images/image-20230417162054851.png style="width:600px" />
 
 Here I have selected the VRF Tier-0 and defined the network for it. I have disabled NAT. 
@@ -573,4 +573,268 @@ Now we can use this password to log in to the TKC nodes with the user: vmware-sy
 ```bash
 ssh vmware-system-user@10.101.51.34
 ```
+
+
+
+## DCLI - VMware Datacenter CLI
+
+If you happen to find different tasks easier to perform from CLI instead of GUI I will show here how to create a new vSphere Namespace by using DCLI from the VCSA appliance (vCenter Server). For more information and reference on dcli look [here](https://developer.vmware.com/web/tool/3.0.0/vmware-datacenter-cli).
+
+Log in to your vCenter hosting your Supervisor Cluster with SSH and enter shell:
+
+```bash
+andreasm@andreasm:~/$ ssh root@vcsa.cpod-v7n31.az-wdc.cloud-garage.net
+
+VMware vCenter Server 7.0.3.01000
+
+Type: vCenter Server with an embedded Platform Services Controller
+
+(root@vcsa.cpod-v7n31.az-wdc.cloud-garage.net) Password:
+Connected to service
+
+    * List APIs: "help api list"
+    * List Plugins: "help pi list"
+    * Launch BASH: "shell"
+
+Command> shell
+Shell access is granted to root
+root@vcsa [ ~ ]#
+```
+
+Type *dcli --help" to see some options:
+
+```bash
+root@vcsa [ ~ ]# dcli --help
+usage: dcli [+server SERVER] [+vmc-server] [+nsx-server [NSX_SERVER]] [+org-id ORG_ID] [+sddc-id SDDC_ID] [+interactive] [+prompt PROMPT]
+            [+skip-server-verification | +cacert-file CACERT_FILE] [+username USERNAME] [+password PASSWORD] [+logout] [+filter FILTER [FILTER ...]]
+            [+formatter {yaml,yamlc,table,xml,xmlc,json,jsonc,jsonp,html,htmlc,csv}] [+verbose] [+log-level {debug,info,warning,error}] [+log-file LOG_FILE]
+            [+generate-json-input] [+generate-required-json-input] [+json-input JSON_INPUT] [+credstore-file CREDSTORE_FILE]
+            [+credstore-add | +credstore-list | +credstore-remove] [+session-manager SESSION_MANAGER] [+configuration-file CONFIGURATION_FILE] [+more]
+            [args [args ...]]
+
+VMware Datacenter Command Line Interface
+
+positional arguments:
+  args                  CLI command
+
+optional arguments:
+  +server SERVER        Specify VAPI Server IP address/DNS name (default: 'http://localhost/api')
+  +vmc-server           Switch to indicate connection to VMC server (default VMC URL: 'https://vmc.vmware.com')
+  +nsx-server [NSX_SERVER]
+                        Specify NSX on VMC Server or on-prem instance IP address/DNS name (default: 'None')
+  +org-id ORG_ID        Specify VMC organization id to connect to NSX instance. Works together with +sddc-id. (default: 'None')
+  +sddc-id SDDC_ID      Specify VMC SDDC id to connect to NSX instance. Works together with +org-id. (default: 'None')
+  +interactive          Open a CLI shell to invoke commands
+  +prompt PROMPT        Prompt for cli shell (default: dcli> )
+  +skip-server-verification
+                        Skip server SSL verification process (default: False)
+  +cacert-file CACERT_FILE
+                        Specify the certificate authority certificates for validating SSL connections (format: PEM) (default: '')
+  +username USERNAME    Specify the username for login (default: '')
+  +password PASSWORD    Specify password explicitly (default: False)
+  +logout               Requests delete session and remove from credentials store if stored. (default: False)
+  +filter FILTER [FILTER ...]
+                        Provide JMESPath expression to filter command output. More info on JMESPath here: http://jmespath.org
+  +formatter {yaml,yamlc,table,xml,xmlc,json,jsonc,jsonp,html,htmlc,csv}
+                        Specify the formatter to use to format the command output
+  +verbose              Prints verbose output
+  +log-level {debug,info,warning,error}
+                        Specify the verbosity for log file. (default: 'info')
+  +log-file LOG_FILE    Specify dcli log file (default: '/var/log/vmware/vapi/dcli.log')
+  +generate-json-input  Generate command input template in json
+  +generate-required-json-input
+                        Generate command input template in json for required fields only
+  +json-input JSON_INPUT
+                        Specifies json value or a json file for command input
+  +credstore-file CREDSTORE_FILE
+                        Specify the dcli credential store file (default: '/root/.dcli/.dcli_credstore')
+  +credstore-add        Store the login credentials in credential store without prompting
+  +credstore-list       List the login credentials stored in credential store
+  +credstore-remove     Remove login credentials from credential store
+  +session-manager SESSION_MANAGER
+                        Specify the session manager for credential store remove operation
+  +configuration-file CONFIGURATION_FILE
+                        Specify the dcli configuration store file (default: '/root/.dcli/.dcli_configuration')
+  +more                 Flag for page-wise output
+root@vcsa [ ~ ]#
+```
+
+Enter DCLI interactive mode:
+**All commands in dcli have autocomplete**
+
+```bash
+root@vcsa [ ~ ]# dcli +i +server vcsa.cpod-nsxam-stc.az-stc.cloud-garage.net +skip-server-verification
+Welcome to VMware Datacenter CLI (DCLI)
+
+usage: <namespaces> <command>
+
+To auto-complete and browse DCLI namespaces:   [TAB]
+If you need more help for a command:           vcenter vm get --help
+If you need more help for a namespace:         vcenter vm --help
+To execute dcli internal command: env
+For detailed information on DCLI usage visit:  http://vmware.com/go/dcli
+
+dcli>
+```
+
+Below shows how autocomplete works:
+
+```bash
+root@vcsa [ ~ ]# dcli +i +server vcsa.cpod-nsxam-stc.az-stc.cloud-garage.net +skip-server-verification
+Welcome to VMware Datacenter CLI (DCLI)
+
+usage: <namespaces> <command>
+
+To auto-complete and browse DCLI namespaces:   [TAB]
+If you need more help for a command:           vcenter vm get --help
+If you need more help for a namespace:         vcenter vm --help
+To execute dcli internal command: env
+For detailed information on DCLI usage visit:  http://vmware.com/go/dcli
+
+dcli> com vmware vcenter n
+                           > namespacemanagement
+                           > namespaces
+                           > network
+```
+
+
+
+```bash
+dcli> com vmware vcenter namespaces instances list
+                                               list
+                                               getv2
+                                               update
+                                               delete
+                                               listv2
+                                               createv2
+                                               set
+```
+
+We can tab to autocomplete and/or use the "dropdown" list to scroll through the different options. Nice feature.
+
+Create a vSphere Namespace from DCLI, selecting a VRF T0, configure name, network etc (as you would do from the GUI of vCenter in Workload Management):
+
+```bash
+dcli> com vmware vcenter namespaces instances create --cluster domain-c8 --namespace stc-cluster-vrf2 --namespace-network-network-ingress-cidrs '[{"address": "10.13.54.
+0", "prefix":24}]' --namespace-network-network-load-balancer-size SMALL --namespace-network-network-namespace-network-cidrs '[{"address": "10.13.53.0", "prefix":24}]' -
+-namespace-network-network-provider NSXT_CONTAINER_PLUGIN --namespace-network-network-nsx-tier0-gateway vrf-1 --namespace-network-network-routed-mode true --namespace-n
+etwork-network-subnet-prefix-length 28
+dcli>
+```
+
+To get the --cluster domain id run this:
+
+```bash
+dcli> com vmware vcenter namespaces instances list
+|---------|-----------------------------------|----------------|-----------|----------------------|-------------|
+|cluster  |stats                              |namespace       |description|self_service_namespace|config_status|
+|---------|-----------------------------------|----------------|-----------|----------------------|-------------|
+|domain-c8||--------|-----------|------------||stc-cluster-vrf |           |False                 |RUNNING      |
+|         ||cpu_used|memory_used|storage_used||                |           |                      |             |
+|         ||--------|-----------|------------||                |           |                      |             |
+|         ||0       |0          |0           ||                |           |                      |             |
+|         ||--------|-----------|------------||                |           |                      |             |
+|domain-c8||--------|-----------|------------||stc-cluster-vrf2|           |False                 |RUNNING      |
+|         ||cpu_used|memory_used|storage_used||                |           |                      |             |
+|         ||--------|-----------|------------||                |           |                      |             |
+|         ||0       |0          |0           ||                |           |                      |             |
+|         ||--------|-----------|------------||                |           |                      |             |
+|---------|-----------------------------------|----------------|-----------|----------------------|-------------|
+dcli>
+```
+
+And seconds later the vSphere Namespace is created
+
+<img src=images/image-20230419140128385.png style="width:700px" />
+
+
+
+## vCenter API - with Postman
+
+vCenter has a nice feature included, the API Explorer. This can be found here:
+
+Click on the hamburger Menu, and find Developer Center:
+
+<img src=images/image-20230419130432052.png style="width:300px" />
+
+And from here we have all the API available to us:
+
+<img src=images/image-20230419130541256.png style="width:700px" />
+
+Its a looooong list of available APIs. 
+
+To be able to authenticate against vCenter with Postman we must create an API Key. So the first we need to do is "login" with post using the following api (this uses a username and password with sufficient acces to vCenter): 
+
+```bash
+https://{{vcenter-fqdn}}/api/session
+```
+
+In Postman one should create an environment that contains the vCenter IP/FQDN, username and password. 
+So the first action is to POST this API to get the API Key, making sure you set Authorization to Basic Auth from your environment:
+
+<img src=images/image-20230419130911655.png style="width:800px" />
+
+The response from this POST should be a token. From now you need to use this token to interact with vCenter API. Change the authentication to API Key and use *vmware-api-session-id* as Key and Token as value. 
+
+<img src=images/image-20230419131143625.png style="width:800px" />
+
+Now lets try a GET and see if it works:
+
+<img src=images/image-20230419131357915.png style="width:800px" />
+
+That worked out fine :smile:
+
+What about creating a vSphere Namespace from Postman? 
+
+Thats very easy, below is an example to create a new vSphere Namespace, and pointing it to my VRF Tier-0 router:
+
+```json
+{
+	"access_list": [
+		{
+			"domain": "cpod-nsxam-stc.az-stc.cloud-garage.net",
+			"role": "OWNER",
+			"subject": "andreasm",
+			"subject_type": "USER"
+		}
+	],
+	"cluster": "domain-c8",
+	"namespace": "stc-cluster-vrf2",
+	"namespace_network": {
+		"network": {
+			"ingress_cidrs": [
+				{
+					"address": "10.13.54.0",
+					"prefix": 24
+				}
+			],
+			"load_balancer_size": "SMALL",
+			"namespace_network_cidrs": [
+				{
+					"address": "10.13.53.0",
+					"prefix": 24
+				}
+			],
+			"nsx_tier0_gateway": "vrf-1",
+			"routed_mode": true,
+			"subnet_prefix_length": 28
+		},
+		"network_provider": "NSXT_CONTAINER_PLUGIN"
+	}
+}
+```
+
+Paste this into Postman (Body - Raw) and POST it to the following path https://{{vcenter-fqdn}}/api/vcenter/namespaces/instances and the new vSphere Namespace should be created in a jiff.
+
+<img src=images/image-20230420094101806.png style="width:800px" />
+
+
+
+And in vCenter our new Namespace:
+
+<img src=images/image-20230420094154011.png style="width:800px" />
+
+
+
+For references to the APIs in vCenter and a whole lot of details and explanations have a look [here](https://developer.vmware.com/apis/vsphere-automation/v8.0.0/vcenter/)!
 
