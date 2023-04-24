@@ -17,6 +17,7 @@ tags:
   - network 
 
 comment: false # Disable comment if false.
+summary: This post will take you trough how to configre Tanzu with vSphere using NSX with multiple Tier-0 and VRF Tier-0 gateways. It will also show you how to do this using DCLI and API
 ---
 
 
@@ -41,12 +42,16 @@ My lab is looking like this "networking wise":
 
 In my lab I use the following IP addresses for the following components:
 
+{{% notice info "Network overview" %}}
+
 - Tanzu Management network: 10.13.10.0/24 - connected to a NSX Overlay segment - manually created by me
 - Tanzu Workload network (the initial Workload network): 10.13.96.0/20 (could be much smaller) - will be created automatically as a NSX overlay segment. 
 - Ingress: 10.13.200.0/24
 - Egress: 10.13.201.0/24 I am doing NAT on this network (important to have in mind for later)
 - The first Tier-0 has been configured to use uplinks on vlan 1304 in the following cidr: 10.13.4.0/24 
 - The second (new) Tier-0 will be using uplink on vlan 1305 in the follwing cidr: 10.13.5.0/24
+
+{{% /notice %}}
 
 Using dedicated Tier-0 means we need to deploy additional edges, either in the same NSX edge cluster or a new edge cluster. This can generate some compute and admin overhead. But in some environments its not "allowed" to share two different network classifications over same devices. So we need separate edges for our different Tier-0s. But again, with TKGs we cant deploy our TKC clusters on other vSphere clusters than our Supervisor cluster has been configured on, so the different TKC cluster will end up on the same shared compute nodes (ESXi). But networking wise they are fully separated.  
 
@@ -128,7 +133,17 @@ So we should have something like this now:
 
 As mentioned above, these routes is maybe easier to create after we have created the vSphere Network with the correct network definition as we can see them being realized in the NSX manager. 
 
-***By adding these static routes on the T0 level as I have done, means this traffic will never leave the Tier-0s, it will go over the linknet between the Tier-0 ***
+{{% notice warning "Info" %}}
+
+By adding these static routes on the T0 level as I have done, means this traffic will never leave the Tier-0s, it will go over the linknet between the Tier-0s
+
+{{% /notice %}}
+
+{{% notice tip "Info" %}}
+
+These routes are necessary for the Supervisor and the TKC cluster to be able to reach each others. If they cant, deployment of the TKC clusters will fail, it will just deploy the first Control Plane node and stop there)
+
+{{% /notice %}}
 
 
 ### Create a vSphere Namespace to use our new Tier-0
@@ -239,12 +254,16 @@ In NSX-T 3.0 VRF was a new feature, and configuring it was a bit cumbersome, but
 
 In this part of my lab I use the following IP addresses for the following components:
 
+{{% notice info "Network overview" %}}
+
 - Tanzu Management network: 172.21.103.0/24 - connected to a VDS port group - manually created by me
 - Tanzu Workload network (the initial Workload network): 10.103.100.0/23 - will be created automatically as a NSX overlay segment. 
 - Ingress: 10.103.200.0/24
 - Egress: 10.103.201.0/24 I am doing NAT on this network (important to have in mind for later)
 - The first Tier-0 has been configured to use uplinks on vlan 1034 in the following cidr: 10.103.4.0/24 
 - The VRF Tier-0 will be using uplink on vlan 1035 in the follwing cidr: 10.103.5.0/24
+
+{{% /notice %}}
 
 Here is a digram showing high-level how VRF-T0 looks like:
 
@@ -360,7 +379,7 @@ But the most interesting part is the static routes being created. Let us have a 
 
 In the VRF T0 it has created two additonal static routes: 
 
-![image-20230417162553365](images/image-20230417162553365.png)
+![Autocreated static routes](images/image-20230417162553365.png)
 
 Those to routes above points to the Supervisor Workload network and the Supervisor Ingress network. Next hop is:
 
@@ -489,7 +508,7 @@ how to fix it, please visit the web page mentioned above.
 
 The nodes in a TKC cluster can also be SSH'ed into. If you dont do NAT on your vSphere Namespace network they can be reach directly on their IPs (if from where your SSH jumpbox is allowed routing wise/firewall wise). But if you are NAT'ing then you have to place your SSH jumpbox in the same segment as the TKC nodes you want to SSH into. Or add a second interface on your jumpbox placed in this network. The segment is created in NSX and is called something like this:
 
-<img src=images/image-20230415093000226.png style="width:800px" />
+<img src=images/image-20230415093000226.png style="width:12000px" />
 
 To get the password for the TKC nodes you can get them with kubectl like this:
 Put yourselves in the context of the namespace where your workload nodes is deployed:
