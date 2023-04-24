@@ -96,7 +96,7 @@ Click on Routing -> Static Routes and add the following route (svc workload netw
 
 <img src=images/image-20230414152757615.png style="width:700px" />
 
-And the next-hop is defined with the ip of the other (first) Tier-0 interface on the "linknett" between the T0s (not configured yet):
+And the next-hop is defined with the ip of the other (first) Tier-0 interface on the "linknet" between the T0s (not configured yet):
 
 <img src=images/image-20230414152955696.png style="width:700px" />
 
@@ -144,6 +144,80 @@ By adding these static routes on the T0 level as I have done, means this traffic
 These routes are necessary for the Supervisor and the TKC cluster to be able to reach each others. If they cant, deployment of the TKC clusters will fail, it will just deploy the first Control Plane node and stop there)
 
 {{% /notice %}}
+
+### Static Routes
+
+This part can be a bit confusing if not fully understanding how network traffic works in Tanzu with vSphere and NSX. So I decided to create a section on its own for it. 
+By default all vSphere Namespace network are NAT'ed. This means the worker nodes themselves are not exposed with their real IP addresses outside of the Tier-0. NCP will automatically create NAT rules on the corresponding Tier-1 router, the Tier-1 router that is being created for the vSphere Namespace. This includes the workload network side (eth1) of the Supervisor control plane VMs. You can identify the Tier-1 router responsible for your vSphere Namespace by looking for the vSphere Namespace name in the name of the Tier-1 router, like the example below (the initial Tier-1 router created when enabling WCP is just called domain-cXXXXXXXXXXX):
+
+![Tier1 for NS ns-stc-cluste-vrf](images/image-20230424194408005.png)
+
+If we go into NSX and have a look at NAT rules and I have a NAT enabled vSphere Namespace there should be a Source NAT rule created there:
+
+![SNAT rule](images/image-20230424194605015.png)
+
+On the Supervisor T1 (the initial T1 created when enabling WCP) it will also create some NO-NAT rules like these:
+
+![NO-NAT](images/image-20230424194824508.png)
+
+These will be automatically updated with additional NO-NAT Rules each time you create a new vSphere Namespace with new network subnets. The rules above can be explained like this:
+If the Supervisor Control Plane (not the mgmt interface) or anything from the initial default Workload Network (10.13.100.0/23) wants to reach the other vSphere Namespace Workload Networks directly (not ingress network) you shall not hide your true identity, meaning it will use its real IP address and will not be SNAT'ed before going out to the other vSphere NS Workload Networks. 
+
+In a NAT setup the only two networks that are advertised to the outside world is the ingress and egress subnets. 
+
+As explained earlier in this post, for the Supervisor Cluster to be able to fullfill its responsibilities like deploying TKC clusters, supervise and monitor TKC cluster status/health it needs to be able to communicate with these clusters workload network subnets and also the ingress subnet/IP (K8s API Endpoint port 6443) for each vSphere NS/TKC cluster.
+
+Now, in a NAT'ed setup, the workload network is never exposed outside the Tier-0, when the workload network is doing egress traffic it will always be translated into an IP address from the Egress subnet (SNAT rule, shown above) defined and to be able to reach it from the outside (ingress) world we use the ingress network (created by the NSX-T LoadBalancer).
+
+![NSX LoadBalancer L4 K8s API](images/image-20230424202157952.png)
+
+Also in the Tier-0 where you have configured WCP and/or other vSphere Namespaces with NAT enabled there will be created route-maps using IP-prefix lists containing the Workload Network CIDRs with a DENY rule. 
+
+![Auto-created IP Prefix](images/image-20230424202423811.png)
+
+![route-map](images/image-20230424202510141.png)
+
+![matching IP prefix](images/image-20230424202532435.png)
+
+
+
+
+
+As long as we are only using just one Tier-0 router for all our vSphere Namespaces, regardless of how many different subnets we decide to create pr vSphere Namespace they will be known by the same Tier-0 as the Tier-1 will be default configured to advertise to the Tier-0 its connected networks, yes it also advertise NAT IPs and LoadBalancer IPs but these are also configured on the Tier-0 to be further advertised to the outside world. Its only the Tier-0 that can be configured with BGP, as its only the Tier-0 that can be configured to talk to the outside world (external network) by SR T0 using interfaces on the NSX edges (VM or Bare-Metal formfactor). This means there is no need for us to create any routes either on the Tier-1 or Tier-0 when creating different vSphere Namespaces with different subnets. 
+
+So how and where can I create these routes so the Supervisor can be allowed to do its job?
+We can create the routes on the Tier-0s themselves as done above, or they can be created in the upstream physical routers or even other physical routers somewhere in your infrastructure. If creating them on the Tier-0s themselves we need to allow advertising of static routes over BGP, or we can use a "linknet" between the Tier-0 routers and point to the respective interfaces for their respective network as done earlier in this post. If we use the linknet approach we only need to create the routes for the actual workload network from both workloads, on the respective Tier-0 using the next-hop accordingly. The reason for this is that the Tier-0s are very well aware of its connected Tier-1 networks(remember), they are not hidden behind any IP prefix lists/Route-Maps. So we only need to tell the two Tier-0 where to go if it needs to reach the two below networks which are not advertised by any dynamic routing protocol as they are "blocked" from being advertised.
+
+<img src=images/image-20230414154511864.png style="width:700px" />
+
+Now, what if I want to create these routes in my physical routers. Yes, that is also possible, but then we need to tell the physical routers about traffic coming from these workload networks which are suddenly not SNAT'ed anymore as they are reaching the other vSphere Namespace networks. Remember the NO-NAT rule above? 
+
+That means we need to create two routes like this:
+
+```bash
+ip route 10.13.100.0/23 10.13.4.10
+ip route 10.13.201.0/24 10.13.4.10
+```
+
+Where the first line is the actual Workload Network of my Supervisor Cluster and nexthop is the Tier-0 where this network is connected (not directly but behind a Tier-1 gateway/router) and the second route is the Egress network in the same Workload Network (the initial/default Workload Network).
+
+![image-20230424204230713](images/image-20230424204230713.png)
+
+These routes are then created in one of my BGP routers, which can then be propagated to the other BGP routers with route-advertisements. I am only telling the physical world where to go if it happens to stumble (get requests to reach) over these subnets. 
+
+<img src=images/image-20230424205917248.png style="width:400px" />
+
+Two tier-0s with two vSphere Namespaces, both NAT'ed routes created in the physical routers:
+
+<img src=images/image-20230424210422034.png style="width:800px" />
+
+When I create a vSphere Namespace with NAT disabled, I only need to create the routes for the Supervisor Workload Network which is NAT enabled.
+
+<img src=images/image-20230424211231784.png style="width:800px" />
+
+In short, we only need to take care of the networks that are not advertised or "exposed". In my environment I only have the Supervisor Workload Network NAT'ed. The other vSphere Namespaces is not NAT'ed so I dont have to create any routes for these as they are already advertised, assuming we are using BGP or OSPF to dynamically advertise them. 
+
+
 
 
 ### Create a vSphere Namespace to use our new Tier-0
