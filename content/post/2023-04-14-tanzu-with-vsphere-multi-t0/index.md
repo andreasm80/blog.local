@@ -216,12 +216,12 @@ Next configure BGP and the BGP peering with your upstream router:
 
 ![BGP peering](images/image-20230425205441878.png)
 
-The last thing we need to do in our newly created Tier-0 is to create a static route that can help us reach the Workload Network on the Supervisor Control Plane nodes on their actual IP addresses (remember our talk above?). 
+The last thing we need to do in our newly created Tier-0 is to create two static routes that can help us reach the Workload Network on the Supervisor Control Plane nodes on their actual IP addresses (remember our talk above?). 
 On the newly created Tier-0 (Tier-0-2) click on Routing -> Static Routes and add the following route (Supervisor workload network): 
 
-![Static route to svc workload](images/image-20230425205633192.png)
+![Static routes tier-0-2](images/image-20230425215845504.png)
 
-
+The two routes created is the Supervisor workload network cidr and the actual ingress vip /32. 
 
 And the next-hop is defined with the ip of the other (first) Tier-0 interface on the "linknet" interface between the T0s (not configured on the first Titer-0 yet):
 
@@ -371,7 +371,39 @@ And a couple of minutes later (if all preps have been done correctly) you should
 
 <img src=images/image-20230414161125662.png style="width:600px" />
 
+Now, if the network conditions not were right, the TKC cluster would never be finished. It would stop stop at deploying the first control plane node. But to quickly verify connectivity from the supervisor controlplane vm and the tkc controlplane vm I will SSH into both (described below under troubleshooting) and do a curl against their K8s API VIP respectively:
 
+From one of the supervisor vms "curling" both vSphere NS workload networks k8s api vip:
+
+```bash
+root@422068ece368739850023f7a81cf5e14 [ ~ ]# curl https://10.101.93.1:6443
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+root@422068ece368739850023f7a81cf5e14 [ ~ ]# curl https://10.101.92.1:6443
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+root@422068ece368739850023f7a81cf5e14 [ ~ ]#
+```
+
+From the controlplane node of the TKC workload cluster:
+
+```bash
+vmware-system-user@wdc-vrf-cluster-1-2k8tp-gb5g2:~$ curl https://10.101.90.2:6443
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.haxx.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+```
 
 
 
