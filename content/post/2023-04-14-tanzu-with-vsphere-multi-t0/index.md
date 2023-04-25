@@ -24,36 +24,154 @@ summary: This post will take you trough how to configre Tanzu with vSphere using
 
 # Tanzu with vSphere using NSX with multiple T0s
 
-In this post I will go through how to configure Tanzu with different T0 routers in NSX for separation and network isolation.
-The first part will involve spinning up dedicated NSX Tier-0s by utlizing several NSX Edges and NSX Edge Clusters. The second part will involve using NSX VRF. Same needs, two different approaches, and some different configs in NSX. In vSphere with Tanzu with NSX we have the option to override network setting pr vSphere Namespace. That means we can place TKC clusters on different subnets/segments in NSX for ip separation, but we can also override and define separate NSX Tier-0 routers for separation all the way out to the physical infrastructure.  
+In this post I will go through how to configure Tanzu with different NSX T0 routers for IP separation use cases, network isolation and multi-tenancy.
+The first part will involve spinning up dedicated NSX Tier-0 routers by utlizing several NSX Edges and NSX Edge Clusters. The second part will involve using NSX VRF-Tier0. Same needs, two different approaches, and some different configs in NSX.
+
+Some background to why this is a useful feature: In vSphere with Tanzu with NSX we have the option to override network setting pr vSphere Namespace. That means we can place TKC/Workload clusters on different subnets/segments for ip separation and easy NSX Distributed Firewall policy creation (separation by environments DEV, TEST, PROD etc), but we can also override and define separate NSX Tier-0 routers for separation all the way out to the physical infrastructure. In some environments this is needed as there is guidelines/policies for certain network classifications to be separated, and filtered in physical firewall/security perimeters. Although NSX comes with a powerful and advanced distributed firewall, including Gateway firewall (on Tier1 and Tier0) there is nothing in the way for NSX to be combined in such environments, it just allows for more granular firewall policies before the traffic is eventually shipped out to the perimeter firewalls.    
 
 The end-goal would be something like this (high level):
 
-<img src=images/image-20230414134727247.png style="width:1000px" />
+![Multi-Tier-0-Tanzu](images/image-20230414134727247.png)
+
+
+
+Before jumping into the actual configuration of this setup I will need to explain a couple of things, as there are some steps that needs to be involved in getting this to work. Lets continue this discussion/monologue in the chapter below.
+
+## Routing considerations
+
+Tanzu with vSphere consists of a Supervisor Controlplane VM cluster (3 nodes). These three are configured with two network interfaces, interface ETH0 is placed in the management network. This management network can be NSX overlay segments, or regular VLAN backed segments or VDS/vSwitch portgroups. Its main responsibility is to communicate with the vCenter server API for vm/node creation etc. The second interface (ETH1) on these Supervisor Controlpane VMs is the Workload network. This network's responsibilities are among a couple of things the Kubernetes API endpoint where we can interact with the Kubernetes API to create workload clusters, and here is an important note to remember: It is also used to communicate with the workload clusters being created. If there is no communication from this network to the workload cluster being created, workload cluster creation will fail. So needles to say, it is important that this communication works. 
+When we deploy or enable the Workload Control Plane/Supervisor cluster on a fresh vCenter server and with NSX as the networking stack we are presented with a choice how the workload network can be configured, and the option I am interested in here is the NAT or no NAT option.
+
+
+
+![NAT choice](images/image-20230425181349063.png)
+
+![NAT explanation](images/image-20230425181434562.png) 
+
+This option is very easy to select (selected by default) and very easy to deselect, but the impact it does is big. Especially when we in this post are discussing TKG with multi-Tier-0/VRF-T0. 
+
+What this option does is deciding whether the workload network in your vSphere Namespace will be routed or not. Meaning that the controlplane and worker nodes actual ip addresses will be directly reachable and exposed (routed) in your network or if it will be masked by NAT rules so they will not be exposed with their real ip addresses in the network. The same approach as a POD in Kubernetes, default it will be Source NAT'ed through its worker node it is running on when it is doing egress traffic (going out and wants to make contact with something). So with NAT enabled on the workload network in a vSphere Namespace the workers will not be using their real ip addresses when they are communicating out, they will be masked by a NAT rule created in NSX automatically. This is all fine, if you want to use NAT. But if you dont want to use NAT you will have to disable this option and prepare all your vSphere Namespace workoad networks to be of ip subnets you are prepared to route in your network. That is also very fine. And as long as you dont expect to be running 500000+ worker nodes you will have available routed RFC1918 addresses to your disposal. 
+
+The reason I would like to touch upon the above subject is that it will define how we create our routing rules between a Supervisor cluster a vSphere Namespace workload network with NAT enabled or not. 
+
+Now I get to the part where it really get interesting. If you decide to use the NAT'ed approach and NSX VRF-T0 when you create your first vSphere Namespace (not the default inital system vSphere Namespace, but the first vSphere Namespace you can create after WCP has been installed) NCP (NSX Container Plugin) will automatically create a couple of static routes so the Supervisor Cluster workload network can reach the workload networks in your vSphere Namespace placed under a different Tier-0 than the default workload network is placed, here a VRF Tier-0. These routes will be defined with VRF Route Leaking, meaning they will not go out of its parent Tier-0 to reach certain subnets. And with a NAT enabled workload cluster that is perfect as the we dont have care about the NAT rules created on the workload network, they can talk to each other with their real ip addresses. I will explain this a bit later on. Well that is fine and all, but sometimes VRF Tier-0 is not the best option, we need to use dedicated Tier-0 routers on different NSX edge cluster/edges then there is no automatic creation for these static routes. But where and how do I define these static routes manually? On the Tier-0s themselves? In the physical routers the Tier-0s are peering with (using static or BGP)? Yes, both options are possible. If we decide to create these rules in the Tier-0s themselves we need to create a linknet between the Tier-0s to they can point to each other with their respective subnet routes (can be a regular overlay segment used as L2 between the different Tier-0s).
+
+![Static routes Tier-02Tier-2](images/image-20230425184544084.png)
+
+But, there is always a but :smile:. With a NAT enabled vSphere Namespace, the workload network is not allowed to use its own IP address when going out of the Tier-0, it will be using an IP address from the egress subnet defined, or will it?
+First, when NAT is enabled on a vSphere Namespace, NCP will create a rule in NSX saying that if you want to talk to your other workload cluster network buddies, you dont have to hide your true identity, you are allowed to use your real name when you want to talk to your buddies. See below for how these rules looks like:
+
+![no snat rules](images/image-20230425185526446.png)
+
+Wait a minute, what does this mean then? Exactly, this means that when it communicates with the other vSphere Namespace network destinations IP/Subnets (see above) it will not be NAT'ed. It will use its real ip address. 
+And that ladies and gentlemen is why creating the static routes directly between the Tier-0s using a linknet between is an easy solution when using NAT in the vSphere Namespace network. Why, how etc, still dont understand? Ok, let me first show you an example below of two such static routes.
+
+![Tier-0-1 static route](images/image-20230425185949136.png)
+
+The above screenshot illustrates a static route defined on the Tier-0 where the Supervisor workload network is placed below behind a Tier-1 gateway. The ip subnet is the workload network cidr/subnet of a vSphere Namespace placed on a different Tier-0 router (its actual ip subnet, not the NAT ip addresses). 
+
+![Tier-0-2 static route](images/image-20230425190245012.png)
+
+The above static route is created on the second Tier-0 where the vSphere Namespace number 2 is created and placed. This route is pointing to the actual IP subnet/cidr of the Supervisor workload network, not the NAT address. 
+Just to mention it, common for both these routes is that they are using the linknet interfaces of the Tier-0s respectively. 
+But how? We have this no SNAT rule, but at the same time we have a route-map denying any segment used by a NAT enable vSphere Namespace workload network to be advertised/exposed outside the Tier-0. Yes, exactly, outside the Tier-0. By using the linknet between the Tier-0s for our static routes we are simply telling the Tier-0 routers to go to their respective Tier-0 when it needs to find the respective vSphere Namespace workload networks. The idea here is that the Tier-0s are the "all-seeing-eye" and they truly are. All the T1 gateways configured by NCP/WCP will enable 4 route advertisements, all connected segments, NAT IPs, LB VIPS and Static Routes. This means that all the Tier1 gateways will happily tell the Tier-0 about their networks/subnets/ip addresses they know of to the Tier-0. So when we just create a static route like the two above (e.g 10.101.82.32/27 via linknet interface) the Tier-0 router that is defined as next-hop know exactly where this network is located, which T1 gateway it needs to send it to regardless of NAT rules and route-maps. 
+
+![static routes between tier-0s](images/image-20230425192920493.png)
+
+Nice, right?
+This means we dont need to interfere with these static routes in the physical routers, they were supposed to be NAT'ed right? So we dont want them in our physical routers anyway. This traffic will then never leave the "outside" of the Tier-0s via their uplinks connected to their respective BGP/Upstream routers as we are using the "linknet" between them. 
+And also, did I mention that there will be created a route-map on the Tier-0 for the vSphere Namespace Networks with corresponding IP-prefix lists prohibiting the workload networks ip subnets to be advertised through BGP/OSPF from the Tier-0 and its upstream bgp neigbours. 
+
+![route-map](images/image-20230425192622624.png)
+
+How will this go then, if we cant by any reason use a linknet between the Tier-0s for these static routes and need to define them in the physical routers? Well that is an interesting question. Let us try to dive into that topic also.
+Did I mention that we can also decide to disable NAT completely? Well that is also a perfectly fine option. This could also give other benefits for the environments where it is is needed to have these routes in the physical network due to policies, requirements etc. We can create much more granular firewall policies in the perimeter firewalls when we know each node will egress with their actual IP instead of being masked by a NAT ip address. If being masked by a NAT ip address we cant for sure really know which node it is, we can only know that it potentially comes from any node in a vSphere Namespace where this egress subnet is defined (and that can potentially be a couple). Remember how the SNAT rules look like (maybe not as I haven't shown a screenshot of it yet :smile:)?
+
+![SNAT rule](images/image-20230425193731066.png)
+
+Also, we dont need to create any static routes, it will be auto advertised by BGP (if using BGP) each time we create a new vSphere Namespace.
+
+But, there is a possibilty to still use static routes, or inject them via BGP in the physical network. We need to define the static routes with the correct subnets, pointing to the NAT'ed vSphere Namespace workload network and egress subnet/cidr. 
+So in my physical router I would need to create these rules:
+
+
+
+```bash
+ip route 10.101.80.0/23 10.101.4.10 #Workload network Default vSphere Namespace via Tier-0 Uplink(s)
+ip route 10.101.91.0/24 10.101.4.10 #Egress cidr Default vSphere Namespace via Tier-0 Uplink(s)
+```
+
+These are the needed static routes for the Supervisor Workload and egress network to be configured in the physical router, if you happen to create a vSphere Namespace which is not NAT'ed these are the only routes needed. If your other vSphere Namespace is also NAT'ed you need to create the routes accordingly for this Namespace also. 
+
+![routes in physical router](images/image-20230425194514060.png)
+
+Illustration of static routes in the physical network between two Tier-0s and two NAT enabled vSphere Namespaces:
+
+![NAT2NAT Static routes](images/image-20230425201357364.png)
+
+If using routed or a NAT disabled vSphere Namespace, the life will be much easier if using BGP on your Tier-0s.
+
+![No NAT using BGP](images/image-20230425202252703.png)
+
+
+
+{{% notice warning "Be aware" %}}
+
+There was a reason you decided to use NAT? When defining these static routes the network which are supposed to not be routed outside the Tier-0s will now suddenly be routed and exposed in your network. Is that something you want? Then you maybe should opt for no NAT anyway? 
+
+{{% /notice %}}
+
+{{% notice info "Tip" %}}
+
+Some notes on BFD with NSX and BGP/Static routes [here](https://docs.vmware.com/en/VMware-NSX/4.1/administration/GUID-E7CAD615-D96A-4DE4-811D-D8D743634F35.html?hWord=N4IghgNiBcIMoBcwIJYGMAEAlA9gVwQFMMAhAMQBEMAFQwgJxAF8g)
+
+ 
+
+{{% /notice %}}
+
+
+
+
+
+This part can be a bit confusing if not fully understanding how network traffic works in Tanzu with vSphere and NSX. Hopefully I managed to explain it so its more understandable. 
+
+As long as we are only using just one Tier-0 router for all our vSphere Namespaces, regardless of how many different subnets we decide to create pr vSphere Namespace they will be known by the same Tier-0 as the Tier-1 will be default configured to advertise to the Tier-0 its connected networks, yes it also advertise NAT IPs and LoadBalancer IPs but these are also configured on the Tier-0 to be further advertised to the outside world. Its only the Tier-0 that can be configured with BGP, as it is only the Tier-0 that can be configured to talk to the outside world (external network) by a SR T0 using interfaces on the NSX edges (VM or Bare-Metal). This means there is no need for us to create any routes either on the Tier-1 or Tier-0 when creating different vSphere Namespaces with different subnets. But I would not have anything to write about if we just decided to use only one Tier-0 router, would I? :grin:
+
+Now when all this is clear as day, let us head over to the actual installation and configuration of this. 
+
+
 
 ## NSX and Tanzu configurations with different individual Tier-0s
 
-In this post I will assume a working NSX with the "first" T0 alredy peered and configured with BGP to its upstream router and Tanzu environment configured and running and maybe a couple of TKC clusters deployed in the "original/initial" Namespace/Workload Network. In other words a fully functional Tanzu with vSphere environment.
-My lab is looking like this "networking wise":
+I assume a fully functional  Tanzu environment is running with the default Workload network configured with NAT and NSX is the networking component. For this exercise I have prepared my lab to look like this "networking wise":
 
-<img src=images/image-20230414150018939.png style="width:600px" />
+![Lab topology](images/image-20230425203120093.png)
 
 
+
+I will deploy two new vSphere Namespaces where I select override Supervisor Network and choose the Tier-0-2 which is another Tier-0 router than my  Supervisor workload network is on (this is using the first Tier-0 router)
 
 In my lab I use the following IP addresses for the following components:
 
 {{% notice info "Network overview" %}}
 
-- Tanzu Management network: 10.13.10.0/24 - connected to a NSX Overlay segment - manually created by me
-- Tanzu Workload network (the initial Workload network): 10.13.96.0/20 (could be much smaller) - will be created automatically as a NSX overlay segment. 
-- Ingress: 10.13.200.0/24
-- Egress: 10.13.201.0/24 I am doing NAT on this network (important to have in mind for later)
-- The first Tier-0 has been configured to use uplinks on vlan 1304 in the following cidr: 10.13.4.0/24 
-- The second (new) Tier-0 will be using uplink on vlan 1305 in the follwing cidr: 10.13.5.0/24
+- Tanzu Management network: 10.101.10.0/24 - connected to a NSX overlay segment - manually created by me
+- Tanzu Workload network (the default Workload network): 10.101.80.0/23 (could be smaller) - will be created automatically as a NSX overlay segment. 
+- Ingress: 10.101.90.0/24
+- Egress: 10.101.91.0/24 I am doing NAT on this network (important to have in mind for later)
+- The first Tier-0 has been configured to use uplinks on vlan 1014 in the following cidr: 10.101.4.0/24 
+- The second Tier-0 (Tier-0-2) will be using uplink on vlan 1017 in the follwing cidr: 10.101.7.0/24
+- Second vSphere Namespace - will be using Tier-0-2 and NAT disabled
+- Second vSphere Namespace Workload network: 10.101.82.0/24
+- Second vSphere Namespace ingress network: 10.101.92.0/24
+- Third vSphere Namespace - will be using Tier-0-2 and NAT enabled
+- Third vSphere Namespace Workload network: 10.101.83.0/24
+- Third vSphere Namespace ingress network: 10.101.93.0/24
+- Third vSphere Namespace egress network: 10.101.94.0/24 (where the NAT rules will be created)
 
 {{% /notice %}}
 
-Using dedicated Tier-0 means we need to deploy additional edges, either in the same NSX edge cluster or a new edge cluster. This can generate some compute and admin overhead. But in some environments its not "allowed" to share two different network classifications over same devices. So we need separate edges for our different Tier-0s. But again, with TKGs we cant deploy our TKC clusters on other vSphere clusters than our Supervisor cluster has been configured on, so the different TKC cluster will end up on the same shared compute nodes (ESXi). But networking wise they are fully separated.  
+Using dedicated Tier-0 means we need to deploy additional edges, either in the same NSX edge cluster or a new edge cluster. This can generate some compute and admin overhead. But in some environments its not "allowed" to share two different network classifications over same devices. So we need separate edges for our different Tier-0s. But again, with TKGs we cannot deploy our TKC clusters on other vSphere clusters than our Supervisor cluster has been configured on, so the different TKC cluster will end up on the same shared compute nodes (ESXi). But networking wise they are fully separated.  
 
 ### Deploy new Edge(s) to support a new Tier-0
 
@@ -71,65 +189,74 @@ So my new edge for this second T0 will be deployed like this:
 After the Edge has been deployed its time to create a Edge cluster. 
 <img src=images/image-20230414144431614.png style="width:600px" />
 
-Now we need to create a new segment for the coming new Tier-0 router. 
-<img src=images/image-20230414144707087.png style="width:800px" />
+Now we need to create a new segment for the coming new Tier-0 router and the Tier-0 linknet:
 
-The segment has been configured to use the edge-vlan-transportzone, and with the vlan I will be using to peer with the upstream router. 
+![Tier-0-2 Uplink segment](images/image-20230425204733777.png)
+
+![Tier-0 linknet overlay segment](images/image-20230425205031235.png)
+
+The first segment has been configured to use the edge-vlan-transportzone, and this vlan will be used to peer with the upstream router. The second segment is just a layer 2 overlay segment to be used for link between the two Tier-0s.
 
 Now we can go ahead and create the new Tier-0:
 
-<img src=images/image-20230414152027299.png style="width:800px" />
+![New-Tier-0-Router](images/image-20230425204915394.png)
+
+
 
 Give the Tier-0 a name, select your new Edge cluster. Save and go back to edit it.
-We need to add a interface: 
-<img src=images/image-20230414152204319.png style="width:700px" />
+We need to add the two interfaces uplink to upstream router and link interface between the two tier-0s: 
+![Two interfaces](images/image-20230425205201388.png)
 
-Give the interface a name, IP address and select the segment we create above for the new Tier-0 uplink.
+Give the interfaces a name, IP address and select the segments we created above for the new Tier-0 uplinks.
 Select the Edge node and Save
-Now we have a interface, to test if it is up and running you can ping it from your upstream router. 
+Now we have the interfaces, to test if it is up and running you can ping it from your upstream router. The only interface that can be reached is the uplink interface 10.101.7.13. 
 Next configure BGP and the BGP peering with your upstream router:
 
-<img src=images/image-20230414152420114.png style="width:700px" />
+![BGP Settings](images/image-20230425205414902.png)
 
-The last thing we need to do in our newly created Tier-0 is to create a static route that can help us reach the Workload Network on the Supervisor Control Plane nodes. The TKC cluster need this connectivity.
-Click on Routing -> Static Routes and add the following route (svc workload network): 
+![BGP peering](images/image-20230425205441878.png)
 
-<img src=images/image-20230414152757615.png style="width:700px" />
+The last thing we need to do in our newly created Tier-0 is to create a static route that can help us reach the Workload Network on the Supervisor Control Plane nodes on their actual IP addresses (remember our talk above?). 
+On the newly created Tier-0 (Tier-0-2) click on Routing -> Static Routes and add the following route (Supervisor workload network): 
 
-And the next-hop is defined with the ip of the other (first) Tier-0 interface on the "linknet" between the T0s (not configured yet):
-
-<img src=images/image-20230414152955696.png style="width:700px" />
-
-Add and Save. In my lab I like to create these routes in the T0s themselves instead of in the physical router. It could be done from there also. 
+![Static route to svc workload](images/image-20230425205633192.png)
 
 
 
+And the next-hop is defined with the ip of the other (first) Tier-0 interface on the "linknet" interface between the T0s (not configured on the first Titer-0 yet):
+
+![next-hop using linknet](images/image-20230425205713866.png)
+
+Add and Save.
 
 
-Now on the first Tier-0 we need a second or two interface (depending on the number of edges) and create a static route there also. 
-The second interface will need to be in the same segment as the new Tier-0 or a dedicated link-net/segment so the Tier-0s can exchange routes between each other there. I just took the lazy approach and reused the same uplink segment my new T0 is already been configured to use. Then I saved a couple of clicks. 
-In the first Tier-0 this is the new interface:
 
-<img src=images/image-20230414153644055.png style="width:700px" />
+Now on the first Tier-0 we need a second interface (or two depending on the amount of edges) in the linknet we created earlier. 
 
-Name it, ip address in the same range as the uplink for the new Tier-0 and same segment used in the new T0. 
+![linknet interface edge-1 Tier-0-1](images/image-20230425205956715.png) 
+
+Name it, ip address 
 Select the edge(s) that will have this/these new interface(s).
 Save.
 
 Next up is the route:
-This route (dmz I have called it) should point to the TKC workload network cidr we decide to use. The correct cidr is something we get when we create the vSphere Namespace (it is base on the Subnet prefix you configure) 
+These route should point to the vSphere workload network cidrs we defined when we created the vSphere Namespaces. The correct cidr is something we get when we create the vSphere Namespace (it is based on the Subnet prefix you configure) 
 
-<img src=images/image-20230414153901023.png style="width:700px" />
-
-And next-hop (yes you guessed correct) is the uplink interface on the new Tier-0.
-
-<img src=images/image-20230414154020667.png style="width:700px" />
+![static routes on first Tier-0](images/image-20230425210254323.png)
 
 
+
+And next-hop (yes you guessed correct) is the linknet interface on the new Tier-0.
+
+![image-20230425210335204](images/image-20230425210335204.png)
+
+I create the static routes for both the vSphere Namespaces, and I know that it will start using the second /27 subnet in the /24 workload network cidr for the first cluster in each namespace.
 
 So we should have something like this now:
 
-<img src=images/image-20230414154511864.png style="width:700px" />
+![Routes between two Tier-0s](images/image-20230425210731033.png)
+
+
 
 As mentioned above, these routes is maybe easier to create after we have created the vSphere Network with the correct network definition as we can see them being realized in the NSX manager. 
 
@@ -145,118 +272,6 @@ These routes are necessary for the Supervisor and the TKC cluster to be able to 
 
 {{% /notice %}}
 
-### Static Routes
-
-This part can be a bit confusing if not fully understanding how network traffic works in Tanzu with vSphere and NSX. So I decided to create a section on its own for it. 
-By default all vSphere Namespace network are NAT'ed. This means the worker nodes themselves are not exposed with their real IP addresses outside of the Tier-0. NCP will automatically create NAT rules on the corresponding Tier-1 router, the Tier-1 router that is being created for the vSphere Namespace. This includes the workload network side (eth1) of the Supervisor control plane VMs. You can identify the Tier-1 router responsible for your vSphere Namespace by looking for the vSphere Namespace name in the name of the Tier-1 router, like the example below (the initial Tier-1 router created when enabling WCP is just called domain-cXXXXXXXXXXX):
-
-![Tier1 for NS ns-stc-cluste-vrf](images/image-20230424194408005.png)
-
-If we go into NSX and have a look at NAT rules and I have a NAT enabled vSphere Namespace there should be a Source NAT rule created there:
-
-![SNAT rule](images/image-20230424194605015.png)
-
-On the Supervisor T1 (the initial T1 created when enabling WCP) it will also create some NO-NAT rules like these:
-
-![NO-NAT](images/image-20230424194824508.png)
-
-These will be automatically updated with additional NO-NAT Rules each time you create a new vSphere Namespace with new network subnets. The rules above can be explained like this:
-If the Supervisor Control Plane (not the mgmt interface) or anything from the initial default Workload Network (10.13.100.0/23) wants to reach the other vSphere Namespace Workload Networks directly (not ingress network) you shall not hide your true identity, meaning it will use its real IP address and will not be SNAT'ed before going out to the other vSphere NS Workload Networks. 
-
-In a NAT setup the only two networks that are advertised to the outside world is the ingress and egress subnets. 
-
-As explained earlier in this post, for the Supervisor Cluster to be able to fullfill its responsibilities like deploying TKC clusters, supervise and monitor TKC cluster status/health it needs to be able to communicate with these clusters workload network subnets and also the ingress subnet/IP (K8s API Endpoint port 6443) for each vSphere NS/TKC cluster.
-
-Now, in a NAT'ed setup, the workload network is never exposed outside the Tier-0, when the workload network is doing egress traffic it will always be translated into an IP address from the Egress subnet (SNAT rule, shown above) defined and to be able to reach it from the outside (ingress) world we use the ingress network (created by the NSX-T LoadBalancer).
-
-![NSX LoadBalancer L4 K8s API](images/image-20230424202157952.png)
-
-Also in the Tier-0 where you have configured WCP and/or other vSphere Namespaces with NAT enabled there will be created route-maps using IP-prefix lists containing the Workload Network CIDRs with a DENY rule. 
-
-![Auto-created IP Prefix](images/image-20230424202423811.png)
-
-![route-map](images/image-20230424202510141.png)
-
-![matching IP prefix](images/image-20230424202532435.png)
-
-
-
-
-
-As long as we are only using just one Tier-0 router for all our vSphere Namespaces, regardless of how many different subnets we decide to create pr vSphere Namespace they will be known by the same Tier-0 as the Tier-1 will be default configured to advertise to the Tier-0 its connected networks, yes it also advertise NAT IPs and LoadBalancer IPs but these are also configured on the Tier-0 to be further advertised to the outside world. Its only the Tier-0 that can be configured with BGP, as its only the Tier-0 that can be configured to talk to the outside world (external network) by SR T0 using interfaces on the NSX edges (VM or Bare-Metal formfactor). This means there is no need for us to create any routes either on the Tier-1 or Tier-0 when creating different vSphere Namespaces with different subnets. 
-
-So how and where can I create these routes so the Supervisor can be allowed to do its job?
-We can create the routes on the Tier-0s themselves as done above, or they can be created in the upstream physical routers or even other physical routers somewhere in your infrastructure. If creating them on the Tier-0s themselves we need to use a "linknet" between the Tier-0 routers and point to the respective interfaces for their respective network as done earlier in this post. If we use the linknet approach we only need to create the routes for the actual workload network from both workloads, on the respective Tier-0 using the next-hop accordingly. The reason for this is that the Tier-0s are very well aware of whats its connected Tier-1 networks are up to(remember how they are configured to advertise to the Tier-0), they are not hidden behind any IP prefix lists/Route-Maps. So we only need to tell the two Tier-0s where to go if it needs to reach the networks which are not advertised by any dynamic routing protocol as they are "blocked" from being advertised (pr design).
-So to put it a bit into context, I will below explain the scenario in my lab and how they are configured.
-
-{{% notice info "Network overview" %}}
-
-- Tanzu Management network: 10.13.10.0/24 - connected to a NSX Overlay segment - manually created by me
-- Default vSphere Namespace Workload network has NAT enabled and will be using Tier-0-1
-- Default vSphere Namespace Workload network: 10.13.100.0/23  - will be created automatically as a NSX overlay segment. 
-- Default vSphere Namespace Workload network ingress: 10.13.200.0/24
-- Default vSphere Namespace Workload network Egress: 10.13.201.0/24 I am doing NAT on this network (important to have in mind for later)
-- The first Tier-0 (Tier-0-1) has been configured to use uplinks on vlan 1304 in the following cidr: 10.13.4.0/24, specifically 10.13.4.10
-- vSphere Namespace no 2 has NAT disabled and will be using Tier-0-2
-- vSphere Namespace no 2 Workload network: 10.13.51.0/24
-- vSphere Namespace no 2 Workload ingress network: 10.13.52.0/24
-- The second Tier-0 (Tier-0-2) will be using uplink on vlan 1305 in the follwing cidr: 10.13.5.0/24, specifically 10.13.5.14
-- The two Tier-0s will be using a VLAN 1305 as linknet where Tier-0-1 is using 10.13.5.10 and Tier-0-2 is using 10.13.5.14
-
-{{% /notice %}}
-
-Creating static routes on Tier-0 using a linknet between the two Tier-0 routers.
-In order to create the static routes in the two Tier-0s we need to create the static route on the first Tier-0 with a route pointing to the vSphere Namespace no 2 TKC cluster workload network CIDR using the subnet prefix defined in this vSphere Namespace, using the correct subnet. In my vSphere Namespace no 2 I have defined a /27 subnet prefix and I know that the first /27 part of the /24 Namespace Network I have define is always reserved for Supervisor Services, so I will need to either go into NSX and find the subnet that has been allocated for my TKC cluster, or calculate the correct /27 subnet for the first workload cluster deployed in this vSphere Namespace. A /27 netmask will give me 30 usable addresses, 0 is the network and 31 is broadcast. So the first network will be 10.13.51.0-10.13.51.31. That gives me the next usable /27 subnet in the /24 netmask starting from 10.13.51.32/27. That is my network, and that is the static route I need to create on my first Tier-0.
-
-![Tier-0-1 Static route](images/image-20230424231613637.png)
-
-Where Next-Hop is:
-
-![Next-hop](images/image-20230424231645545.png)
-
-the interface IP of my second Tier-0 (Tier-0-2) and for my first Tier-0 to get there (scope) it will be using the link interface I have created for the two Tier-0s to connect over Layer2.  
-
-As illustrated below:
-
-<img src=images/image-20230424230508181.png style="width:700px" />
-
-Remember that the traffic from the Supervisor Workload Network is not NAT'ed when it wants to communicate with the respective vSphere Namespace networks. So I only need to create the route for the two Tier-0s informing them of the actual workload networks from the two vSphere Namespaces (Default vSphere Namespace Workload network and vSphere NS no 2 Workload network).
-
-Now, what if I want to create these routes in my physical routers. Yes, that is also possible, but then we need to tell the physical routers about traffic coming from these workload networks which are suddenly not SNAT'ed anymore as they are reaching the other vSphere Namespace networks. Remember the NO-NAT rule above? 
-
-That means we need to create two routes like this:
-
-```bash
-ip route 10.13.100.0/23 10.13.4.10 #Workload network Default vSphere Namespace
-ip route 10.13.201.0/24 10.13.4.10 #Egress cidr Default vSphere Namespace
-```
-
-Where the first line is the actual Workload Network of my Supervisor Cluster and nexthop is the Tier-0 where this network is connected (not directly but behind a Tier-1 gateway/router) and the second route is the Egress network in the same Workload Network (the Default Workload Network).
-
-![Default vSphere NS Workload network](images/image-20230424204230713.png)
-
-These routes are then created in one of my BGP routers, which can then be propagated to the other BGP routers with route-advertisements. I am only telling the physical world where to go if it happens to stumble (get requests to reach) over these subnets. 
-
-
-
-<img src=images/image-20230424232621719.png style="width:400px" />
-
-Two tier-0s with two vSphere Namespaces, both NAT'ed routes created in the physical routers where 10.13.100.0/24 and 10.13.201.0/24 are Supervisor Workload network and Egress cidr respectively and 10.13.101.0/23 and 10.13.202.0/24 vSphere NS no2 Workload network and Egress cidr respectively :
-
-![NAT2NAT-Routes](images/image-20230424232906293.png)
-
-
-
-When I create a vSphere Namespace with NAT disabled, I only need to create the routes for the Supervisor Workload Network which is NAT enabled.
-
-![NAT2-NO-NAT-Routes](images/image-20230424234038412.png)
-
-![NAT2-NO-NAT-Routes](images/image-20230424234143968.png)
-
-
-
-In short, we only need to take care of the networks that are not advertised or "exposed". In my environment I only have the Supervisor Workload Network NAT'ed. The other vSphere Namespaces is not NAT'ed so I dont have to create any routes for these as they are already advertised, assuming we are using BGP or OSPF to dynamically advertise them from the Tier-0. 
-
 
 
 
@@ -266,10 +281,14 @@ Head over to vCenter -Workload Management and create a new Namespace:
 
 <img src=images/image-20230414155025700.png style="width:500px" />
 
-<img src=images/image-20230414155222954.png style="width:700px" />
+![vSphere ns number 2](images/image-20230425211021081.png)
 
-Give the NS a dns compliant name, select the *Override Supervisor network settings*. From the dropdown select our new Tier-0 router.
-Uncheck NAT (dont need NAT). Fill in the IP addresses you want to use for the TKC worker nodes, and then the ingress cidr you want. 
+As soon as that is done, go ahead and create the third vSphere Namespace with NAT enabled:
+
+![vSphere ns number 3](images/image-20230425211226398.png)
+
+Give the NS'es a dns compliant name, select the *Override Supervisor network settings*. From the dropdown select our new Tier-0 router.
+Uncheck NAT on the vSphere NS number 2 (dont need NAT). Fill in the IP addresses you want to use for the TKC worker nodes, and then the ingress cidr you want. On the vSphere NS number 2 enable NAT and populate an egress cidr also. 
 
 Click Create. Wait a couple of second and head over to NSX and check what has been created there.
 
@@ -277,36 +296,30 @@ In the NSX Manager you should now see the following:
 
 Network Topology:
 
-<img src=images/image-20230418155511027.png style="width:1000px" />
+![NSX Networ Topology](images/image-20230425211453587.png)
 
 
 
 Segments
 
-<img src=images/image-20230414155535867.png style="width:1000px" />
+![Segments created by NCP](images/image-20230425211552491.png)
 
-This network is always created pr vSphere Namespace and is reserved for vSphere Pods/vSphere Services.
-A second segment is created which is of our interest:
+These network is automatically created by NCP, and the first /27 segment in all vSphere Namespace created will be reserved for Supervisor services, like vSphere pods etc.
+The second /27 segment is the first available network for the workload clusters. This will in my case start at 10.101.82.32/27 and 10.101.83.32/27 accordingy. 
 
-<img src=images/image-20230414155729832.png style="width:1000px" />
+Under LoadBalancing we also got a couple of new objects:
 
-This is where our first TKC Nodes in this vSphere Namespace will be placed. And we can now get the correct cidr for our static routes created above. The subnet here is 10.13.51.32727 as NSX is showing is the GW address to be 10.13.51.33/27.
+![Loadbalancing](images/image-20230425211911121.png)
 
-Under LoadBalancing we also got a new object:
-
-<img src=images/image-20230414155956341.png style="width:1000px" />
-
-This is our Ingress for the TKC API. 
-
-<img src=images/image-20230414160053703.png style="width:1000px" />
+This is our ingress for the workload cluster Kubernetes API. 
 
 
 
-Under Tier-1 gateways we have a new Tier-1 gateway:
+Under Tier-1 gateways we have new Tier-1 gateways:
 
-<img src=images/image-20230414160704104.png style="width:1000px" />
+![Tier-1 gateways](images/image-20230425212018727.png)
 
-(Strangely enough placed in the old Edge cluster). 
+ 
 
 Now it is time to deploy your new TKC cluster with the new Tier-0. Its the same procedure as every other TKC cluster. Give it a name and place it in the correct Namespace:
 
@@ -364,7 +377,13 @@ And a couple of minutes later (if all preps have been done correctly) you should
 
 ## NSX and Tanzu configurations with NSX VRF
 
-In NSX-T 3.0 VRF was a new feature, and configuring it was a bit cumbersome, but already from NSX-T 3.1 adding and configuring a VRF Tier-0 is very straightforward. The benefit of using VRF is that it does not dictate the requirement of additional NSX Edges, and we can create many VRF T0s. We can "reuse" the same Edges that has already been configured with a Tier-0. Instead a VRF T0 will be linked to that already existing Tier-0 which will then be the Parent Tier-0. Some settings will be inherited from the parent Tier-0 like BGP AS number. But we can achieve ip-separation by using individual uplinks on the VRF Tier-0s and peer to different upstream routers than our parent Tier-0. The VRF Tier0 will have its own Tier-1 linked to it. So all the way from the physical world to the VM we have a dedicated ip network. To be able to configure VRF Tier-0 we need to make sure the uplinks our Edges have been configured with have the correct vlan trunk range so we can create dedicated VRF Tier0 uplink segments in their respective vlan. The VRF Tier0 will use the same "physical" uplinks as the Edges have been configured with, but using different VLAN for the Tier-0 uplinks. I will go through how I configre VRF T0 in my environment. Pr default there is no route leakage between the parent Tier-0 and the VRF-T0 created, if you want to exhange routes between them we need to create those static routes ourselves. Read more about NSX VRF [here](https://docs.vmware.com/en/VMware-NSX/4.1/administration/GUID-8C060C35-1AD2-4B71-AB15-C551F392E528.html). 
+In NSX-T 3.0 VRF was a new feature, and configuring it was a bit cumbersome, but already from NSX-T 3.1 adding and configuring a VRF Tier-0 is very straightforward. The benefit of using VRF is that it does not dictate the requirement of additional NSX Edges, and we can create many VRF T0s. We can "reuse" the same Edges that has already been configured with a Tier-0. Instead a VRF T0 will be linked to that already existing Tier-0 which will then be the Parent Tier-0. Some settings will be inherited from the parent Tier-0 like BGP AS number for NSX-T versions before 4.1. From NSX-T 4.1 it is now also possible to override the BGP AS number in the VRF-T0, its no longer tied to the parent T0s BGP AS. We can achieve ip-separation by using individual uplinks on the VRF Tier-0s and peer to different upstream routers than our parent Tier-0. The VRF Tier0 will have its own Tier-1 linked to it. So all the way from the physical world to the VM we have a dedicated ip network. To be able to configure VRF Tier-0 we need to make sure the uplinks our Edges have been configured with have the correct vlan trunk range so we can create dedicated VRF Tier0 uplink segments in their respective vlan. The VRF Tier0 will use the same "physical" uplinks as the Edges have been configured with, but using different VLAN for the Tier-0 uplinks. I will go through how I configre VRF T0 in my environment. Pr default there is no route leakage between the parent Tier-0 and the VRF-T0 created, if you want to exhange routes between them we need to create those static routes ourselves. Read more about NSX VRF [here](https://docs.vmware.com/en/VMware-NSX/4.1/administration/GUID-8C060C35-1AD2-4B71-AB15-C551F392E528.html). 
+
+{{% notice info "Tip" %}}
+
+From NSX-T 4.1 it is now also possible to override the BGP AS number in the VRF-T0, its no longer tied to the parent T0s BGP AS
+
+{{% /notice %}}
 
 In this part of my lab I use the following IP addresses for the following components:
 
