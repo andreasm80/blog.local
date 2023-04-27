@@ -410,6 +410,12 @@ Under Tier-1 gateways we have new Tier-1 gateways:
 
 ![Tier-1 gateways](images/image-20230425212018727.png)
 
+If you take a closer look at the new Tier-1s, you probably would expect them to be created on the new edge-cluster you created and placed your Tier-0 on? No, its not doing that.
+
+It used the edge-cluster the Supervisor has been configured to use. Thats pr design. So dont try to troubleshoot this. Reboot the Edge nodes, NSX managers, ESXi hosts etc. It is like that.
+
+![edge-cluster](images/image-20230427160531075.png)
+
  
 
 Now it is time to deploy your new TKC cluster with the new Tier-0. Its the same procedure as every other TKC cluster. Give it a name and place it in the correct Namespace:
