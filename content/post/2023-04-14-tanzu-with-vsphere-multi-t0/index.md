@@ -79,7 +79,96 @@ But how? We have this no SNAT rule, but at the same time we have a route-map den
 ![static routes between tier-0s](images/image-20230425192920493.png)
 
 Nice, right?
-This means we dont need to interfere with these static routes in the physical routers, they were supposed to be NAT'ed right? So we dont want them in our physical routers anyway. This traffic will then never leave the "outside" of the Tier-0s via their uplinks connected to their respective BGP/Upstream routers as we are using the "linknet" between them. 
+This means we dont need to interfere with these static routes in the physical routers, they were supposed to be NAT'ed right? So we dont want them in our physical routers anyway. This traffic will then never leave the "outside" of the Tier-0s via their uplinks connected to their respective BGP/Upstream routers as we are using the "linknet" between them. This will be true as long as the destination subnet is for the subnets defined in the no-nat rules and we have defined the static routes to go over the linknet.
+
+To further show evidence of how this looks, let us do a "traffic walk" from the Supervisor Cluster Control Plane vm's workload network to the other workload cluster networks on the second Tier-0 router. First an attempt to draw this:
+
+![traffic walk](images/image-20230427142746406.png)
+
+The diagram above tries to illustrate what the actual IP address being used in regards of the destination subnet. If we quickly take a look at the no-snat rules created in NSX again:
+
+![no nat and snat rules](images/image-20230427143116306.png)
+
+The first 4 no-snat rules tells the Tier-1 router to NOT do any SNAT on the source IP if the source subnet happens to be 10.101.80/23 (SVC workload network) and the destination happens to be any of the four defined subnets in each NO-SNAT rules (10.101.80/23 itself, 10.101.82.0/24, 10,101.90.0/24 its own ingress cidr, and 10.101.83.0/24).
+
+So if I do a tcpdump on one of my workload clusters control plane nodes, and fitering on ip coming from the supervisor control planes workload network. Will I then see the NATed address or will I see their real IP?
+
+```bash
+vmware-system-user@wdc-vrf-cluster-1-ls6ct-5pgdf:~$ sudo tcpdump src net 10.101.80.0/27
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+12:39:06.351632 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [P.], seq 1537746084:1537746122, ack 2981756064, win 6516, options [nop,nop,TS val 2335069578 ecr 3559626446], length 38
+12:39:06.356621 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [.], ack 91, win 6516, options [nop,nop,TS val 2335069583 ecr 3559634990], length 0
+12:39:06.356621 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [.], ack 7589, win 6477, options [nop,nop,TS val 2335069583 ecr 3559634990], length 0
+12:39:06.356621 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [P.], seq 38:73, ack 7589, win 6516, options [nop,nop,TS val 2335069584 ecr 3559634990], length 35
+12:39:06.400033 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [.], ack 7620, win 6516, options [nop,nop,TS val 2335069626 ecr 3559634991], length 0
+12:39:06.794326 IP 10.101.80.2.59524 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [S], seq 2927440799, win 64240, options [mss 1460,sackOK,TS val 2841421479 ecr 0,nop,wscale 7], length 0
+12:39:06.797334 IP 10.101.80.2.59524 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [.], ack 907624276, win 502, options [nop,nop,TS val 2841421483 ecr 3559635431], length 0
+12:39:06.797334 IP 10.101.80.2.59524 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [F.], seq 0, ack 1, win 502, options [nop,nop,TS val 2841421483 ecr 3559635431], length 0
+12:39:06.800095 IP 10.101.80.2.59524 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [.], ack 2, win 502, options [nop,nop,TS val 2841421486 ecr 3559635434], length 0
+12:39:06.809982 IP 10.101.80.3.58013 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [P.], seq 1460837974:1460838009, ack 2147601163, win 1312, options [nop,nop,TS val 1221062723 ecr 4234259718], length 35
+```
+
+ If I filter on port 6443:
+
+```bash
+vmware-system-user@wdc-vrf-cluster-1-ls6ct-5pgdf:~$ sudo tcpdump port 6443
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+12:40:57.817560 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [P.], seq 1537768767:1537768802, ack 2982048853, win 6516, options [nop,nop,TS val 2335181040 ecr 3559745035], length 35
+12:40:57.817560 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [P.], seq 35:174, ack 1, win 6516, options [nop,nop,TS val 2335181041 ecr 3559745035], length 139
+12:40:57.817643 IP wdc-vrf-cluster-1-ls6ct-5pgdf.6443 > 10.101.80.2.34116: Flags [.], ack 35, win 501, options [nop,nop,TS val 3559746454 ecr 2335181040], length 0
+12:40:57.817677 IP wdc-vrf-cluster-1-ls6ct-5pgdf.6443 > 10.101.80.2.34116: Flags [.], ack 174, win 501, options [nop,nop,TS val 3559746454 ecr 2335181041], length 0
+12:40:57.819719 IP wdc-vrf-cluster-1-ls6ct-5pgdf.6443 > 10.101.80.2.34116: Flags [P.], seq 1:90, ack 174, win 501, options [nop,nop,TS val 3559746456 ecr 2335181041], length 89
+12:40:57.864302 IP 10.101.80.2.34116 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [.], ack 90, win 6516, options [nop,nop,TS val 2335181086 ecr 3559746456], length 0
+12:40:58.590194 IP 10.101.92.3.4120 > wdc-vrf-cluster-1-ls6ct-5pgdf.6443: Flags [P.], seq 1810063827:1810063865, ack 3070977968, win 5820, options [nop,nop,TS val 1030353737 ecr 937884951], length 38
+```
+
+What do I see? I see the source address being the real IP addresses from the Supervisor Control Plane VMs (10.101.80.x). I also see 10.101.92.3 which happens to be the workload clusters own ingress. 
+
+After these static routes have been added I also just want to do a traceroute from the supervisor vm to the workload cluster control plane node to show how I have altered the next hops it will use to get there:
+
+```bash
+root@422080039f397c9aa239cf40e4535f0d [ ~ ]# traceroute -T -p 22 -i eth1 10.101.82.34
+traceroute to 10.101.82.34 (10.101.82.34), 30 hops max, 60 byte packets
+ 1  _gateway (10.101.80.1)  0.265 ms  0.318 ms  0.295 ms
+ 2  100.64.0.4 (100.64.0.4)  1.546 ms  1.518 ms  1.517 ms
+ 3  10.101.240.13 (10.101.240.13)  9.603 ms  9.551 ms  9.568 ms
+ 4  * * *
+ 5  10.101.82.34 (10.101.82.34)  10.378 ms  10.296 ms  10.724 ms
+```
+
+Now if I do the same traceflow from the same Supervisor vm, but to the workload cluster's vip (10.101.92.0/24) which is exposed via BGP...
+
+```bash
+root@422080039f397c9aa239cf40e4535f0d [ ~ ]# traceroute -T -p 22 -i eth1 10.101.92.3
+traceroute to 10.101.92.3 (10.101.92.3), 30 hops max, 60 byte packets
+ 1  _gateway (10.101.80.1)  0.229 ms  0.263 ms  0.237 ms
+ 2  100.64.0.4 (100.64.0.4)  1.025 ms  1.006 ms  0.972 ms
+ 3  10.101.4.1 (10.101.4.1)  1.405 ms  1.408 ms  1.524 ms
+ 4  10.101.7.13 (10.101.7.13)  2.123 ms  2.037 ms  2.019 ms
+ 5  10.101.92.3 (10.101.92.3)  2.562 ms  2.197 ms  2.499 ms
+```
+
+It will not take the same route to get there. It will actually go all the way out to the physical BGP peers, and then over to the second Tier-0 router. 
+
+But if I do the same traceroute from my workload cluster nodes, traceroute the Supervisor workload VIP (which is also exposed via BGP)?
+
+```bash
+vmware-system-user@wdc-vrf-cluster-1-ls6ct-5pgdf:~$ sudo traceroute -T -p 22 10.101.90.2
+traceroute to 10.101.90.2 (10.101.90.2), 30 hops max, 60 byte packets
+ 1  _gateway (10.101.82.33)  0.494 ms  1.039 ms  1.015 ms
+ 2  100.64.0.0 (100.64.0.0)  1.460 ms  1.451 ms  1.441 ms
+ 3  10.101.240.10 (10.101.240.10)  3.120 ms  3.108 ms  3.099 ms
+ 4  10.101.90.2 (10.101.90.2)  3.115 ms  3.105 ms  3.095 ms
+```
+
+ It will go over the Tier-0 linknet. Why, because on the second Tier-0 router I have created two static routes pointing to both the Supervisor workload cluster subnet and Supervisor VIP altering the next-hops. See below:
+
+![static routes on the tier-0-2](images/image-20230427150248091.png)
+
+
+
 And also, did I mention that there will be created a route-map on the Tier-0 for the vSphere Namespace Networks with corresponding IP-prefix lists prohibiting the workload networks ip subnets to be advertised through BGP/OSPF from the Tier-0 and its upstream bgp neigbours. 
 
 ![route-map](images/image-20230425192622624.png)
@@ -219,7 +308,9 @@ Next configure BGP and the BGP peering with your upstream router:
 The last thing we need to do in our newly created Tier-0 is to create two static routes that can help us reach the Workload Network on the Supervisor Control Plane nodes on their actual IP addresses (remember our talk above?). 
 On the newly created Tier-0 (Tier-0-2) click on Routing -> Static Routes and add the following route (Supervisor workload network): 
 
-![Static routes tier-0-2](images/image-20230425215845504.png)
+![Static routes tier-0-2](images/image-20230427145518942.png)
+
+
 
 The two routes created is the Supervisor workload network cidr and the actual ingress vip /32. 
 
@@ -242,7 +333,7 @@ Save.
 Next up is the route:
 These route should point to the vSphere workload network cidrs we defined when we created the vSphere Namespaces. The correct cidr is something we get when we create the vSphere Namespace (it is based on the Subnet prefix you configure) 
 
-![static routes on first Tier-0](images/image-20230425210254323.png)
+![static routes on first Tier-0](images/image-20230427145625390.png)
 
 
 
