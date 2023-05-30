@@ -182,7 +182,7 @@ I dont want to go into a big writeup on the difference between these two other t
 
 {{% notice info "Info" %}}
 
-Why I am mentioning this? Why could I not just focus on NSX Advanced Loadbalancer that can cover all my needs? That is because in this specific post I am hitting a special use-case where I want to have my TKG cluster placed in one datacenter managed by its own NSX-T, while I want to deploy and manage my TKG workload clusters in a completely different datacenter also managed by its own NSX-T. And as of now I am not allowed to override the control-plane network, the network where I can place the virtual IP address for the Kubernetes endpoint of my TKG clusters. It is currently not possible to override the NSX-T Tier1 for the the control-plane network, as these are different due to two different NSX-T environments, I can name the Tier-1 routers identically  in both datacenters, but its not so easily fooled :smile:
+Why I am mentioning this? Why could I not just focus on NSX Advanced Loadbalancer that can cover all my needs? That is because in this specific post I am hitting a special use-case where I have my TKG management cluster placed in one datacenter managed by its own NSX-T, while I want to deploy and manage TKG workload clusters in a completely different datacenter also managed by its own NSX-T. And as of now I am not allowed to override the control-plane network, the network where I can place the virtual IP address for the Kubernetes endpoint of my TKG clusters. It is currently not possible to override the NSX-T Tier1 for the the control-plane network, as these are different due to two different NSX-T environments, I can name the Tier-1 routers identically  in both datacenters, but its not so easily fooled :smile:
 
 
 
