@@ -25,7 +25,7 @@ summary: In this post I will quickly go through how to deploy vSphere with Tanzu
 # vSphere with Tanzu and Multi-Zone 
 
 This post will be a brief introduction of how we can deploy and configure vSphere with Tanzu on three vSphere clusters (vSphere Zones) to achieve better availability of the TKG clusters and Supervisor controlplane nodes. This feature came with Sphere 8, not available in vSphere 7.
-There are some pre-reqs that needs to be in place for this to work in addition to the pre-reqs for deploying vSphere with Tanzu on a single vSphere cluster. I will list them below later.
+There are some requirements that needs to be addressed for this to work in addition to the pre-reqs for deploying vSphere with Tanzu on a single vSphere cluster. I will list them below later.
 
 From the official VMware [documentation](https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-with-tanzu-concepts-planning/GUID-3E4E6039-BD24-4C40-8575-5AA0EECBBBEC.html):
 
@@ -63,7 +63,7 @@ From the official documentation:
 
 ### Network
 
-To be able to deploy a three-zone Supervisor an important requirement on the networking side is that all vSphere cluster to be used is connected to the same VDS. One VDS shared across all three vSphere clusters. 
+To be able to deploy a three-zone Supervisor an important requirement on the networking side is that all vSphere clusters to be used are connected to the same VDS. One VDS shared across all three vSphere clusters. 
 From the official documentation:
 
 >
@@ -72,15 +72,15 @@ From the official documentation:
 Not sure what is meant with connecting to the same L2 physical device though...
 But anyhow, this constraint can be a limiting factor and something to be aware of. Some explanations:
 
-If you have an NSX environment with one common Overlay transportzone across all vSphere clusters, but configured with three individual VDS switches (1 specific VDS pr vSphere cluster) it is currently not supported. Having individual VDS switches pr cluster allows you to have only relevant portgroups in your vSphere clusters that are configured specifically for their respective clusters network, different vlans, placed in different racks and there is no L2 between them, only L3. The different vSphere clusters can be on different racks with different ToR switches, in a Spine-Leaf topology, different subnets/vlans configured for mgmt, vmotion, vSAN, Geneve tunnel VLAN, VM network and so on.
+If you have an NSX environment with one common Overlay transportzone across all vSphere clusters, but configured with three individual VDS switches (1 specific VDS pr vSphere cluster) it is currently not supported. Having individual VDS switches per cluster allows you to have only relevant portgroups in your vSphere clusters that are configured specifically for their respective cluster's network, different vlans, placed in different racks and there is no L2 between them, only L3. The different vSphere clusters can be on different racks with different ToR switches, in a Spine-Leaf topology, different subnets/vlans configured for mgmt, vmotion, vSAN, Geneve tunnel VLAN, VM network and so on.
 
 An example when having a dedicated VDS pr vSphere cluster:
 
 ![dedicated vds pr cluster](images/image-20230504085748736.png)
 
-the illustration above indicates that we have portgroups defined that is valid for the VLAN trunks configured to the attached ToR switches with the corresponding VLAN trunks. So there is no risk of using any of the portgroups defined in the respective VDS in any of the above two vSphere clusters to use VLAN portgoups that has not been defined in the ToR switches trunk-ports. That means you will not end up with any unrelevant portgroups not valid for the respective cluster they are being used in. All this depends on the vlan trunks configured in the ToR switches. There is no need to have portgroups spanning across different vSphere clusters with unrelevant vlan tags. They will just end up not getting anywhere, and create a lot of "noise" for the admin managing these portgroups. 
+The illustration above indicates that we have portgroups defined that is valid for the VLAN trunks configured to the attached ToR switches with the corresponding VLAN trunks. So there is no risk of using any of the portgroups defined in the respective VDS in any of the above two vSphere clusters to use VLAN portgoups that has not been defined in the ToR switches trunk-ports. That means you will not end up with any unrelevant portgroups not valid for the respective cluster they are being used in. All this depends on the vlan trunks configured in the ToR switches. There is no need to have portgroups spanning across different vSphere clusters with unrelevant vlan tags. They will just end up not getting anywhere, and create a lot of "noise" for the admin managing these portgroups. 
 
-The example below illustrates one shared VDS across all vSphere clusters, where we have differentiating ToR VLAN trunks, configured pr rack. 
+The example below illustrates one shared VDS across all vSphere clusters, where we have differentiating ToR VLAN trunks, configured per rack. 
 
 ![shared vds](images/image-20230504091255522.png)
 
@@ -88,7 +88,7 @@ The example below illustrates one shared VDS across all vSphere clusters, where 
 
 As we are using the same VDS across all clusters, all portgroups defined in this shared VDS is accessible and visible for all ESXi hosts participating in this VDS. This means they can easily be used, but they may not be the correct portgroups to be used for this cluster as the underlaying ToR switches may not have the correct vlan trunks for the ESXi hosts uplinks (pNICs).
 
-That is just something to be aware of. If your ESXi hosts have been configured with more than two pNICs it is also possible to have one dedicated VDS pr cluster for services specificially for the respective ESXi clusters and one shared for services that are configured identically across the clusters. 
+That is just something to be aware of. If your ESXi hosts have been configured with more than two pNICs it is also possible to have one dedicated VDS per cluster for services specificially for the respective ESXi clusters and one shared for services that are configured identically across the clusters. 
 
 ### Storage
 
@@ -145,14 +145,14 @@ From the official documentation:
 
 ## Deployment time
 
-Now that we have gone through the requirements I will start det actual installation/deployment steps of vSphere with Tanzu in a three-zone setup. 
+Now that we have gone through the requirements I will start the actual installation/deployment steps of vSphere with Tanzu in a three-zone setup. 
 This post is assuming an already configured and working vSphere environment and NSX installation. Will only focus on the actual deployment of vSphere with Tanzu in a three-zone setup.
 
 This is how my environment looks like on a vSphere level before enabling the three-zone Supervisor:
 
 ![vsphere environment](images/image-20230505083355519.png)
 
-My vSphere cluster consists of three vSphere cluster with 4 esxi hosts each. They are all connected to the same Distributed Virtual Switch, but with different portgroups as their backend vlans is different between the clusters. The only common portgroups they share is all the overlay segments created from NSX (they are all part of the same Overlay TransportZone). Each cluster has its own VSAN datastore, not shared or stretched between the clusters. VSAN local to every vSphere cluster. 
+My vSphere cluster consists of three vSphere cluster with 4 ESXi hosts each. They are all connected to the same Distributed Virtual Switch, but with different portgroups as their backend vlans is different between the clusters. The only common portgroups they share is all the overlay segments created from NSX (they are all part of the same Overlay TransportZone). Each cluster has its own VSAN datastore, not shared or stretched between the clusters. VSAN local to every vSphere cluster. 
 
 ## Enable three-zone Supervisor
 
@@ -162,7 +162,7 @@ Before I can go ahead and enable a three-zone Supervisor I need to create the vS
 
 ![vSphere zones](images/image-20230505084320172.png)
 
-Click on the vCenter in the inventory three -> Configure > vSphere Zones. 
+Click on the vCenter in the inventory tree -> Configure > vSphere Zones. 
 From there I need to create three zones representing my three vSphere clusters. 
 Click Add New vSphere Zone:
 
@@ -214,7 +214,7 @@ Now that the storage policy is in place next up is the actual deployment of the 
 
 ### Deploy the three-zone Supervisor
 
-When all the pre-requirements have been done, the actual enablement of the Supervisor is not so different from a regual Supervisor enablement, but let us go through the steps anyway.
+When all the prerequisites have been done, the actual enablement of the Supervisor is not so different from a regual Supervisor enablement, but let us go through the steps anyway.
 
 Head over to *Workload Management*
 
@@ -238,11 +238,11 @@ Step 2 is the only step that is done different from a single-zone deployment.
 
 
 
-In step I select my newly created "zonal" policy, notice that we only have to select the *Control Plane Storage Policy* 
+In step 3 I select my newly created "zonal" policy, notice that we only have to select the *Control Plane Storage Policy* 
 
 ![storage-policy](images/image-20230505091111465.png)
 
-Then in step it is the Supervisor management network configurations, here I am using my ls-mgmt NSX overlay segment which is common/shared across all esxi hosts/vSphere cluster.
+Then in step 4 it is the Supervisor management network configurations, here I am using my ls-mgmt NSX overlay segment which is common/shared across all esxi hosts/vSphere cluster.
 
 ![network](images/image-20230505091232350.png)
 
@@ -252,7 +252,7 @@ In step 5 its the Supervisor Workload network configurations.
 
 
 
-Then in the last step its finish time, or put in a dns name for the supervisor k8s api endpoint. 
+Then in the last step its review and finish time, or put in a dns name for the supervisor k8s api endpoint. 
 
 ![review-confirm](images/image-20230505091501527.png)
 
@@ -266,9 +266,9 @@ Now let us head back to vCenter inventory view and check whats going on there.
 
 ![three supervisors](images/image-20230505091803400.png)
 
-As I can see from the screenshot above, the three supervisors will be distributed across my three vSphere clusters, one Supervisor pr vSphere cluster. 
+As you can see from the screenshot above, the three supervisors will be distributed across my three vSphere clusters, one Supervisor per vSphere cluster. 
 
-This conclues the enabling of a three-zone Supervisor cluster. Next step is to deploy your TKC or guest clusters.
+This concludes the enabling of a three-zone Supervisor cluster. Next step is to deploy your TKC or guest clusters.
 
 ### Deploy a TKC/guest cluster in a three-zone
 
