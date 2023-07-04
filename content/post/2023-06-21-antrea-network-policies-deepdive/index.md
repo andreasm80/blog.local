@@ -21,7 +21,7 @@ tags:
   - antrea
   - tmc
  
-summary: In this post I will go through how to utilize Antrea Network policies with Tanzu Mission Control and a little bit NSX. So jump in and hopefully get some ideas how much we can do with Antrea Network Policies and how to use them.
+summary: In this post I will go through how to utilize Antrea Network policies with Tanzu Mission Control and a little bit NSX. So jump in and hopefully get some ideas how what we can do with Antrea Network Policies and how to use them.
 comment: false # Disable comment if false.
 ---
 
@@ -44,11 +44,11 @@ As usual, for more details on the above mentioned product head over to the below
 
 ## Different layers of security, different personas, different enforcement points
 
-This post will mostly be focusing in on the Kubernetes perspective, using specifically Antrea Network policies to restrict traffic inside the Kubernetes cluster. A Kubernetes cluster is just one infrastructure solution in the organization, but for many a very important one so it needs to be secured with a set of tools to satisfy the security policy guidelines in the organization. In a typical datacenter we have several security mechanisms in place like AV agents, physical firewall, virtual firewall, NSX distributed firewall. All these play an important role in the different layers of the datacenter/organization. Assuming the Kubernetes worker nodes are running virtual machines on VMware vSphere the below illustration describes two layers of security using NSX distributed firewall securing the VM workers, and Antrea Network Policies securing pods, services inside the Kubernetes cluster.
+This post will mostly be focusing in on the Kubernetes perspective, using specifically Antrea Network policies to restrict traffic inside the Kubernetes cluster. A Kubernetes cluster is just one infrastructure component in the organization, but contains many moving parts with applications and services inside. Even inside a Kubernetes cluster there can be different classifications for what should be allowed and not. Therefore a Kubernetes cluster is also in need to be to be secured with a set of tools and policies to satisfy the security policy guidelines in the organization. A Kubernetes cluster is another layer in the infrastructure that needs to be controlled. In a typical datacenter we have several security mechanisms in place like AV agents, physical firewall, virtual firewall, NSX distributed firewall. All these play an important role in the different layers of the datacenter/organization. Assuming the Kubernetes worker nodes are running as virtual machines on VMware vSphere the below illustration describes two layers of security using NSX distributed firewall securing the VM workers, and Antrea Network Policies securing pods, services inside the Kubernetes cluster.
 
 ![two-layers](images/image-20230628155554248.png)
 
- With the illustration above in mind it is fully possible to create a very strict environment with no unwanted lateral movement. Meaning only the strict necessary firewall openings inside the kubernetes cluster between pods, namespaces services, but also between workers in same subnet and across several several Kubernetes clusters. But the above two layers, VMs in vSphere protected by the NSX distributed firewall and apps running Kubernetes clusters and protected by Antrea Network policies, are often managed by different personas in the organization. We have the vSphere admins, Network admins, Security Admins, App Operators and App Developers. Security is crucial in a modern datacenter, so, again, the correct tools needs to be in place for the organizations security-framework to be implemented all the way down the "stack" to be compliant. Very often there is a decided theoretical security framework/design in place, but that plan is not always so straightforward to implement. 
+ With the illustration above in mind it is fully possible to create a very strict environment with no unwanted lateral movement. Meaning only the strict necessary firewall openings inside the kubernetes cluster between pods, namespaces and services, but also between workers in same subnet and across several several Kubernetes clusters. But the above two layers, VMs in vSphere protected by the NSX distributed firewall and apps running Kubernetes clusters and protected by Antrea Network policies, are often managed by different personas in the organization. We have the vSphere admins, Network admins, Security Admins, App Operators and App Developers. Security is crucial in a modern datacenter, so, again, the correct tools needs to be in place for the organization's security-framework to be implemented all the way down the "stack" to be compliant. Very often there is a decided theoretical security framework/design in place, but that plan is not always so straightforward to implement. 
 
 Going back to Kubernetes again and Antrea Network policies. Antrea feature several static (and optional custom) [Tiers](https://antrea.io/docs/v1.12.0/docs/antrea-network-policy/#tier) where different types of network policies can be applied. As all the Antrea Network policies are evaluated "top-down" it is very handy to be able to place some strict rules very early in the "chain" of firewall policies to ensure the organization's security compliance is met. Being able to place these rules at the top prohibits the creation of rules further down that contradicts these top rules, they will not be evaluated. Then there is room to create a framework that gives some sense of "flexibility" to support the environment's workload according to the type of classification (prod, dev, test, dmz, trust, untrust). Other policies can be applied to further restrict movement before hitting a default block rule that takes care of anything that is not specified earlier in the "chain" of policies. The illustration below is an example of whom and where these personas can take charge and apply their needed policies.       
 
@@ -649,13 +649,498 @@ By enabling this feature in TMC its just all about adding or attaching your clus
 
 ## Applying Antrea policies with NSX
 
-NSX Searc policy id traceflow.. will show real rule. 
+With NSX one can also manage the native Antrea policies inside each TKC cluster (or any other Kubernetes cluster Antrea supports for that matter). I have written about this [here](https://blog.andreasm.io/2023/06/01/managing-antrea-in-vsphere-with-tanzu/#integrating-antrea-with-nsx-t). NSX can also create security policies "outside" the TKC cluster by using the inventory information it gets from Antrea and enforce them in the NSX Distributed firewall, a short section on this below. 
+
+### Applying Antrea native policies from the NSX manager 
+
+So in this section I will quickly go through using the same "framework" as above using NSX as the "management-plane". 
+Just a reminder, we have these three policies:
+
+```bash
+NAME                                     TIER          PRIORITY   DESIRED NODES   CURRENT NODES   AGE
+acnp-drop-except-own-cluster-node-cidr   securityops   8          3               3               23h
+allow-all-egress-dns-service             securityops   8          4               4               23h
+strict-ns-isolation-except-system-ns     securityops   9          3               3               23h
+```
+
+The first rule is allowing only traffic to the nodes in its own cluster - matches this requirement "*All Kubernetes workload clusters are considered isolated and not allowed to reach nothing more than themselves, including pods and services (all nodes in the same cluster)*"
+
+The second rule is allowing all namespaces to access the *kube-dns* service in the *kube-system* namespace - matches this requirement "*Only necessary backend functions such as DNS/NTP are allowed*"
+
+The third rule is dropping all traffic between namespaces, except the "system"-namespaces I have defined. But it allows intra communication inside each namespace - matches this requirement "*All non-system namespaces should be considered "untrusted" and isolated by default*"
+
+In NSX I will need to create some Security Groups, then use these groups in a Security Policy. So I will start by creating the Security Group for the concerning kube-dns service:
+
+One can either define the service kube-dns: 
+
+![sg-kube-dns](images/image-20230703124322874.png)
+
+Or the pods that is responsible for the DNS service (CoreDNS:
+
+![dns-pods](images/image-20230703140557678.png)
+
+This depends on how we define the policy in NSX. I have gone with the pod selection group.
+
+AS the requirement supports all services to access DNS, I dont have to create a security group for the source. Then the policy will look like this in NSX:
+
+![dns-policy-all](images/image-20230703140707117.png)
+
+Notice also that I have placed the policy in the *Infrastructrue* Tier in NSX. 
+
+This is how it looks like in the Kubernetes clusters:
+
+```yaml
+andreasm@linuxvm01:~/antrea/policies/groups$ k get acnp 933e463e-c061-4e80-80b3-eff3402e41a9 -oyaml
+apiVersion: crd.antrea.io/v1alpha1
+kind: ClusterNetworkPolicy
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: k8s-core-dns
+  creationTimestamp: "2023-06-27T11:15:30Z"
+  generation: 11
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: 933e463e-c061-4e80-80b3-eff3402e41a9
+  resourceVersion: "2248486"
+  uid: a5d7378d-ede0-4f8c-848b-413c10ce5602
+spec:
+  egress:
+  - action: Allow
+    appliedTo:
+    - podSelector: {}
+    enableLogging: false
+    name: "2025"
+    ports:
+    - port: 53
+      protocol: TCP
+    - port: 53
+      protocol: UDP
+    to:
+    - group: c7e96b35-1961-4659-8a62-688a0e98fe63
+  priority: 1.0000000177635693
+  tier: nsx-category-infrastructure
+status:
+  currentNodesRealized: 4
+  desiredNodesRealized: 4
+  observedGeneration: 11
+  phase: Realized
+```
+
+```bash
+andreasm@linuxvm01:~/antrea/policies/groups$ k get tiers
+NAME                          PRIORITY   AGE
+application                   250        6d1h
+baseline                      253        6d1h
+emergency                     50         6d1h
+networkops                    150        6d1h
+nsx-category-application      4          6d
+nsx-category-emergency        1          6d
+nsx-category-environment      3          6d
+nsx-category-ethernet         0          6d
+nsx-category-infrastructure   2          6d
+platform                      200        6d1h
+securityops                   100        6d1h
+```
+
+For the next policy, allowing only node in same cluster, I will need to create two groups with "ip-blocks" containing all RFC1918 in one group and the actual node range in the second:
+![all-rfc1918](images/image-20230703141115420.png)
+
+![dev-cluster-1-cidr](images/image-20230703141312909.png)
+
+The policy in NSX will then look like this:
+![own-cidr-allow](images/image-20230703145201241.png)
+
+This is how it looks like in the Kubernetes clusters:
+
+```yaml
+apiVersion: crd.antrea.io/v1alpha1
+kind: ClusterNetworkPolicy
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: dev-cluster-1-intra
+  creationTimestamp: "2023-07-03T12:27:13Z"
+  generation: 2
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: 17dbadce-06cf-4d1e-9747-3e888f0f58e0
+  resourceVersion: "2257468"
+  uid: 73814a58-2da8-44c2-ba85-2522865430d1
+spec:
+  egress:
+  - action: Allow
+    appliedTo:
+    - podSelector: {}
+    enableLogging: false
+    name: "2027"
+    to:
+    - group: 2051f64c-8c65-46a2-8397-61c926c8c4ce
+  - action: Drop
+    appliedTo:
+    - podSelector: {}
+    enableLogging: false
+    name: "2028"
+    to:
+    - group: 5bfc16b1-08f3-48bd-91f9-fee3d66762b1
+  priority: 1.000000017763571
+  tier: nsx-category-infrastructure
+status:
+  currentNodesRealized: 4
+  desiredNodesRealized: 4
+  observedGeneration: 2
+  phase: Realized
+```
+
+Where the groups contain this:
+
+```yaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: 2051f64c-8c65-46a2-8397-61c926c8c4ce
+  creationTimestamp: "2023-07-03T12:27:13Z"
+  generation: 1
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: 2051f64c-8c65-46a2-8397-61c926c8c4ce
+  resourceVersion: "2257281"
+  uid: 18009c1b-c44f-4c75-a9f2-8a30e2415859
+spec:
+  childGroups:
+  - 2051f64c-8c65-46a2-8397-61c926c8c4ce-0
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T12:27:13Z"
+    status: "True"
+    type: GroupMembersComputed
+andreasm@linuxvm01:~/nsx-antrea-integration$ k get clustergroup 2051f64c-8c65-46a2-8397-61c926c8c4ce-0 -oyaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: 2051f64c-8c65-46a2-8397-61c926c8c4ce-0
+    ccp-adapter.antrea.tanzu.vmware.com/parent: 2051f64c-8c65-46a2-8397-61c926c8c4ce
+  creationTimestamp: "2023-07-03T12:27:13Z"
+  generation: 1
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: 2051f64c-8c65-46a2-8397-61c926c8c4ce-0
+  resourceVersion: "2257278"
+  uid: b1d4a59b-0557-4f6c-a08c-7b76af6bca8c
+spec:
+  ipBlocks:
+  - cidr: 10.101.84.32/27
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T12:27:13Z"
+    status: "True"
+    type: GroupMembersComputed
+```
+
+```yaml
+andreasm@linuxvm01:~/nsx-antrea-integration$ k get clustergroup 5bfc16b1-08f3-48bd-91f9-fee3d66762b1 -oyaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: 5bfc16b1-08f3-48bd-91f9-fee3d66762b1
+  creationTimestamp: "2023-07-03T12:27:13Z"
+  generation: 1
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: 5bfc16b1-08f3-48bd-91f9-fee3d66762b1
+  resourceVersion: "2257282"
+  uid: 6782589e-8488-47df-a750-04432c3c2f18
+spec:
+  childGroups:
+  - 5bfc16b1-08f3-48bd-91f9-fee3d66762b1-0
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T12:27:13Z"
+    status: "True"
+    type: GroupMembersComputed
+andreasm@linuxvm01:~/nsx-antrea-integration$ k get clustergroup 5bfc16b1-08f3-48bd-91f9-fee3d66762b1-0 -oyaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: 5bfc16b1-08f3-48bd-91f9-fee3d66762b1-0
+    ccp-adapter.antrea.tanzu.vmware.com/parent: 5bfc16b1-08f3-48bd-91f9-fee3d66762b1
+  creationTimestamp: "2023-07-03T12:27:13Z"
+  generation: 1
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: 5bfc16b1-08f3-48bd-91f9-fee3d66762b1-0
+  resourceVersion: "2257277"
+  uid: fd2a1c32-1cf8-4ca8-8dad-f5420f57e55c
+spec:
+  ipBlocks:
+  - cidr: 192.168.0.0/16
+  - cidr: 10.0.0.0/8
+  - cidr: 172.16.0.0/12
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T12:27:13Z"
+    status: "True"
+    type: GroupMembersComputed
+```
+
+
+
+Now the last rule is blocking all non-system namespaces to any other namespace than themselves. 
+
+First I need to create a Security Group with the namespace as sole member, then a Security Group with the criteria not-equals.
+Group for the namespace:
+![ns-dev-app](images/image-20230703152404669.png)
+
+Negated Security Group, selecting all pods which does not have the same label as any pods in the namespace "dev-app".
+![negated](images/image-20230703152546054.png)
+
+Then the Security Policy looks like this:
+![policy-strict-ns](images/image-20230703152659459.png)
+
+This is how it looks like in the Kubernetes clusters:
+
+```yaml
+apiVersion: crd.antrea.io/v1alpha1
+kind: ClusterNetworkPolicy
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: dev-cluster-strict-ns-islolation
+  creationTimestamp: "2023-07-03T13:00:40Z"
+  generation: 3
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: cfbe3754-c365-4697-b124-5fbaddd87b57
+  resourceVersion: "2267847"
+  uid: 47949441-a69b-47e5-ae9b-1d5760d5c195
+spec:
+  egress:
+  - action: Allow
+    appliedTo:
+    - group: beed7011-4fc7-49e6-b7ed-d521095eb293
+    enableLogging: false
+    name: "2029"
+    to:
+    - group: beed7011-4fc7-49e6-b7ed-d521095eb293
+  - action: Drop
+    appliedTo:
+    - group: beed7011-4fc7-49e6-b7ed-d521095eb293
+    enableLogging: false
+    name: "2030"
+    to:
+    - group: f240efd5-3a95-49d3-9252-058cc80bc0c0
+  priority: 1.0000000177635728
+  tier: nsx-category-infrastructure
+status:
+  currentNodesRealized: 3
+  desiredNodesRealized: 3
+  observedGeneration: 3
+  phase: Realized
+```
+
+Where the cluster groups look like this:
+
+```yaml
+andreasm@linuxvm01:~/nsx-antrea-integration$ k get clustergroup beed7011-4fc7-49e6-b7ed-d521095eb293 -oyaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: beed7011-4fc7-49e6-b7ed-d521095eb293
+  creationTimestamp: "2023-07-03T13:00:40Z"
+  generation: 1
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: beed7011-4fc7-49e6-b7ed-d521095eb293
+  resourceVersion: "2266125"
+  uid: 7bf8d0f4-d719-47d5-98a9-5fba3b5da7b9
+spec:
+  childGroups:
+  - beed7011-4fc7-49e6-b7ed-d521095eb293-0
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T13:00:41Z"
+    status: "True"
+    type: GroupMembersComputed
+andreasm@linuxvm01:~/nsx-antrea-integration$ k get clustergroup beed7011-4fc7-49e6-b7ed-d521095eb293-0 -oyaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: beed7011-4fc7-49e6-b7ed-d521095eb293-0
+    ccp-adapter.antrea.tanzu.vmware.com/parent: beed7011-4fc7-49e6-b7ed-d521095eb293
+  creationTimestamp: "2023-07-03T13:00:40Z"
+  generation: 1
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: beed7011-4fc7-49e6-b7ed-d521095eb293-0
+  resourceVersion: "2266123"
+  uid: 4b393674-981a-488c-a2e2-d794f0b0a312
+spec:
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values:
+      - dev-app
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T13:00:41Z"
+    status: "True"
+    type: GroupMembersComputed
+```
+
+```yaml
+andreasm@linuxvm01:~/nsx-antrea-integration$ k get clustergroup f240efd5-3a95-49d3-9252-058cc80bc0c0 -oyaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: f240efd5-3a95-49d3-9252-058cc80bc0c0
+  creationTimestamp: "2023-07-03T13:06:59Z"
+  generation: 1
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: f240efd5-3a95-49d3-9252-058cc80bc0c0
+  resourceVersion: "2267842"
+  uid: cacd1386-a434-4c42-8739-6813dd1d475b
+spec:
+  childGroups:
+  - f240efd5-3a95-49d3-9252-058cc80bc0c0-0
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T13:07:00Z"
+    status: "True"
+    type: GroupMembersComputed
+andreasm@linuxvm01:~/nsx-antrea-integration$ k get clustergroup f240efd5-3a95-49d3-9252-058cc80bc0c0-0 -oyaml
+apiVersion: crd.antrea.io/v1alpha3
+kind: ClusterGroup
+metadata:
+  annotations:
+    ccp-adapter.antrea.tanzu.vmware.com/createdFrom: nestdbGroupMsg
+    ccp-adapter.antrea.tanzu.vmware.com/display-name: f240efd5-3a95-49d3-9252-058cc80bc0c0-0
+    ccp-adapter.antrea.tanzu.vmware.com/parent: f240efd5-3a95-49d3-9252-058cc80bc0c0
+  creationTimestamp: "2023-07-03T13:06:59Z"
+  generation: 5
+  labels:
+    ccp-adapter.antrea.tanzu.vmware.com/managedBy: ccp-adapter
+  name: f240efd5-3a95-49d3-9252-058cc80bc0c0-0
+  resourceVersion: "2269597"
+  uid: bd7f4526-2be9-4a4e-860e-0bb85ea30516
+spec:
+  podSelector:
+    matchExpressions:
+    - key: app
+      operator: NotIn
+      values:
+      - ubuntu-20-04
+status:
+  conditions:
+  - lastTransitionTime: "2023-07-03T13:07:00Z"
+    status: "True"
+    type: GroupMembersComputed
+```
+
+With all three policies applied, they look like this in the TKC cluster:
+
+```bash
+andreasm@linuxvm01:~/antrea/policies/groups$ k get acnp
+NAME                                   TIER                          PRIORITY             DESIRED NODES   CURRENT NODES   AGE
+17dbadce-06cf-4d1e-9747-3e888f0f58e0   nsx-category-infrastructure   1.000000017763571    4               4               18h
+933e463e-c061-4e80-80b3-eff3402e41a9   nsx-category-infrastructure   1.0000000177635702   4               4               18h
+cfbe3754-c365-4697-b124-5fbaddd87b57   nsx-category-infrastructure   1.0000000177635728   3               3               17h
+```
+
+
+
+By using NSX managing the Antrea policies there is also a very easy way to verify if the policies are working or not by using the Traffic Analysis tool in NSX:
+![nsx-traffic-analysis](images/image-20230703153342301.png)
+
+This tools will also inform you of any policies applied by using kubectl inside the cluster, in other words it can also show you policies not created or applied from the NSX manager. 
+
+I have applied a Antrea Policy directly in the TKC cluster using kubectl called *block-ns-app3-app4*.
+
+```bash
+andreasm@linuxvm01:~/antrea/policies/groups$ k get acnp
+NAME                                   TIER                          PRIORITY             DESIRED NODES   CURRENT NODES   AGE
+17dbadce-06cf-4d1e-9747-3e888f0f58e0   nsx-category-infrastructure   1.000000017763571    4               4               20h
+933e463e-c061-4e80-80b3-eff3402e41a9   nsx-category-infrastructure   1.0000000177635702   4               4               20h
+block-ns-app3-app4   #this             securityops                   4                    1               1               3s
+cfbe3754-c365-4697-b124-5fbaddd87b57   nsx-category-infrastructure   1.0000000177635728   3               3               20h
+```
+
+If I do a traceroute from within NSX from a pod in ns Dev-App3 to a pod in ns Dev-App4 and hit this rule, the NSX manager will show me this:
+![traceflow](images/image-20230704110828663.png)
+
+Its clearly doing its job and blocking the traffic, but which rule is it?
+Click on EgressMetric, copy the rule id and paste it in the search field in NSX:
+![policy-id](images/image-20230704110937455.png)
+
+![search](images/image-20230704111008480.png)
+
+### Applying Kubernetes related policies using inventory information from Antrea
+
+As mentioned above, NSX can also utilize the information from TKC cluster (or any Kubernetes cluster that uses Antrea) to enforce them in the Distributed firewall. The information NSX is currently:
+
+- Kubernetes Cluster - Used to create security group containing Kubernetes clusters by name, not used alone but in combination with the below ->
+- Kubernetes Namespace - Used to create security group containing Kubernetes clusters namespace by name or tag, not used alone but in combination from a Kubernetes cluster defined above. 
+- Kubernetes Service - Used to create security group containing Kubernetes Services  by name or tag, not used alone but in combination with any of the above ->
+- Kubernetes Ingress - Used to create security group containing Kubernetes Ingresses by name or tag, not used alone but in combination with any of the above Kubernetes Cluster or Kubernetes Namespace.
+- Antrea Egress - Used to create security group containing Antrea Egress IP in use by name or tag, not used alone but in combination with only Kubernetes Cluster.
+- Antrea IP Pool - Used to create security group containing Antrea Egress IP Pool by name or tag, not used alone but in combination with only Kubernetes Cluster.
+- Kubernetes Node - Used to create security group containing Kubernetes Node IPs or POD CIDRs by node IP address or POD CIDR, not used alone but in combination with only Kubernetes Cluster.
+- Kubernetes Gateway - Used to create security group containing Kubernetes Gateways by name or tag, not used alone but in combination with only Kubernetes Cluster.
+
+An example of a Security group in NSX using the contexts above, Kubernetes Cluster with name *dev-cluster* and Kubernetes Node IP address:
+![kubernetes-cluster-nodes](images/image-20230704114000685.png)
+
+![kubernets-nodes-dev-cluster-1](images/image-20230704114033192.png)
+
+Now, if I want to create a NSX firewall policy isolating two Kubernetes clusters from each other using the constructs above:
+
+I will simply create two security groups like the one above, selection the two different cluster in each group. Then the policy will be like this:
+
+![policy-blocking-dev1-to-dev2](images/image-20230704115441922.png)
+
+Now if I do a traceflow from any node in dev-cluster-1 to any node in dev-cluster-2 it will dropped.
+
+![traceflow-dev-1-dev-2](images/image-20230704115342329.png)
+
+The Firewall Rule ID is:
+![drop-rule](images/image-20230704115625261.png)
+
+With this approach, its very easy to isolate complete clusters from each other with some really simple rules. We could even create a negated rule, saying you are allowed to reach any workers from same cluster but nothing else with one blocking rule (using a negated selection where source is dev-cluster-1 and destination is also dev-cluster-1:
+![destination-same-source](images/image-20230704120342084.png)
+
+The policy:
+![negated](images/image-20230704120437282.png)
+
+This is just one rule blocing everything except its own Kubernetes nodes.
 
 
 
 
-
-L7 services and or FQDN.. 
+ 
 
 ## RBAC - making sure no one can overwrite/override existing rules. 
+
+How to manage RBAC, or Tier Entitlement with Antrea I have already covered [here](https://blog.andreasm.io/2023/06/01/managing-antrea-in-vsphere-with-tanzu/#antrea-rbac)
+
+
+
+## Outro...
+
+I have in this post shown three different ways to manage and apply Antrea Network policies. Three different approaches, the first approach was all manual, the second automatic but the policies still needs to be defined. The last one with the NSX manager a bit different approach as not all the Antrea Network policy features are available and some policies have to be defined different. But, the NSX manager can also be used to automate some of the policies by just adding the clusters to existing policies. Then they will be applied at once. 
+
+The Antrea policies used and how they are defined in this post is by all means not the final answer or best practice. They were just used as simple examples to have something to "work with" during this post. As I have mentioned, one could utilise the different tiers to delegate administration of the policies to the right set of responsibilities (security admins, vSphere operators, Dev-ops etc). If the target is zero-trust also inside your TKC clusters, this can be achieved by utilizing the tiers and place a drop-all-else rule dead last in the Antrea policy chain (baseline tier e.g).
+
+
 
