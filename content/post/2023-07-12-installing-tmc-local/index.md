@@ -607,7 +607,7 @@ andreasm@linuxvm01:~/tmc-sm/keycloak$ k apply -f keycloak-ingress.yaml
 ingress.networking.k8s.io/keycloak created
 ```
 
-Now, what is created on the Avi side:
+Now, what is created on the NSX-ALB side:
 ![keycloak-ingress](images/image-20230712235313488.png)
 
 There is my Ingress for Keycloak. Lets check the certificate it is using:
@@ -702,7 +702,7 @@ Updating the configuration and installing your custom providers, if any. Please 
 ```
 
 Hmm, error=invalid_token... type=REFRESH_TOKEN_ERROR...
-Well after some investigating, after some Sherlock Holmsing, I managed to figure out what caused this. I need to deselect a setting in my Avi Application profile selected default for this Ingress. So first I need to create an Application Profile, with most of the setting, but unselect the *HTTP-only Cookies*. So head over to the Avi guy, create a new application profile:
+Well after some investigating, after some Sherlock Holmsing, I managed to figure out what caused this. I need to deselect a setting in my Avi Application profile selected default for this Ingress. So first I need to create an Application Profile, with most of the setting, but unselect the *HTTP-only Cookies*. So head over to the NSX-ALB gui, create a new application profile:
 ![application-profile-create](images/image-20230713000916114.png)
 
 Click create, select under Type: HTTP:
