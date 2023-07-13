@@ -33,7 +33,14 @@ For all official documentation and updated content head over [here](https://docs
 
 There is always some pre-requirements to be in place. Why should it always be pre-requirements? Well there is no need create any cars if there is no roads for them to drive on, will it? Thats enough humour for today. 
 Instead of listing a detailed list of the requirements here, head over to the official page [here](https://docs.vmware.com/en/VMware-Tanzu-Mission-Control/1.0/tanzumc-sm-install/prepare-cluster.html) and get familiar with it.
-In this post I have already deployed a Kubernetes cluster in my vSphere with Tanzu environment, that meets the requirements. More on that later. Then I will cover the certificate requirement deploying Cert-Manager and configure a ClusterIssuer. The image registry I will not cover as I already have a registry up and running and will be using that. I will not cover the loadbalancer/Ingress installation. I will be using NSX ALB in combination with Contour that is being installed with TMC), I will cover the specifics in configuring NSX-ALB, more specifically AKO, to support Keycloak via Ingress. Then I will cover the installation and configuration of Keycloak as the OIDC requirement. Then I will show how I handle my DNS zone for the TMC installation.
+In this post I have already deployed a Kubernetes cluster in my vSphere with Tanzu environment, that meets the requirements. More on that later. Then I will cover the certificate requirement deploying Cert-Manager and configure a ClusterIssuer. The image registry I will not cover as I already have a registry up and running and will be using that. I will not cover the loadbalancer/Ingress installation as I am assuming the following is already in place:
+
+- A working vSphere 8 Environment
+- A working Tanzu with vSphere Supervisor deployment
+- A working NSX-ALB configuration to support both L4 and L7 services (meaning AKO is installed on the cluster for TMC-SM)
+- A working image registry with a valid signed certificate, I will be using Harbor Registry. 
+
+I will be using NSX ALB in combination with Contour that is being installed with TMC), I will cover the specifics in configuring NSX-ALB, more specifically AKO, to support Keycloak via Ingress. Then I will cover the installation and configuration of Keycloak as the OIDC requirement. Then I will show how I handle my DNS zone for the TMC installation.
 As a final note, remember that the certificate I  going to use needs to be trusted by the components that will be consuming them and DNS is important. Well lets go through it step by step.
 
 
