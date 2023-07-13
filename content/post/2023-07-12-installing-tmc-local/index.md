@@ -1668,6 +1668,31 @@ Continue? [yN]: y
 7:57:44AM: Deleting 'ClusterRoleBinding': tanzu-mission-control-tmc-local-cluster-rolebinding
 ```
 
+
+
+There may be reasons you need to remove the namespace tmc-local also has it contains a lot of configmaps, secret and pvc volumes. So if you want to completeley and easily remove everything TMC-SM related, delete the namespace.
+From the official documentation:
+
+> To remove Tanzu Mission Control Self-Managed and its artifacts from you cluster, use the `tanzu` cli.
+>
+> 1. Back up any data that you do not want to lose.
+>
+> 2. Run the following commands:
+>
+>    ```
+>    tanzu package installed delete tanzu-mission-control --namespace tmc-local
+>    tanzu package repository delete tanzu-mission-control-packages --namespace tmc-local
+>    ```
+>
+> 3. If necessary, delete residual resources.
+>
+>    The above commands clean up most of the resources that were created by the `tanzu-mission-control` Tanzu package. However, there are some resources that you have to remove manually. The resources include:
+>    \- persistent volumes - internal TLS certificates - configmaps
+>
+>    Alternatively, you can delete the `tmc-local` namespace. When you delete the `tmc-local` namespace, the persistent volume claims associated with the namespace are deleted. Make sure you have already backed up any data that you don’t want to lose.
+
+
+
 ## First time login TMC-SM
 
 If everything above went after plan (not for me, just a minor issue), I should now be able to login to my TMC-SM console.
