@@ -40,7 +40,7 @@ In this post I have already deployed a Kubernetes cluster in my vSphere with Tan
 - A working NSX-ALB configuration to support both L4 and L7 services (meaning AKO is installed on the cluster for TMC-SM)
 - A working image registry with a valid signed certificate, I will be using Harbor Registry. 
 
-I will be using NSX ALB in combination with Contour that is being installed with TMC), I will cover the specifics in configuring NSX-ALB, more specifically AKO, to support Keycloak via Ingress. Then I will cover the installation and configuration of Keycloak as the OIDC requirement. Then I will show how I handle my DNS zone for the TMC installation.
+I will be using NSX ALB in combination with Contour that is being installed with TMC-SM, I will cover the specifics in configuring NSX-ALB, more specifically AKO, to support Keycloak via Ingress. Then I will cover the installation and configuration of Keycloak as the OIDC requirement. Then I will show how I handle my DNS zone for the TMC installation.
 As a final note, remember that the certificate I  going to use needs to be trusted by the components that will be consuming them and DNS is important. Well lets go through it step by step.
 
 
