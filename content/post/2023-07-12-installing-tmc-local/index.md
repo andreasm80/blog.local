@@ -1251,7 +1251,7 @@ PING pinniped-supervisor.tmc.pretty-awesome-domain.net (10.101.210.12) 56(84) by
 
 I am good :smile:
 
-After waiting a while, the package installation process finished, either 100% successfully or with errors. In my environment it fails on step 25/26 on the tmc-local-monitoring. This turns out to be the alertmanager. But luckily, its the only pod that fails, and I dont have time to troubleshoot it right now, I want to login to my new TMC-SM instance. 
+After waiting a while, the package installation process finished, either 100% successfully or with errors. In my environment it fails on step 25/26 on the tmc-local-monitoring. This turns out to be the alertmanager. I have a section below that explains how this can be solved. 
 
 Here is the pod that is failing:
 
@@ -1357,6 +1357,205 @@ ui-server-6994bc9cd6-xzxbv                           1/1     Running            
 wcm-server-5c95c8d587-7sc9l                          1/1     Running            1 (13m ago)   14m
 wcm-server-5c95c8d587-r2kbf                          1/1     Running            1 (12m ago)   14m
 ```
+
+### Troubleshooting the Alertmanager pod
+
+If your package installation stops at 25/26, and the alertmanager pod is in a crasloopbackoff state:
+![image-20230716162954492](images/image-20230716162954492.png)
+
+And if you check the logs of the alertmanager container it will throw you this error. 
+
+```bash
+k logs -n tmc-local alertmanager-tmc-local-monitoring-tmc-local-0 -c alertmanager
+ts=2023-07-13T14:16:30.239Z caller=main.go:231 level=info msg="Starting Alertmanager" version="(version=0.24.0, branch=HEAD, revision=f484b17fa3c583ed1b2c8bbcec20ba1db2aa5f11)"
+ts=2023-07-13T14:16:30.239Z caller=main.go:232 level=info build_context="(go=go1.17.8, user=root@265f14f5c6fc, date=20220325-09:31:33)"
+ts=2023-07-13T14:16:30.240Z caller=cluster.go:178 level=warn component=cluster err="couldn't deduce an advertise address: no private IP found, explicit advertise addr not provided"
+ts=2023-07-13T14:16:30.241Z caller=main.go:263 level=error msg="unable to initialize gossip mesh" err="create memberlist: Failed to get final advertise address: No private IP address found, and explicit IP not provided"
+```
+
+After some searching around, a workaround is to add the below values to the stateful set (see comments below):
+
+```yaml
+    spec:
+      containers:
+      - args:
+        - --volume-dir=/etc/alertmanager
+        - --webhook-url=http://127.0.0.1:9093/-/reload
+        image: registry.domain.net/project/package-repository@sha256:9125ebac75af1eb247de0982ce6d56bc7049a1f384f97c77a7af28de010f20a7
+        imagePullPolicy: IfNotPresent
+        name: configmap-reloader
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/alertmanager/config
+          name: config-volume
+          readOnly: true
+      - args:
+        - --config.file=/etc/alertmanager/config/alertmanager.yaml
+        - --cluster.advertise-address=$(POD_IP):9093 # added from here
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP # To here
+```
+
+But setting this directly on the statefulset will be overwritten by the package conciliation. 
+
+So we need to apply this config using ytt overlay. Create a new yaml file, call it something like alertmanager-overlay.yaml. Below is my ytt config to achieve this:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-overlay-secret
+  namespace: tmc-local
+stringData:
+  patch.yaml: |
+    #@ load("@ytt:overlay", "overlay")
+    #@overlay/match by=overlay.subset({"kind":"StatefulSet", "metadata": {"name": "alertmanager-tmc-local-monitoring-tmc-local"}})
+    ---
+    spec:
+      template:
+        spec:
+          containers: #@overlay/replace
+          - args:
+            - --volume-dir=/etc/alertmanager
+            - --webhook-url=http://127.0.0.1:9093/-/reload
+            image: registry.domain.net/project/package-repository@sha256:9125ebac75af1eb247de0982ce6d56bc7049a1f384f97c77a7af28de010f20a7
+            imagePullPolicy: IfNotPresent
+            name: configmap-reloader
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /etc/alertmanager/config
+              name: config-volume
+              readOnly: true
+          - args:
+            - --config.file=/etc/alertmanager/config/alertmanager.yaml
+            - --cluster.advertise-address=$(POD_IP):9093
+            env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            image: registry.domain.net/project/package-repository@sha256:74d46d5614791496104479bbf81c041515c5f8c17d9e9fcf1b33fa36e677156f
+            imagePullPolicy: IfNotPresent
+            name: alertmanager
+            ports:
+            - containerPort: 9093
+              name: alertmanager
+              protocol: TCP
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /#/status
+                port: 9093
+                scheme: HTTP
+              initialDelaySeconds: 30
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 30
+            resources:
+              limits:
+                cpu: 300m
+                memory: 100Mi
+              requests:
+                cpu: 100m
+                memory: 70Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /etc/alertmanager/config
+              name: config-volume
+              readOnly: true
+            - mountPath: /data
+              name: data
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tmc-overlay-override
+  namespace: tmc-local
+stringData:
+  patch-alertmanager.yaml: |
+    #@ load("@ytt:overlay", "overlay")
+    #@overlay/match by=overlay.subset({"kind":"PackageInstall", "metadata": {"name": "tmc-local-monitoring"}})
+    ---
+    metadata:
+      annotations:
+        #@overlay/match missing_ok=True
+        ext.packaging.carvel.dev/ytt-paths-from-secret-name.0: alertmanager-overlay-secret
+```
+
+This was the only way I managed to get the configs applied correctly. It can probably be done a different way, but it works.
+
+Apply the above yaml:
+
+```bash
+andreasm@linuxvm01:~/tmc-sm/errors$ k apply -f alertmanager-overlay.yaml
+secret/alertmanager-overlay-secret configured
+secret/tmc-overlay-override configured
+```
+
+Then I need to annotate the package:
+
+```bash
+kubectl annotate packageinstalls tanzu-mission-control -n tmc-local ext.packaging.carvel.dev/ytt-paths-from-secret-name.0=tmc-overlay-override
+```
+
+Pause and unpause the reconciliation (if it is already in a reconciliation state its not always necessary to pause and unpause). But to kick it off immediately, run the commands below. 
+
+```bash
+andreasm@linuxvm01:~/tmc-sm/errors$ kubectl patch -n tmc-local --type merge pkgi tmc-local-monitoring --patch '{"spec": {"paused": true}}'
+andreasm@linuxvm01:~/tmc-sm/errors$ kubectl patch -n tmc-local --type merge pkgi tmc-local-monitoring --patch '{"spec": {"paused": false}}'
+packageinstall.packaging.carvel.dev/tmc-local-monitoring patched
+```
+
+One can also kick the reconcile by pointing to the package tanzu-mission-control:
+
+```bash
+andreasm@linuxvm01:~/tmc-sm/errors$ kubectl patch -n tmc-local --type merge pkgi tanzu-mission-control --patch '{"spec": {"paused": true}}'
+packageinstall.packaging.carvel.dev/tanzu-mission-control patched
+andreasm@linuxvm01:~/tmc-sm/errors$ kubectl patch -n tmc-local --type merge pkgi tanzu-mission-control --patch '{"spec": {"paused": false}}'
+packageinstall.packaging.carvel.dev/tanzu-mission-control patched
+```
+
+The end result should give us this in our alertmanager statefulset:
+
+```yaml
+andreasm@linuxvm01:~/tmc-sm/errors$ k get statefulsets.apps -n tmc-local alertmanager-tmc-local-monitoring-tmc-local -oyaml
+   #snippet 
+      - args:
+        - --config.file=/etc/alertmanager/config/alertmanager.yaml
+        - --cluster.advertise-address=$(POD_IP):9093
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+    #snippet
+```
+
+And the alertmanager pod should start:
+
+```bash
+andreasm@linuxvm01:~/tmc-sm/errors$ k get pod -n tmc-local alertmanager-tmc-local-monitoring-tmc-local-0
+NAME                                            READY   STATUS    RESTARTS   AGE
+alertmanager-tmc-local-monitoring-tmc-local-0   2/2     Running   0          10m
+```
+
+If its still in CrashLoopBackOff just delete the pod and it should go into a running state. If not, describe the alermananger statefulset for any additional errors, maybe a typo in the ytt overlay yaml...
+
+One can also do this operation while the installation is waiting on the package tmc-local-monitoring re-conciliation. So the package installation will be successful after all. 
+
+
+
+### Install the TMC-SM package - continued
 
 What about the services created, httpproxies and Ingress?
 
@@ -1483,7 +1682,7 @@ Ah.. More DNS records.
 
 
 
-Unfortunately my tmc-sm deployement gave me this error in the end:
+Unfortunately my tmc-sm deployement gave me this error in the end, which can be solved afterwards or during the install process following the section on Alertmanager above:
 
 ```bash
 	    | 8:32:35AM: ---- waiting on 1 changes [25/26 done] ----
@@ -1498,7 +1697,7 @@ Unfortunately my tmc-sm deployement gave me this error in the end:
 Error: packageinstall/tanzu-mission-control (packaging.carvel.dev/v1alpha1) namespace: tmc-local: Reconciling: kapp: Error: Timed out waiting after 15m0s for resources: [packageinstall/tmc-local-monitoring (packaging.carvel.dev/v1alpha1) namespace: tmc-local]. Reconcile failed: Error (see .status.usefulErrorMessage for details)
 ```
 
-But its only the Alertmanager service, so I will take that for what it is and call it kind of a success. Remember also the note in the official documentation:
+Except the Alertmanager pod which can be fixed, it is kind a success. Remember also the note in the official documentation:
 
 {{% notice warning "Note" %}}
 
