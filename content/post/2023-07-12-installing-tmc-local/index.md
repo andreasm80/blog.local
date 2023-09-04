@@ -2,7 +2,7 @@
 author: "Andreas M"
 title: "Installing TMC local on vSphere 8 with Tanzu using Keycloak as OIDC provider"
 date: 2023-07-12T15:22:46+02:00 
-description: "Article description."
+description: "TMC local installation"
 draft: false 
 toc: true
 #featureimage: ""
