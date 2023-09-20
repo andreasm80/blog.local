@@ -15,7 +15,7 @@ tags:
   - Kubernetes-api-endpoint
   - TKGs
   - vSphere-with-tanzu
-summary: In this post I will quickly go through how to use vSphere with Tanzu together HAProxy exposing the Kubernetes API 
+summary: In this post I will quickly go through how to use vSphere with Tanzu and HAProxy exposing the Kubernetes API 
 
 comment: false # Disable comment if false.
 ---
