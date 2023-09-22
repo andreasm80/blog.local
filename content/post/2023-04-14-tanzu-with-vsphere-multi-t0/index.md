@@ -2,7 +2,7 @@
 author: "Andreas M"
 title: "Tanzu with vSphere and different Tier-0s"
 date: 2023-04-14T13:24:41+02:00 
-description: "Article description."
+description: "Tanzu with vSphere and different Tier-0s"
 draft: false 
 toc: true
 #featureimage: ""

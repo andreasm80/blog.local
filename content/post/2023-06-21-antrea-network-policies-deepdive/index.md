@@ -2,7 +2,7 @@
 author: "Andreas M"
 title: "Securing Kubernetes clusters with Antrea Network Policies"
 date: 2023-06-21T10:01:46+02:00 
-description: "Article description."
+description: "Antrea Network Policies"
 draft: false 
 toc: true
 #featureimage: ""

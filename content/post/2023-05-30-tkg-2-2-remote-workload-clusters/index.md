@@ -2,7 +2,7 @@
 author: "Andreas M"
 title: "Tanzu Kubernetes Grid 2.2 & Remote Workload Clusters"
 date: 2023-05-30T14:54:29+02:00 
-description: "Article description"
+description: "Tanzu Kubernetes Grid 2.2 & Remote Workload Clusters"
 draft: false 
 toc: true
 #featureimage: ""

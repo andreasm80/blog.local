@@ -2,7 +2,7 @@
 author: "Andreas M"
 title: "Tanzu Kubernetes Grid 2.1"
 date: 2023-03-22T09:24:01+01:00 
-description: "Article description."
+description: "Tanzu Kubernetes Grid 2.1"
 draft: false 
 toc: true
 #featureimage: ""

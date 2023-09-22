@@ -2,7 +2,7 @@
 author: "Andreas M"
 title: "vSphere with Tanzu and Multi Zones part2"
 date: 2023-05-03T07:34:47+02:00
-description: "Article description."
+description: "vSphere with Tanzu and Multi Zones"
 draft: false
 toc: true
 #featureimage: ""

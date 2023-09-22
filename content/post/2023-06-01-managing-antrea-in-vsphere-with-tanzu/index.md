@@ -2,7 +2,7 @@
 author: "Andreas M"
 title: "Managing Antrea in vSphere with Tanzu"
 date: 2023-06-01T11:14:32+02:00 
-description: "Article description."
+description: "Manage Antrea in TKG"
 draft: false 
 toc: true
 #featureimage: ""
