@@ -70,8 +70,8 @@ Before getting started with the installation/enabling TKG in vSphere 8 U2 using 
 
 <img src=images/image-20230923224222497.png style="width:400px" />
 
-And the usual assumptions (mostly to save some time, as I have covered most of this several times before, saving digital ink is saving the environment):
-I already have my vSphere 8 U2 environment running, I already have my NSX 4.1.1 environment configured and lastly I already have my NSX-ALB controller 22.1.4 deployed and working. My lab is used for many things so I am not deploying NSX and NSX-ALB from scratch just for this post, they are already running a bunch of other stuff including the NSX-LAB controller. I the next chapters I will go through what I had to prepare on the NSX side (if any) and the NSX-ALB side (there are a couple of steps there).
+And the usual assumptions (mostly to save some time, as I have covered many of these topics several times before, saving digital ink is saving the environment :smile:
+I already have my vSphere 8 U2 environment running, I already have my NSX 4.1.1 environment configured and lastly I already have my NSX-ALB controller 22.1.4 deployed and working. My lab is used for many things so I am not deploying NSX and NSX-ALB from scratch just for this post, they are already running a bunch of other stuff including the NSX-LAB controller. In the next chapters I will go through what I had to prepare on the NSX side (if any) and the NSX-ALB side (there are a couple of steps there).
 
 ## vSphere preparations - requirements
 
