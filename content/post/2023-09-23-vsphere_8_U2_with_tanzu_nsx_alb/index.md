@@ -648,7 +648,73 @@ It has created a distributed loadbalancer where all virtual servers are kubernet
 
 ![dlb-vs](images/image-20230924203124396.png)
 
-I am currently not sure why and what this is.. Will need to investigate at bit more. 
+The NSX Distributed Loadbalancer is used for the ClusterIP services running inside the Supervisor, the ones that are running on the ESXi hosts. The LoadBalancer services is handled by NSX-ALB. 
+
+```bash
+andreasm@ubuntu02:~/avi_nsxt_wcp$ k get svc -A
+NAMESPACE                                   NAME                                                             TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)                         AGE
+default                                     kubernetes                                                       ClusterIP      10.96.0.1     <none>        443/TCP                         15h
+kube-system                                 docker-registry                                                  ClusterIP      10.96.0.37    <none>        5000/TCP                        15h
+kube-system                                 kube-apiserver-authproxy-svc                                     ClusterIP      10.96.0.243   <none>        8443/TCP                        14h
+kube-system                                 kube-apiserver-lb-svc                                            LoadBalancer   10.96.0.201   10.13.90.1    443:32163/TCP,6443:31957/TCP    15h
+kube-system                                 kube-dns                                                         ClusterIP      10.96.0.10    <none>        53/UDP,53/TCP,9153/TCP          15h
+kube-system                                 snapshot-validation-service                                      ClusterIP      10.96.0.128   <none>        443/TCP                         15h
+ns-stc-1                                    cluster-1-76996f5b17a254b02e55a                                  LoadBalancer   10.96.0.239   10.13.92.2    80:30165/TCP                    12h
+ns-stc-1                                    cluster-1-control-plane-service                                  LoadBalancer   10.96.1.157   10.13.92.1    6443:30363/TCP                  13h
+vmware-system-appplatform-operator-system   packaging-api                                                    ClusterIP      10.96.0.87    <none>        443/TCP                         14h
+vmware-system-appplatform-operator-system   vmware-system-appplatform-operator-controller-manager-service    ClusterIP      None          <none>        <none>                          15h
+vmware-system-appplatform-operator-system   vmware-system-psp-operator-k8s-cloud-operator-service            ClusterIP      10.96.1.101   <none>        29002/TCP                       15h
+vmware-system-appplatform-operator-system   vmware-system-psp-operator-service                               ClusterIP      None          <none>        <none>                          15h
+vmware-system-appplatform-operator-system   vmware-system-psp-operator-webhook-service                       ClusterIP      10.96.1.84    <none>        443/TCP                         15h
+vmware-system-capw                          capi-controller-manager-metrics-service                          ClusterIP      10.96.1.47    <none>        9844/TCP                        15h
+vmware-system-capw                          capi-kubeadm-bootstrap-controller-manager-metrics-service        ClusterIP      10.96.1.67    <none>        9845/TCP                        15h
+vmware-system-capw                          capi-kubeadm-bootstrap-webhook-service                           ClusterIP      10.96.0.170   <none>        443/TCP                         15h
+vmware-system-capw                          capi-kubeadm-control-plane-controller-manager-metrics-service    ClusterIP      10.96.1.48    <none>        9848/TCP                        15h
+vmware-system-capw                          capi-kubeadm-control-plane-webhook-service                       ClusterIP      10.96.0.102   <none>        443/TCP                         15h
+vmware-system-capw                          capi-webhook-service                                             ClusterIP      10.96.1.248   <none>        443/TCP                         15h
+vmware-system-capw                          capv-webhook-service                                             ClusterIP      10.96.1.124   <none>        443/TCP                         15h
+vmware-system-capw                          capw-controller-manager-metrics-service                          ClusterIP      10.96.1.252   <none>        9846/TCP                        15h
+vmware-system-capw                          capw-webhook-service                                             ClusterIP      10.96.0.101   <none>        443/TCP                         15h
+vmware-system-cert-manager                  cert-manager                                                     ClusterIP      10.96.0.158   <none>        9402/TCP                        15h
+vmware-system-cert-manager                  cert-manager-webhook                                             ClusterIP      10.96.0.134   <none>        443/TCP                         15h
+vmware-system-csi                           vmware-system-csi-webhook-service                                ClusterIP      10.96.1.130   <none>        443/TCP                         15h
+vmware-system-csi                           vsphere-csi-controller                                           LoadBalancer   10.96.0.108   10.13.90.2    2112:30383/TCP,2113:31530/TCP   15h
+vmware-system-imageregistry                 vmware-system-imageregistry-controller-manager-metrics-service   ClusterIP      10.96.0.47    <none>        9857/TCP                        14h
+vmware-system-imageregistry                 vmware-system-imageregistry-webhook-service                      ClusterIP      10.96.1.108   <none>        443/TCP                         14h
+vmware-system-license-operator              vmware-system-license-operator-webhook-service                   ClusterIP      10.96.1.51    <none>        443/TCP                         15h
+vmware-system-netop                         vmware-system-netop-controller-manager-metrics-service           ClusterIP      10.96.0.234   <none>        9851/TCP                        15h
+vmware-system-nsop                          vmware-system-nsop-webhook-service                               ClusterIP      10.96.1.73    <none>        443/TCP                         15h
+vmware-system-nsx                           nsx-operator                                                     ClusterIP      10.96.0.150   <none>        8093/TCP                        15h
+vmware-system-pinniped                      pinniped-concierge-api                                           ClusterIP      10.96.1.204   <none>        443/TCP                         14h
+vmware-system-pinniped                      pinniped-supervisor                                              ClusterIP      10.96.1.139   <none>        12001/TCP                       14h
+vmware-system-pinniped                      pinniped-supervisor-api                                          ClusterIP      10.96.1.94    <none>        443/TCP                         14h
+vmware-system-tkg                           tanzu-addons-manager-webhook-service                             ClusterIP      10.96.1.18    <none>        443/TCP                         14h
+vmware-system-tkg                           tanzu-featuregates-webhook-service                               ClusterIP      10.96.0.160   <none>        443/TCP                         14h
+vmware-system-tkg                           tkgs-plugin-service                                              ClusterIP      10.96.1.31    <none>        8099/TCP                        14h
+vmware-system-tkg                           tkr-conversion-webhook-service                                   ClusterIP      10.96.0.249   <none>        443/TCP                         14h
+vmware-system-tkg                           tkr-resolver-cluster-webhook-service                             ClusterIP      10.96.1.146   <none>        443/TCP                         14h
+vmware-system-tkg                           vmware-system-tkg-controller-manager-metrics-service             ClusterIP      10.96.1.147   <none>        9847/TCP                        14h
+vmware-system-tkg                           vmware-system-tkg-state-metrics-service                          ClusterIP      10.96.1.174   <none>        8443/TCP                        14h
+vmware-system-tkg                           vmware-system-tkg-webhook-service                                ClusterIP      10.96.0.167   <none>        443/TCP                         14h
+vmware-system-vmop                          vmware-system-vmop-controller-manager-metrics-service            ClusterIP      10.96.0.71    <none>        9848/TCP                        15h
+vmware-system-vmop                          vmware-system-vmop-web-console-validator                         ClusterIP      10.96.0.41    <none>        80/TCP                          15h
+vmware-system-vmop                          vmware-system-vmop-webhook-service                               ClusterIP      10.96.0.182   <none>        443/TCP                         15h
+andreasm@ubuntu02:~/avi_nsxt_wcp$ k get nodes
+NAME                                           STATUS   ROLES                  AGE   VERSION
+4234784dcf1b9d8d15d541fab8855b55               Ready    control-plane,master   15h   v1.26.4+vmware.wcp.0
+4234e1920ede3cad62bcd3ce8bd2f2dc               Ready    control-plane,master   15h   v1.26.4+vmware.wcp.0
+4234f25d5bdc9796ce1e247a4190bb58               Ready    control-plane,master   15h   v1.26.4+vmware.wcp.0
+esx01.cpod-nsxam-stc.az-stc.cloud-garage.net   Ready    agent                  15h   v1.26.4-sph-79b2bd9
+esx02.cpod-nsxam-stc.az-stc.cloud-garage.net   Ready    agent                  15h   v1.26.4-sph-79b2bd9
+esx03.cpod-nsxam-stc.az-stc.cloud-garage.net   Ready    agent                  15h   v1.26.4-sph-79b2bd9
+esx04.cpod-nsxam-stc.az-stc.cloud-garage.net   Ready    agent                  15h   v1.26.4-sph-79b2bd9
+```
+
+ 
+
+
+
+ 
 
 And lastly it has also created a DHCP server for the Service Engines Dataplane interfaces.
 
