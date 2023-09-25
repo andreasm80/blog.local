@@ -844,4 +844,6 @@ This concludes this post.
 
 
 
- 
+##  Credits
+
+A big thanks goes to Tom Schwaller, Container Networking TPM @VMware, (Twitter/X handle @tom_schwaller), for getting me started on this post, and for providing useful insights on the requirements for getting this to work. 
