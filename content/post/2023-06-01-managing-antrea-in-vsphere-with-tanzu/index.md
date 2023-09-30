@@ -271,6 +271,78 @@ spec:
       trafficEncapMode: encap
 ```
 
+### Getting the Antrea config "templates" for a specific TKR version
+
+Usually with new TKR versions, a new version of Antrea is shipped. And with a new version of Antrea is shipped it most liley containt new and exciting features. So if you want to see which feature gates are being available in your latest and greatest TKR, run these commands from the Supervisor context:
+
+```bash
+# to get all the Antrea configs 
+andreasm@ubuntu02:~/avi_nsxt_wcp$ k get antreaconfigs.cni.tanzu.vmware.com -A
+NAMESPACE           NAME                                           TRAFFICENCAPMODE   DEFAULTMTU   ANTREAPROXY   ANTREAPOLICY   SECRETREF
+ns-stc-1            cluster-1-antrea-package                       encap                           true          true           cluster-1-antrea-data-values
+vmware-system-tkg   v1.23.15---vmware.1-tkg.4                      encap                           true          true
+vmware-system-tkg   v1.23.15---vmware.1-tkg.4-routable             noEncap                         true          true
+vmware-system-tkg   v1.23.8---vmware.2-tkg.2-zshippable            encap                           true          true
+vmware-system-tkg   v1.23.8---vmware.2-tkg.2-zshippable-routable   noEncap                         true          true
+vmware-system-tkg   v1.24.9---vmware.1-tkg.4                       encap                           true          true
+vmware-system-tkg   v1.24.9---vmware.1-tkg.4-routable              noEncap                         true          true
+vmware-system-tkg   v1.25.7---vmware.3-fips.1-tkg.1                encap                           true          true
+vmware-system-tkg   v1.25.7---vmware.3-fips.1-tkg.1-routable       noEncap                         true          true
+vmware-system-tkg   v1.26.5---vmware.2-fips.1-tkg.1                encap                           true          true
+vmware-system-tkg   v1.26.5---vmware.2-fips.1-tkg.1-routable       noEncap                         true          true
+
+# Get the content of a specific Antrea config
+andreasm@ubuntu02:~/avi_nsxt_wcp$ k get antreaconfigs.cni.tanzu.vmware.com -n vmware-system-tkg v1.26.5---vmware.2-fips.1-tkg.1 -oyaml
+apiVersion: cni.tanzu.vmware.com/v1alpha1
+kind: AntreaConfig
+metadata:
+  annotations:
+    tkg.tanzu.vmware.com/template-config: "true"
+  creationTimestamp: "2023-09-24T17:49:37Z"
+  generation: 1
+  name: v1.26.5---vmware.2-fips.1-tkg.1
+  namespace: vmware-system-tkg
+  resourceVersion: "19483"
+  uid: 8cdaa6ec-4059-4d35-a0d4-63711831edc8
+spec:
+  antrea:
+    config:
+      antreaProxy:
+        proxyLoadBalancerIPs: true
+      defaultMTU: ""
+      disableTXChecksumOffload: false
+      disableUdpTunnelOffload: false
+      dnsServerOverride: ""
+      enableBridgingMode: false
+      enableUsageReporting: false
+      featureGates:
+        AntreaIPAM: false
+        AntreaPolicy: true
+        AntreaProxy: true
+        AntreaTraceflow: true
+        Egress: true
+        EndpointSlice: true
+        FlowExporter: false
+        Multicast: false
+        Multicluster: false
+        NetworkPolicyStats: true
+        NodePortLocal: true
+        SecondaryNetwork: false
+        ServiceExternalIP: false
+        TopologyAwareHints: false
+        TrafficControl: false
+      flowExporter:
+        activeFlowTimeout: 60s
+        collectorAddress: flow-aggregator/flow-aggregator:4739:tls
+      noSNAT: false
+      tlsCipherSuites: TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_256_GCM_SHA384
+      trafficEncapMode: encap
+      tunnelCsum: false
+      tunnelPort: 0
+```
+
+ With the above you can always get the latest config coming with the specific TKR release and use it as a template for your TKC cluster. 
+
 
 
 ## Integrating Antrea with NSX-T
