@@ -37,7 +37,7 @@ comment: false # Disable comment if false.
 
 
 
-In this post I will go through how to configure Antrea MC in TKG 2.3 and Tanzu with vSphere. As of the time I am writing this post (end of September 2023) Tanzu with vSphere does not have all the feature gates available right now to be able to configure Antrea Multi-cluster, so this will be added later. After the initial configuration and installation of Antrea Multi-cluster I will go through the different possibilities (features) with Antrea Multi-cluster, with configuration and examples in each of their own sections.
+In this post I will go through how to configure Antrea Multi-cluster in TKG 2.3 and Tanzu with vSphere. As of the time I am writing this post (end of September begining of October 2023) Tanzu with vSphere does not have all the feature gates available right now to be able to configure Antrea Multi-cluster, so this will be added later. After the initial configuration and installation of Antrea Multi-cluster I will go through the different possibilities (features) with Antrea Multi-cluster, with configuration and examples in each of their own sections. The first sections involving how to enable Antrea Multi-cluster feature gate is specific for the Kubernetes "distribution" it is enabled on (TKG, vSphere with Tanzu, upstream Kubernetes etc). After this initial config the rest is generic and can be re-used for all types of Kubernetes platforms. I will go through everything step by step to learn what the different "moving" parts are doing and how they work. At the end I have a *bonus chapter* where I have created a menu driven script that automates or simplify the whole process.
 
 ## Antrea Feature Gates
 
@@ -47,7 +47,7 @@ Antrea has a set of Feature Gates that can be enabled or disabled on both the An
 
 {{% notice info "Info" %}}
 
-The following procedure may at the time being not officially supported - will get back and confirm this 
+The following procedure may not at the time writing this post be officially supported - will get back and confirm this 
 
 {{% /notice %}}
 
@@ -654,7 +654,7 @@ My TKG Cluster-1 (Leader cluster) is up and running with the required Antrea Mul
 
 {{% notice info "Info" %}}
 
-It is important to follow the documentation according to the version of Antrea beong used. This is due to updates in api, and general configuration settings. An example. If I am on Antrea v1.11.1 I would be using the following github or antrea url:
+It is important to follow the documentation according to the version of Antrea being used. This is due to updates in api, and general configuration settings. An example. If I am on Antrea v1.11.1 I would be using the following github or antrea url:
 https://github.com/antrea-io/antrea/blob/release-1.11/docs/multicluster/user-guide.md
 https://antrea.io/docs/v1.11.1/docs/multicluster/user-guide/ 
 
@@ -976,13 +976,13 @@ secret/member-red-token created
 rolebinding.rbac.authorization.k8s.io/member-red created
 ```
 
-Now create a token yaml file for member blue:
+Now create a token yaml file for member red:
 
 ```bash
-kubectl get secret member-red-token -n antrea-multicluster -o yaml | grep -w -e '^apiVersion' -e '^data' -e '^metadata' -e '^ *name:'  -e   '^kind' -e '  ca.crt' -e '  token:' -e '^type' -e '  namespace' | sed -e 's/kubernetes.io\/service-account-token/Opaque/g' -e 's/antrea-multicluster/kube-system/g' >  member-red-token.yml
+kubectl get secret member-red-token -n antrea-multicluster -o yaml | grep -w -e '^apiVersion' -e '^data' -e '^metadata' -e '^ *name:'  -e   '^kind' -e '  ca.crt' -e '  token:' -e '^type' -e '  namespace' | sed -e 's/kubernetes.io\/service-account-token/Opaque/g' -e 's/antrea-multicluster/kube-system/g' >  member-blue-token.yml
 ```
 
-This should create the file **member-blue-token.yaml** and the content of the file:
+This should create the file **member-red-token.yaml** and the content of the file:
 
 ```yaml
 # cat member-red-token.yml
@@ -1231,7 +1231,7 @@ Member cluster blue is exchanging information to member cluster red via the lead
 
 ## Using antctl
 
-For now I will just link to the GitHub docs of Antrea how to use the **antctl" approach.
+For now I will just link to the GitHub docs of Antrea how to use the **antctl** approach.
 
 For how to use the antctl approach, click [here](https://github.com/antrea-io/antrea/blob/release-1.11/docs/multicluster/quick-start.md#steps-with-antctl)
 
@@ -1460,9 +1460,62 @@ Commercial support is available at
 
 ### Failure scenario
 
-What happens if a node which currently holds the gateway goes down?
+What happens if a node which currently holds the active gateway goes down?
 
-Remember I annotated my two nodes?
+<img src=images/image-20230930211539280.png style="width:600px" />
+
+Lets test that. Currently these are my active gateways in member-cluster-blue and red respectively:
+
+```bash
+## get the current gateway in member-cluster blue
+k get gateway -A
+NAMESPACE     NAME                                             GATEWAY IP     INTERNAL IP    AGE
+kube-system   tkg-cluster-2-md-0-vrt25-7f44f4798xqbk9h-tc979   10.101.12.14   10.101.12.14   37h
+## list all nodes in my member-cluster blue
+k get nodes -owide
+NAME                                              STATUS   ROLES           AGE   VERSION            INTERNAL-IP    EXTERNAL-IP    OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+tkg-cluster-2-md-0-vrt25-7f44f4798xqbk9h-tc979    Ready    <none>          46h   v1.26.5+vmware.2   10.101.12.14   10.101.12.14   Ubuntu 20.04.6 LTS   5.4.0-152-generic   containerd://1.6.18-1-gdbc99e5b1
+tkg-cluster-2-md-1-wmxhd-5998fcf669x64b9h-z7mnw   Ready    <none>          46h   v1.26.5+vmware.2   10.101.12.13   10.101.12.13   Ubuntu 20.04.6 LTS   5.4.0-152-generic   containerd://1.6.18-1-gdbc99e5b1
+tkg-cluster-2-x2fqj-fxswx                         Ready    control-plane   46h   v1.26.5+vmware.2   10.101.12.33   10.101.12.33   Ubuntu 20.04.6 LTS   5.4.0-152-generic   containerd://1.6.18-1-gdbc99e5b1
+```
+
+```bash
+## get the current gateway in member-cluster red
+k get gateway -A
+NAMESPACE     NAME                                             GATEWAY IP     INTERNAL IP    AGE
+kube-system   tkg-cluster-3-md-0-h5ppw-9db445579xq45bn-nsq98   10.101.12.38   10.101.12.38   37h
+## list all nodes in my member-cluster red
+k get nodes -o wide
+NAME                                              STATUS   ROLES           AGE   VERSION            INTERNAL-IP    EXTERNAL-IP    OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+tkg-cluster-3-krrwq-p588j                         Ready    control-plane   46h   v1.26.5+vmware.2   10.101.12.28   10.101.12.28   Ubuntu 20.04.6 LTS   5.4.0-152-generic   containerd://1.6.18-1-gdbc99e5b1
+tkg-cluster-3-md-0-h5ppw-9db445579xq45bn-nsq98    Ready    <none>          46h   v1.26.5+vmware.2   10.101.12.38   10.101.12.38   Ubuntu 20.04.6 LTS   5.4.0-152-generic   containerd://1.6.18-1-gdbc99e5b1
+tkg-cluster-3-md-1-824bx-5bdb559f7bxqgbb8-bqwnr   Ready    <none>          46h   v1.26.5+vmware.2   10.101.12.17   10.101.12.17   Ubuntu 20.04.6 LTS   5.4.0-152-generic   containerd://1.6.18-1-gdbc99e5b1
+
+```
+
+Now I will shutdown the node that currently is the active gateway in my member-cluster blue. I will from my vCenter just do a "Power off" operation.
+
+![power-off-gateway-node](images/image-20230930212321484.png)
+
+And I will even delete it.. 
+
+<img src=images/image-20230930213558665.png style="width:600px" />
+
+
+
+Remember I annotated my two nodes as potential Gateway candidates?
+
+Well look what happened after my active gateway disappeared. It selects the next available candidate automatically. Gateway up again and all services up. 
+
+```bash
+k get gateway -A
+NAMESPACE     NAME                                              GATEWAY IP     INTERNAL IP    AGE
+kube-system   tkg-cluster-2-md-1-wmxhd-5998fcf669x64b9h-z7mnw   10.101.12.13   10.101.12.13   37s
+```
+
+<img src=images/image-20231001090655900.png style="width:600px" />
+
+The deleted node will be taken care of by TKG and recreated.
 
 ## Routing pod traffic through Multi-cluster Gateways
 
@@ -1768,7 +1821,7 @@ It is shown below...
 
 {{% /notice %}}
 
- I will have to edit the configMap in both member clusters setting `enableStretchedNetworkPolicy:` to *true*
+ I will have to edit the configMap in both member clusters and leader-cluster setting `enableStretchedNetworkPolicy:` to *true*
 
 ```yaml
 # Please edit the object below. Lines beginning with a '#' will be ignored,
@@ -1808,7 +1861,7 @@ metadata:
   uid: fd760052-a18e-4623-b217-d9b96ae36cac
 ```
 
-Restart the antrea-mc-controller in all members after editing the above configMap.
+Restart the antrea-mc-controller after editing the above configMap.
 
 Again I will be taking the two examples from the Antrea Gitub doc pages, adjust them to suit my environment. 
 The first policy example will apply to namespaces with the label *environment=protected* where ingress will be denied/dropped from the selected pods in any namespace with the label *environment=untrust* where the scope is ClusterSet. This means it should filter on any traffic coming from any of the namespaces having the label *environment=untrust* in any member cluster in the ClusterSet. So lets see how this works. 
@@ -1937,7 +1990,7 @@ curl: (28) Failed to connect to 10.133.1.57 port 80: Connection timed out
 
 Thats a no...
 
-How about that. Now I would like to see the resourceImport from the leader cluster:
+How about that. Now I would like to see the resourceImport/Exports in the leader cluster:
 
 ```bash
 andreasm@tkg-bootstrap:~$ k get resourceimports.multicluster.crd.antrea.io -A
@@ -2071,6 +2124,35 @@ Events:     <none>
 ```
 
 The leader cluster is now aware of all labels, namespaces and pods, from the other member clusters which will allow us to create this ingress rule with namespace or pod selection from the other clusters. The applyTo field is only relevant for the cluster the policy is applied in. 
+
+The second ingress policy example below is using a "namespaced" policy (Antrea NetworkPolicy). It will be applied to a specific namespace in the "destination" cluster, using podSelector with labels *app=db* to select specific pods. The policy will be placed in the Application Tier, it will allow sources coming from any pods in the ClusterSet matching the label *app=client* to the pods in the specified namesapace with label *app=db* and dropping everything else. 
+
+```yaml
+apiVersion: crd.antrea.io/v1alpha1
+kind: AntreaNetworkPolicy
+metadata:
+  name: db-svc-allow-ingress-from-client-only
+  namespace: prod-us-west
+spec:
+  appliedTo:
+  - podSelector:
+      matchLabels:
+        app: db
+  priority: 1
+  tier: application
+  ingress:
+  - action: Allow
+    from:
+    # Select all Pods in Namespace "prod-us-west" from all clusters in the ClusterSet (if the
+    # Namespace exists in that cluster) whose labels match app=client
+    - scope: ClusterSet
+      podSelector:
+        matchLabels:
+          app: client
+  - action: Deny
+```
+
+I will not test this, as it will work similarly as the first example, the only difference being is that it is applied on a namespace, not clusterwide (using Antrea ClusterNetworkPolicy).
 
 Next up is creating a ClusterNetworkPolicy that is replicated across all clusters. 
 
@@ -2240,6 +2322,634 @@ Events:                    <none>
 ```
 
 Looks good. 
+
+## Bonus content
+
+With the help from my friend ChatGPT I created a menu driven "automated" way of deploying all of the above steps.
+
+The pre-requisities for this script is that it expects all your Kubernetes clusters already deployed and the Antrea Multi-cluster feature gates enabled. Then the script should be executed from a machine that has all the kubernetes clusters contexts added. It will prompt for the different contexts in some of the menus and will change to these context to execute specific commands in selected contexts. 
+
+I will just quickly go through the script/menus. When script is executed it will bring up this menu:
+
+```bash
+Main Menu:
+1. Select Antrea version
+2. Install Antrea Multi-cluster on leader cluster
+3. Install Antrea Multi-cluster on member cluster
+4. Create member-cluster secrets
+5. Apply member tokens
+6. Create ClusterSet on the leader cluster
+7. Create ClusterClaim on member cluster
+8. Create Multi-cluster Gateway
+9. Create a Multi-cluster service
+10. Exit
+Enter your choice:
+```
+
+Explanation of the different menu selections and what it does:
+
+1. This will prompt you for the specific Antrea version you are using and use that as a tag for downloading and applying the correct yaml files
+
+2. This will let you select your "Leader Cluster", create the namespace antrea-multicluster, deploy the leader yaml manifests and deploy the antrea-mc-controller in the cluster. 
+
+3. This will let you select a member cluster to install the member yaml and the antrea-mc-controller. This needs to be done for each of the member cluster you want to install it on.
+
+4. This will create the member-cluster secrets, asking for the leader-cluster contexts for them to be created in. And the export the token.yamls to be applied in next step
+
+   ```bash
+   Enter your choice: 4
+   Creating member-cluster secrets...
+   1) 10.13.90.1
+   2) cluster-1
+   3) ns-stc-1
+   4) Back to Main Menu
+   Select a context as the leader cluster: 2
+   Switched to context "cluster-1".
+   Enter the name for Member Cluster (e.g., member-blue): member-red
+   ```
+
+   
+
+5. This will ask you for the context for the respective token.yamls created to be applied in. It will list all the yaml files created in the current folder for you to choose which token to be applied.
+
+   ```bash
+   Enter your choice: 5
+   Applying member tokens...
+   1) 10.13.90.1
+   2) cluster-1
+   3) ns-stc-1
+   4) Back to Main Menu
+   Select a context to switch to: 2
+   Switched to context "cluster-1".
+   1) member-blue-token.yaml
+   2) Back to Main Menu
+   Select a YAML file to apply:
+   ```
+
+   
+
+6. This will create the clusterset prompting for the leader cluster context and ask for the ClusterID and ClusterSet name
+
+   ```bash
+   Enter your choice: 6
+   Creating ClusterSet on the leader cluster...
+   1) 10.13.90.1
+   2) cluster-1
+   3) ns-stc-1
+   4) Back to Main Menu
+   Select the leader cluster context: 2
+   Switched to context "cluster-1".
+   Enter ClusterID (e.g., tkg-cluster-leader): leader-cluster
+   Enter ClusterSet name (e.g., andreasm-clusterset): super-clusterset
+   ```
+
+   
+
+7. This will create the clusterclaim on the member cluster to join the cluster leader/clusterset 
+
+   ```bash
+   Enter your choice: 7
+   Creating ClusterClaim on member cluster...
+   1) 10.13.90.1
+   2) cluster-1
+   3) ns-stc-1
+   4) Back to Main Menu
+   Select a context to switch to: 2
+   Switched to context "cluster-1".
+   Enter member-cluster-name (e.g., member-cluster-red): member-cluster-blue
+   Enter ClusterSet name (e.g., andreasm-clusterset): super-clusterset
+   Enter Leader ClusterID (e.g., tkg-cluster-leader): leader-cluster
+   Enter Member Token to use: member-blue-token
+   Enter Leader cluster API endpoint (e.g., https://10.101.114.100:6443): https://10.101.115.120:6443
+   ```
+
+8. This will create the Multi-cluster Gateway by letting you select the which node in which cluster to annotate
+
+   ```bash
+   Enter your choice: 8
+   Creating Multi-cluster Gateway...
+   1) 10.13.90.1
+   2) cluster-1
+   3) ns-stc-1
+   4) Back to Main Menu
+   Select a context to switch to: 2
+   Switched to context "cluster-1".
+   1) cluster-1-f82lv-fdvw8			  3) cluster-1-node-pool-01-tb4tw-555756bd56-klgcs
+   2) cluster-1-node-pool-01-tb4tw-555756bd56-76qv6  4) Back to Context Menu
+   Select a node to annotate as Multi-cluster Gateway: 2
+   node/cluster-1-node-pool-01-tb4tw-555756bd56-76qv6 annotated
+   Annotated cluster-1-node-pool-01-tb4tw-555756bd56-76qv6 as Multi-cluster Gateway.
+   Select a node to annotate as Multi-cluster Gateway: 4
+   Do you want to annotate another node? (yes/no): # Selecting yes brings up the node list again. Selecting no takes you back to main menu. This needs to be done on all member clusters you need to define a gateway node
+   ```
+
+9. This will let you select a context, list all services defined in this cluster, let you select it from a menu then export is as a Multi-cluster service.
+
+   ```bash
+   Enter your choice: 9
+   Creating a Multi-cluster service...
+   1) 10.13.90.1
+   2) cluster-1
+   3) ns-stc-1
+   4) Back to Main Menu
+   Select a context to switch to: 2
+   Switched to context "cluster-1".
+   1) antrea-multicluster		   5) kube-public		     9) vmware-system-antrea	      13) vmware-system-tkg
+   2) default			   6) kube-system		    10) vmware-system-auth	      14) yelb
+   3) fruit			   7) secretgen-controller	    11) vmware-system-cloud-provider  15) Back to Context Menu
+   4) kube-node-lease		   8) tkg-system		    12) vmware-system-csi
+   Select a namespace to list services from: 14
+   1) redis-server
+   2) yelb-appserver
+   3) yelb-db
+   4) yelb-ui
+   5) Back to Namespace Menu
+   Select a service to export as Multi-cluster service: 2
+   ServiceExport created for yelb-appserver in namespace yelb.
+   serviceexport.multicluster.x-k8s.io/yelb-appserver unchanged
+   Multi-cluster service applied.
+   Select a service to export as Multi-cluster service: # hit enter to bring up menu
+   1) antrea-multicluster		   5) kube-public		     9) vmware-system-antrea	      13) vmware-system-tkg
+   2) default			   6) kube-system		    10) vmware-system-auth	      14) yelb
+   3) fruit			   7) secretgen-controller	    11) vmware-system-cloud-provider  15) Back to Context Menu
+   4) kube-node-lease		   8) tkg-system		    12) vmware-system-csi
+   Select a service to export as Multi-cluster service: 15
+   ```
+
+   
+
+Here is the script:
+
+```bash
+#!/bin/bash
+
+# Function to create member-cluster secrets
+create_member_cluster_secrets() {
+    echo "Creating member-cluster secrets..."
+
+    # List available contexts and create a menu
+    contexts=($(kubectl config get-contexts -o=name))
+
+    # Display the menu for selecting a context as the leader cluster
+    PS3="Select a context as the leader cluster: "
+    select LEADER_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+        if [[ -n "$LEADER_CONTEXT" ]]; then
+            if [ "$LEADER_CONTEXT" == "Back to Main Menu" ]; then
+                break
+            fi
+
+            # Set the selected context as the leader cluster context
+            kubectl config use-context "$LEADER_CONTEXT"
+
+            read -p "Enter the name for Member Cluster (e.g., member-blue): " MEMBER_CLUSTER_NAME
+
+            # Create YAML content for the member cluster
+            cat <<EOF > member-cluster.yml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: $MEMBER_CLUSTER_NAME
+  namespace: antrea-multicluster
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${MEMBER_CLUSTER_NAME}-token
+  namespace: antrea-multicluster
+  annotations:
+    kubernetes.io/service-account.name: $MEMBER_CLUSTER_NAME
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: $MEMBER_CLUSTER_NAME
+  namespace: antrea-multicluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: antrea-mc-member-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: $MEMBER_CLUSTER_NAME
+    namespace: antrea-multicluster
+EOF
+
+            # Apply the YAML content for the member cluster
+            kubectl apply -f member-cluster.yml
+
+            # Create the member cluster secret file
+            kubectl get secret ${MEMBER_CLUSTER_NAME}-token -n antrea-multicluster -o yaml | grep -w -e '^apiVersion' -e '^data' -e '^metadata' -e '^ *name:'  -e   '^kind' -e '  ca.crt' -e '  token:' -e '^type' -e '  namespace' | sed -e 's/kubernetes.io\/service-account-token/Opaque/g' -e "s/antrea-multicluster/kube-system/g" > "${MEMBER_CLUSTER_NAME}-token.yaml"
+
+            echo "Member cluster secrets created and YAML file generated: ${MEMBER_CLUSTER_NAME}-token.yaml."
+            sleep 2
+            break
+        else
+            echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+        fi
+    done
+}
+
+# Function to apply member tokens
+apply_member_tokens() {
+    echo "Applying member tokens..."
+
+    # List available contexts and create a menu
+    contexts=($(kubectl config get-contexts -o=name))
+
+    # Display the menu for selecting a context to switch to
+    PS3="Select a context to switch to: "
+    select SWITCH_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+        if [[ -n "$SWITCH_CONTEXT" ]]; then
+            if [ "$SWITCH_CONTEXT" == "Back to Main Menu" ]; then
+                break
+            fi
+
+            kubectl config use-context "$SWITCH_CONTEXT"
+
+            # List YAML files in the current folder and create a menu
+            yaml_files=($(ls *.yaml))
+
+            # Display the menu for selecting a YAML file to apply
+            PS3="Select a YAML file to apply: "
+            select SELECTED_YAML in "${yaml_files[@]}" "Back to Main Menu"; do
+                if [[ -n "$SELECTED_YAML" ]]; then
+                    if [ "$SELECTED_YAML" == "Back to Main Menu" ]; then
+                        break
+                    fi
+
+                    kubectl apply -f "$SELECTED_YAML"
+
+                    echo "Applied $SELECTED_YAML in context $SWITCH_CONTEXT."
+                    sleep 2
+                    break
+                else
+                    echo "Invalid selection. Please choose a YAML file or 'Back to Main Menu'."
+                fi
+            done
+            break
+        else
+            echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+        fi
+    done
+}
+
+# Function to create ClusterSet on the leader cluster
+create_clusterset_on_leader() {
+    echo "Creating ClusterSet on the leader cluster..."
+
+    # List available contexts and create a menu
+    contexts=($(kubectl config get-contexts -o=name))
+
+    # Display the menu for selecting the leader cluster context
+    PS3="Select the leader cluster context: "
+    select LEADER_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+        if [[ -n "$LEADER_CONTEXT" ]]; then
+            if [ "$LEADER_CONTEXT" == "Back to Main Menu" ]; then
+                break
+            fi
+
+            kubectl config use-context "$LEADER_CONTEXT"
+
+            # Prompt for ClusterID and ClusterSet name
+            read -p "Enter ClusterID (e.g., tkg-cluster-leader): " CLUSTER_ID
+            read -p "Enter ClusterSet name (e.g., andreasm-clusterset): " CLUSTERSET_NAME
+
+            # Create YAML content for ClusterSet
+            cat <<EOF > clusterset.yaml
+apiVersion: multicluster.crd.antrea.io/v1alpha2
+kind: ClusterClaim
+metadata:
+  name: id.k8s.io
+  namespace: antrea-multicluster
+value: $CLUSTER_ID
+---
+apiVersion: multicluster.crd.antrea.io/v1alpha2
+kind: ClusterClaim
+metadata:
+  name: clusterset.k8s.io
+  namespace: antrea-multicluster
+value: $CLUSTERSET_NAME
+---
+apiVersion: multicluster.crd.antrea.io/v1alpha1
+kind: ClusterSet
+metadata:
+  name: $CLUSTERSET_NAME
+  namespace: antrea-multicluster
+spec:
+  leaders:
+    - clusterID: $CLUSTER_ID
+EOF
+
+            # Apply the ClusterSet YAML
+            kubectl apply -f clusterset.yaml
+
+            echo "ClusterSet created on the leader cluster."
+            sleep 2
+            break
+        else
+            echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+        fi
+    done
+}
+
+# Function to create ClusterClaim on member cluster
+create_clusterclaim_on_member() {
+    echo "Creating ClusterClaim on member cluster..."
+
+    # List available contexts and create a menu
+    contexts=($(kubectl config get-contexts -o=name))
+
+    # Display the menu for selecting a context to switch to
+    PS3="Select a context to switch to: "
+    select MEMBER_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+        if [[ -n "$MEMBER_CONTEXT" ]]; then
+            if [ "$MEMBER_CONTEXT" == "Back to Main Menu" ]; then
+                break
+            fi
+
+            kubectl config use-context "$MEMBER_CONTEXT"
+
+            # Prompt for ClusterClaim values
+            read -p "Enter member-cluster-name (e.g., member-cluster-red): " MEMBER_CLUSTER_NAME
+            read -p "Enter ClusterSet name (e.g., andreasm-clusterset): " CLUSTERSET_NAME
+            read -p "Enter Leader ClusterID (e.g., tkg-cluster-leader): " LEADER_CLUSTER_ID
+            read -p "Enter Member Token to use: " MEMBER_TOKEN
+            read -p "Enter Leader cluster API endpoint (e.g., https://10.101.114.100:6443): " LEADER_ENDPOINT
+
+            # Create YAML content for ClusterClaim
+            cat <<EOF > "${MEMBER_CLUSTER_NAME}-clusterclaim.yaml"
+apiVersion: multicluster.crd.antrea.io/v1alpha2
+kind: ClusterClaim
+metadata:
+  name: id.k8s.io
+  namespace: kube-system
+value: $MEMBER_CLUSTER_NAME
+---
+apiVersion: multicluster.crd.antrea.io/v1alpha2
+kind: ClusterClaim
+metadata:
+  name: clusterset.k8s.io
+  namespace: kube-system
+value: $CLUSTERSET_NAME
+---
+apiVersion: multicluster.crd.antrea.io/v1alpha1
+kind: ClusterSet
+metadata:
+  name: $CLUSTERSET_NAME
+  namespace: kube-system
+spec:
+  leaders:
+    - clusterID: $LEADER_CLUSTER_ID
+      secret: "$MEMBER_TOKEN"
+      server: "$LEADER_ENDPOINT"
+  namespace: antrea-multicluster
+EOF
+
+            # Apply the ClusterClaim YAML
+            kubectl apply -f "${MEMBER_CLUSTER_NAME}-clusterclaim.yaml"
+
+            echo "ClusterClaim created on member cluster."
+            sleep 2
+            break
+        else
+            echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+        fi
+    done
+}
+
+# Function to create Multi-cluster Gateway
+create_multi_cluster_gateway() {
+    echo "Creating Multi-cluster Gateway..."
+
+    # List available contexts and create a menu
+    contexts=($(kubectl config get-contexts -o=name))
+
+    # Display the menu for selecting a context to switch to
+    PS3="Select a context to switch to: "
+    select GATEWAY_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+        if [[ -n "$GATEWAY_CONTEXT" ]]; then
+            if [ "$GATEWAY_CONTEXT" == "Back to Main Menu" ]; then
+                break
+            fi
+
+            kubectl config use-context "$GATEWAY_CONTEXT"
+
+            while true; do
+                # List nodes and create a menu
+                nodes=($(kubectl get nodes -o custom-columns=NAME:.metadata.name --no-headers))
+
+                # Display the menu for selecting a node to annotate
+                PS3="Select a node to annotate as Multi-cluster Gateway: "
+                select SELECTED_NODE in "${nodes[@]}" "Back to Context Menu"; do
+                    if [[ -n "$SELECTED_NODE" ]]; then
+                        if [ "$SELECTED_NODE" == "Back to Context Menu" ]; then
+                            break
+                        fi
+
+                        # Annotate the selected node
+                        kubectl annotate node "$SELECTED_NODE" multicluster.antrea.io/gateway=true
+
+                        echo "Annotated $SELECTED_NODE as Multi-cluster Gateway."
+                        sleep 2
+                    else
+                        echo "Invalid selection. Please choose a node or 'Back to Context Menu'."
+                    fi
+                done
+
+                read -p "Do you want to annotate another node? (yes/no): " ANNOTATE_ANOTHER
+                if [ "$ANNOTATE_ANOTHER" != "yes" ]; then
+                    break
+                fi
+            done
+            break
+        else
+            echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+        fi
+    done
+}
+
+# Function to create a Multi-cluster service
+create_multi_cluster_service() {
+    echo "Creating a Multi-cluster service..."
+
+    # List available contexts and create a menu
+    contexts=($(kubectl config get-contexts -o=name))
+
+    # Display the menu for selecting a context to switch to
+    PS3="Select a context to switch to: "
+    select SELECT_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+        if [[ -n "$SELECT_CONTEXT" ]]; then
+            if [ "$SELECT_CONTEXT" == "Back to Main Menu" ]; then
+                break
+            fi
+
+            kubectl config use-context "$SELECT_CONTEXT"
+
+            # List namespaces and create a menu
+            namespaces=($(kubectl get namespaces -o custom-columns=NAME:.metadata.name --no-headers))
+
+            # Display the menu for selecting a namespace
+            PS3="Select a namespace to list services from: "
+            select SELECTED_NAMESPACE in "${namespaces[@]}" "Back to Context Menu"; do
+                if [[ -n "$SELECTED_NAMESPACE" ]]; then
+                    if [ "$SELECTED_NAMESPACE" == "Back to Context Menu" ]; then
+                        break
+                    fi
+
+                    # List services in the selected namespace and create a menu
+                    services=($(kubectl get services -n "$SELECTED_NAMESPACE" -o custom-columns=NAME:.metadata.name --no-headers))
+
+                    # Display the menu for selecting a service
+                    PS3="Select a service to export as Multi-cluster service: "
+                    select SELECTED_SERVICE in "${services[@]}" "Back to Namespace Menu"; do
+                        if [[ -n "$SELECTED_SERVICE" ]]; then
+                            if [ "$SELECTED_SERVICE" == "Back to Namespace Menu" ]; then
+                                break
+                            fi
+
+                            # Create YAML content for ServiceExport
+                            cat <<EOF > "${SELECTED_SERVICE}-multi-cluster-service.yaml"
+apiVersion: multicluster.x-k8s.io/v1alpha1
+kind: ServiceExport
+metadata:
+  name: $SELECTED_SERVICE
+  namespace: $SELECTED_NAMESPACE
+EOF
+
+                            echo "ServiceExport created for $SELECTED_SERVICE in namespace $SELECTED_NAMESPACE."
+
+                            # Apply the Multi-cluster service
+                            kubectl apply -f "${SELECTED_SERVICE}-multi-cluster-service.yaml"
+                            echo "Multi-cluster service applied."
+
+                            sleep 2
+                            break
+                        else
+                            echo "Invalid selection. Please choose a service or 'Back to Namespace Menu'."
+                        fi
+                    done
+                else
+                    echo "Invalid selection. Please choose a namespace or 'Back to Context Menu'."
+                fi
+            done
+            break
+        else
+            echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+        fi
+    done
+}
+
+
+
+# Main menu
+while true; do
+    clear
+    echo "Main Menu:"
+    echo "1. Select Antrea version"
+    echo "2. Install Antrea Multi-cluster on leader cluster"
+    echo "3. Install Antrea Multi-cluster on member cluster"
+    echo "4. Create member-cluster secrets"
+    echo "5. Apply member tokens"
+    echo "6. Create ClusterSet on the leader cluster"
+    echo "7. Create ClusterClaim on member cluster"
+    echo "8. Create Multi-cluster Gateway"
+    echo "9. Create a Multi-cluster service"
+    echo "10. Exit"
+
+    read -p "Enter your choice: " choice
+
+    case $choice in
+        1)
+            read -p "Enter Antrea version (e.g., v1.11.1): " TAG
+            ;;
+        2)
+            echo "Installing Antrea Multi-cluster on leader cluster..."
+
+            # List available contexts and create a menu
+            contexts=($(kubectl config get-contexts -o=name))
+
+            # Display the menu
+            PS3="Select a context to switch to: "
+            select SWITCH_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+                if [[ -n "$SWITCH_CONTEXT" ]]; then
+                    if [ "$SWITCH_CONTEXT" == "Back to Main Menu" ]; then
+                        break
+                    fi
+
+                    kubectl config use-context "$SWITCH_CONTEXT"
+
+                    # Create namespace if it does not exist
+                    kubectl create namespace antrea-multicluster --dry-run=client -o yaml | kubectl apply -f -
+
+                    # Apply leader cluster YAMLs
+                    kubectl apply -f "https://github.com/antrea-io/antrea/releases/download/$TAG/antrea-multicluster-leader-global.yml"
+                    kubectl apply -f "https://github.com/antrea-io/antrea/releases/download/$TAG/antrea-multicluster-leader-namespaced.yml"
+
+                    echo "Antrea Multi-cluster installed on leader cluster."
+                    sleep 2
+                    break
+                else
+                    echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+                fi
+            done
+            ;;
+        3)
+            echo "Installing Antrea Multi-cluster on member cluster..."
+
+            # List available contexts and create a menu
+            contexts=($(kubectl config get-contexts -o=name))
+
+            # Display the menu
+            PS3="Select a context to switch to: "
+            select SWITCH_CONTEXT in "${contexts[@]}" "Back to Main Menu"; do
+                if [[ -n "$SWITCH_CONTEXT" ]]; then
+                    if [ "$SWITCH_CONTEXT" == "Back to Main Menu" ]; then
+                        break
+                    fi
+
+                    kubectl config use-context "$SWITCH_CONTEXT"
+
+                    # Apply member cluster YAML
+                    kubectl apply -f "https://github.com/antrea-io/antrea/releases/download/$TAG/antrea-multicluster-member.yml"
+
+                    echo "Antrea Multi-cluster installed on member cluster."
+                    sleep 2
+                    break
+                else
+                    echo "Invalid selection. Please choose a context or 'Back to Main Menu'."
+                fi
+            done
+            ;;
+        4)
+            create_member_cluster_secrets
+            ;;
+        5)
+            apply_member_tokens
+            ;;
+        6)
+            create_clusterset_on_leader
+            ;;
+        7)
+            create_clusterclaim_on_member
+            ;;
+        8)
+            create_multi_cluster_gateway
+            ;;
+        9)
+            create_multi_cluster_service
+            ;;
+        10)
+            echo "Exiting..."
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice. Please choose a valid option."
+            sleep 2
+            ;;
+    esac
+done
+```
 
 
 
