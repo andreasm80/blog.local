@@ -77,9 +77,13 @@ I already have my vSphere 8 U2 environment running, I already have my NSX 4.1.1 
 
 I only needed to upgrade my current vSphere 8 U1 environment to vSphere 8 U2, as always starting with the vCenter server using the VAMI interface, then updated the ESXi image in LCM to do a rolling upgrade of the ESXi hosts to 8 U2. 
 
+## NSX-T preparations
+
+For information how to install NSX, see my post [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/)
+
 ## NSX-ALB preparations - requirements
 
-Instead of going through all the steps in configuring the NSX-ALB I will only post the settings that is specific/or needed for the NSX+NSX-ALB feature to work. As I already have a working NSX-ALB environment running and in use for other needs, its not that many changes I had to do. So I will show them here in their own section starting with the cloud.
+Instead of going through all the steps in configuring the NSX-ALB I will only post the settings that is specific/or needed for the NSX+NSX-ALB feature to work. As I already have a working NSX-ALB environment running and in use for other needs, its not that many changes I had to do. So I will show them here in their own section starting with the cloud. For reference how to install NSX-ALB I have done a post on that [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-nsx-t-avi-loadbalancer/#configure-nsx-cloud-in-avi---network-preparations). 
 
 ### NSX cloud
 
@@ -104,6 +108,16 @@ You need to make sure that you have configured an IPAM profile. Again, I already
 
 
 <img src=images/image-20230924122526763.png style="width:500px" />
+
+{{% notice warning "Important" %}}
+
+In your IPAM profile it is very important to **not** have the **Allocate ip in VRF** option selected. This must be de-selected.
+
+{{% /notice %}} 
+
+![vrf-option](images/image-20231003171934860.png)
+
+
 
 Then make sure your NSX cloud has this IPAM profile select:
 
@@ -147,7 +161,7 @@ Another requirement is to change the default certificate to a custom one. One ca
 
 - Need to have configured a NSX Cloud with the DHCP option enabled
 - Created a custom certificate (not configured to be used yet)
-- Created and configured an IPAM profile, updated the NSX cloud to use this profile
+- Created and configured an IPAM profile, updated the NSX cloud to use this profile, in the IPAM profile *Allocate IP in VRF* i de-selected.
 
 
 
@@ -514,65 +528,7 @@ Now, its just clicking finish and monitor the progress.
 
 
 
-{{% notice info "Info" %}}
-
-I have done this installation several times now, and I have discovered that in my environment some times my VRF context is not automatically being updated after a new data network is being added by the WCP installer in my NSX-ALB NSX cloud. So I have to monitor this installation until it reach the LoadBalancer configuration step, then go into my NSX-ALB NSX cloud, click save. Then it will update my VRF Context with the new network. And the installation will continue. 
-
-{{% /notice %}}
-
-In the progress of the Workload Management enablement it will stop here, and indicating this:
-
-<img src=images/image-20230924193525221.png style="width:800px" />
-
-
-
-And you see these events in your NSX-ALB manager:
-
-![image-20230924193723878](images/image-20230924193723878.png)
-
-
-
-You will see a new network being added to the NSX Cloud when you edit the cloud:
-
-<img src=images/image-20230924200512432.png style="width:800px" />
-
-By just clicking save, it will add this network as a VRF Context. 
-
-
-
-{{% notice info "Info" %}}
-
-I also notice that it will create the VIP network profile using the *global* VRF Context. I do not have any routes that support this in my Global VRF Context, So I need to  switch to the newly created VRF Context: domain-c8:5071d9d4-373d-49aa-a202-4c4ed81adc3b. I dont think it is correct that it should use the *Global VRF* context. 
-
-{{% /notice %}}
-
-You will see this event in NSX-ALB (no suitable network found):
-
-![event-no-networks-found](images/image-20230924194358954.png)
-
-
-
-![new-network-profiles](images/image-20230924194123217.png)
-
-As you can see, it does create a new VRF Context, sometimes it is being added automatically, or you have to go in and click save on the NSX Cloud for it to add the vrf context. 
-
-![vrf-context](images/image-20230924194140519.png)
-
-I edit the vcf-ako-net-domain network profile and change the routing context to the domain-c8:50xxxxx context. 
-
-![change-routing-context](images/image-20230924194324069.png)
-
-
-
-![image-20230924194719124](images/image-20230924194719124.png)
-
-
-
-
-
-
-
-This will probably not be an issue if you deploy the NSX-ALB controller also as part of this installation. But in my environment I already have NSX-ALB running and configured for other services also. After tackling these two issues, the installation continues. One will soon see two new Virtual Services being created, two new service engines (according to my defaul-service-engine grup config) being deployed. 
+One will soon see two new Virtual Services being created, two new service engines (according to my default-service-engine group config) being deployed. 
 
 <img src=images/image-20230924194912944.png style="width:800px" />
 
