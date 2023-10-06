@@ -97,7 +97,7 @@ In my NSX-ALB I already have two clouds configured, both of them are NSX clouds.
 
 {{% notice info "Info" %}}
 
-If you happen to have multiple clouds configured it will figure out wich cloud it will use. The NSX manager knows which NSX cloud it must use, most likely because it will use the cloud that is the same NSX the API comes from. In my lab I have two NSX clouds configured, and it will select the correct cloud.
+If you happen to have multiple clouds configured it will figure out wich cloud it will use. The NSX manager knows which NSX cloud it must use, most likely because it will use the cloud that is the same NSX the API comes from. In my lab I have two NSX clouds configured, and it will select the correct cloud. My two NSX clouds are two unique NSX instances, if having two NSX clouds of same NSX instance I am not sure how it can select the right cloud. 
 
 {{% /notice %}} 
 
@@ -357,6 +357,13 @@ Notice the **welcome_workflow_complete** is set to *False*. Set this to true usi
 
 ```bash
 [admin:172-24-3-50]: > configure systemconfiguration welcome_workflow_complete 1
+```
+
+Or 
+
+```bash
+[admin:172-24-3-50]: > configure systemconfiguration
+[admin:172-24-3-50-configure]: > welcome_workflow_complete (hit henter)
 ```
 
 If you show the systemconfiguration again now it should be changed to True...  Logout and back in to the NSX-ALB gui and you should not be asked to do the initial setup wizard. 
@@ -712,7 +719,9 @@ One new Service Engine Group
 
 Two new Network Profiles
 
-<img src=images/image-20230924204302982.png style="width:800px" />
+(notice the ingress cidr network profile (VIP) is placed in the global vrf)
+
+<img src=images/image-20231006101952239.png style="width:800px" />
 
 One new VRF context
 
@@ -728,17 +737,14 @@ I went ahead and created a new vSphere Namespace with these settings:
 
 <img src=images/image-20230924211606562.png style="width:700px" />
 
-Immediately after it also created some new objects in NSX like a new Tier-1, segments etc similar to what it does before vSphere 8 U2. Then in NSX-ALB new netowork profiles and VRF context, but seems to be missing the VRF context her also.
+Immediately after, it also created some new objects in NSX like a new Tier-1, segments etc similar to what it does before vSphere 8 U2. Then in NSX-ALB new network profiles and VRF context, creating the network profile for the SE in the new VRF *t1-domain-xxxxxx-xxxxx-xxx-xxx-x-ns-stc-1*.
 
-The network profile *vcf-ako-net-domain-c8:5071d9d4-373d-49aa-a202-4c4ed81adc3b-ns-stc-1* was created using the global vrf.
+The ingress cidr (VIP) network profile *vcf-ako-net-domain-c8:5071d9d4-373d-49aa-a202-4c4ed81adc3b-ns-stc-1* was created using the global vrf.
+If you remember I deselected the option in my IPAM profile **Allocate ip in VRF**, so it will use the global vrf here.
 
 ![image-20230924210534812](images/image-20230924210534812.png)
 
-Will be switching to the new context:
-
-<img src=images/image-20230924210919966.png style="width:800px" />
-
-Now I can deploy the cluster itself. 
+Now I can deploy my workload cluster in the newly create vSphere namespace. 
 
 ```bash
 andreasm@ubuntu02:~/avi_nsxt_wcp$ k apply -f cluster-1-default.yaml
