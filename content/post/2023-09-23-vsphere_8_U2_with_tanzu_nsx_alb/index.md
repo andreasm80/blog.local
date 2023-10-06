@@ -737,14 +737,16 @@ I went ahead and created a new vSphere Namespace with these settings:
 
 <img src=images/image-20230924211606562.png style="width:700px" />
 
-Immediately after, it also created some new objects in NSX like a new Tier-1, segments etc similar to what it does before vSphere 8 U2. Then in NSX-ALB new network profiles and VRF context, creating the network profile for the SE in the new VRF *t1-domain-xxxxxx-xxxxx-xxx-xxx-x-ns-stc-1*.
+Immediately after, it also created some new objects in NSX like a new Tier-1, segments etc similar to what it does before vSphere 8 U2. Then in NSX-ALB new network profiles and VRF context, creating the network profile for the SEs in the new VRF *t1-domain-xxxxxx-xxxxx-xxx-xxx-x-ns-stc-1*.
 
 The ingress cidr (VIP) network profile *vcf-ako-net-domain-c8:5071d9d4-373d-49aa-a202-4c4ed81adc3b-ns-stc-1* was created using the global vrf.
-If you remember I deselected the option in my IPAM profile **Allocate ip in VRF**, so it will use the global vrf here.
+If you remember I deselected the option in my IPAM profile **Allocate ip in VRF**, so it will use the global vrf here also (as in the initial deployment of the Supervisor cluster).
 
-![image-20230924210534812](images/image-20230924210534812.png)
 
-Now I can deploy my workload cluster in the newly create vSphere namespace. 
+
+![new-network-pfofiles](images/image-20231006104304250.png)
+
+Now I can deploy my workload cluster in the newly created vSphere namespace. 
 
 ```bash
 andreasm@ubuntu02:~/avi_nsxt_wcp$ k apply -f cluster-1-default.yaml
