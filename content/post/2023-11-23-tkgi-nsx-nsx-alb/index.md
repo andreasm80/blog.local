@@ -30,17 +30,17 @@ comment: false # Disable comment if false.
 
 # TKGi
 
-I realized I have not covered any posts around TKGi, so it is about high time to cover TKGi also. TKGi for me has a special place in my IT heart. Back in the days when it was called PKS I was all over the place doing a lot of PoCs and some production installations on TKGi. It was, and is, a very good Kubernetes platform very integrated with NSX. Back then we could not use NSX Advanced Loadbalancer as the Layer 4 provider as that was provided by NSX, and it was only using NCP (NSX Container Plugin) as the CNI for the Kubernetes clusters. Now we can use both Antrea as the CNI and we can also use NSX Advanced LoadBalancer for both Layer 4 and Layer 7 services in combination with NSX as the underlaying network platform. So this will be an exiting post for me to go through. TKGi is very much alive and will keep going forward.
+I realized I have not covered any posts around TKGi, so it is about high time to cover TKGi also. TKGi for me has a special place in my IT heart. Back in the days when it was called PKS I was all over the place doing a lot of PoCs and some production installations on TKGi. It was, and is, a very good Kubernetes platform very integrated with NSX. Back then NSX Advanced Loadbalancer, or Avi Networks, were not part of VMware. TKGi relied 100% on NSX-T providing both L4 and L7 loadbalancer services and it had a very tight integration with NCP (NSX Container Plugin) as the CNI for the Kubernetes clusters. Now we can also use Antrea as the CNI and we can also use NSX Advanced LoadBalancer for both Layer 4 and Layer 7 services in combination with NSX (different ways how NSX is being used, more on that later) as the underlaying network platform. So this will be an exiting post for me to go through. TKGi is very much alive and keeps going forward.
 
 ## Installing TKGi
 
-TKGi involves several components like vSphere, vCenter, NSX, and now also NSX Advanced LoadBalancer and the actual TKGi components themselves. The actual installing of TKGi can be done a couple of ways. One way (the method I prefer) is to use the TKGi Management Console. The MC is a rather large OVA image that contains all the binaries needed to install TKGi, and provides a nice UI. More on that later. The other approach is to build TKGi by downloading all the binaries from the Ops Manager, Bosh Stemcells, TGKi, etc. But before we can deploy TKGi there is some preparations that needs to be done. A note on how NSX can be used in TKGi. NSX can be the underlaying network provider for TKGi in three ways. We can use NSX as a regular underlay, no integration with TKGi, we will create the networks as for regular VM workload with segments, gateway IPs and select them to be used respectively in TKGi. The other option is to use fully automated way where TKGi creates and configures all the needed NSX network components on demand and the third option is to *Bring Your Own Topology* meaning we have created some components like Tier-0 ourselves, and TKGi will create the Tier1s and segments according to the config. I will go through  both of these two options to to show the differencem where the Antrea approach just leverage NSX as the underlaying network stack with no TKGi integration and the "BYOT" will automate many of the networking tasks. I will not show how the "fully" automated NSX network integrations works.  
+TKGi involves several components like vSphere, vCenter, NSX, and now also NSX Advanced LoadBalancer and the actual TKGi components themselves. The actual installing of TKGi can be done a couple of ways. One way (the method I prefer) is to use the TKGi Management Console. The MC is a rather large OVA image that contains all the binaries needed to install TKGi, and provides a nice UI. More on that later. The other approach is to build TKGi by downloading all the binaries from the Ops Manager, Bosh Stemcells, TGKi, etc. But before we can deploy TKGi there is some preparations that needs to be done. A note on how NSX can be prepared for use in TKGi. NSX can be the underlaying network provider for TKGi in three ways. We can use NSX as a regular underlay, no integration with TKGi, we will create the NSX networks as for regular VM workload with segments, gateway IPs and select them to be used respectively in TKGi. The other option is to use fully automated way where TKGi creates and configures all the needed NSX network components on demand and the third option is to *Bring Your Own Topology* meaning we have created some components like Tier-0 ourselves, and TKGi will use these objects and attach its own created Tier1s and segments according to the config. I will go through  both of these two options to to show the differencem where the Antrea approach just leverage NSX as the underlaying network stack with no TKGi integration and the "BYOT" will automate many of the networking tasks. I will not show how the "fully" automated NSX network integrations works, this also configures the Tier-0 which I already have in place in my infra.  
 
-I will be basing this post on TKGi version 1.18.0. This version supports the NSX Policy API, but is not so relevant when selecting the Antrea approach.
+I will be basing this post on TKGi version 1.18.0. This version supports the NSX Policy API, but is not so relevant when selecting the Antrea approach. I was not able to deploy TKGi using NSX Policy API in my lab so it to use Manager API. But the biggest difference is just how to NSX objects are being created in NSX, and for the sake of it probably some support statements that may differ. 
 
 
 
-So this post will cover to three ways of deplying TKGI where the first is using the EPMC, BYOT with NSX-T using NSX manager API, then the Antrea approach (still using TKGiMC) with NSX-T as just a network fabric managed completely outside of TKGi and the third approach the manual way by deploying Ops Man, configure Bosh and TKGi. All three approaches will incorporate the use of NSX Advanced Loadbalancer for both L4 services and L7 services inside my Kubernetes clusters.  
+So this post will cover to two ways of deplying TKGI where the first is using the EPMC, BYOT with NSX-T using NSX manager API, then the Antrea approach (still using TKGiMC) with NSX-T as just a network fabric managed completely outside of TKGi. Both approaches will incorporate the use of NSX Advanced Loadbalancer for both L4 services and L7 services inside my Kubernetes clusters. In the Antrea approach I will also configure Virtual Services in NSX Advanced Loadbalancer to provide the Kubernetes APi endpoint. 
 
 ### Preparations before deploying TKGi
 
@@ -50,11 +50,11 @@ So this post will cover to three ways of deplying TKGI where the first is using 
 - Downloaded the TKGi Management Console from my.vmware.com (13GB)
 
 Network topology 
-![network-topology](images/image-20231123090424987.png)
+![topology](images/image-20231201080952619.png)
 
 ### NSX configurations
 
-Within NSX I have configured my Tier-0, then a Tier-1 for a couple of segments like a "management segment" and "avi-se-generic-data" then a second Tier for my Avi DNS service where the SE data nic will be placed. Depending on the selected topology.. If BYOT then the segments and T1 will be created, for the Antrea approach, you need to manually or create the segments/Tier1s in NSX yourselves. 
+Within NSX I have configured my Tier-0, then a Tier-1 for a couple of segments like a "management segment" and "avi-se-generic-data" for SE "generic" datanic, then a second Tier for my Avi DNS service where the DNS SE data nic will be placed. If BYOT then the T1s and segments for TKGi will be created by TKGi, for the Antrea approach, you need to manually or create the segments/Tier1s in NSX yourselves, these segments is at a minumun the management network for TKGi management components (OpsMan, Bosh) and a service network for the Kubernetes nodes. By using network profiles you can add more service networks to accommodate different networks for different Kubernetes clusters.  
 
 Tier-0
 
@@ -217,12 +217,12 @@ And its here we can do our topology choices. I will start with the BYOT approach
 
 ![nsx-t-byot](images/image-20231123200601136.png)
 
-In this topology I will point to my existing Tier0, then my already created segment ls-tkgi-mgmt, the floating IP pool (api endpoints), ip blocks for node and pod. I deselect NAT as I want to keep the Kubernetes nodes routable. This does not mean the POD network is not NAT'ed. 
+In this topology I will point to my existing Tier0, then my already created segment ls-tkgi-mgmt, the floating IP pool (api endpoints), ip blocks for node and pod. I deselect NAT as I want to keep the Kubernetes nodes routable. This also mean the POD network is not NAT'ed, be aware of this otherwise you may end up advertising a bunch of subnets you may not want to re-distribute. 
 
 {{% notice warning "Info" %}}
 
 According to the official documentation [here](https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid-Integrated-Edition/1.18/tkgi/GUID-nsxt-topologies.html) NO NAT should give me routable management VMs (Bosh, OpsMan etc) and routable Kubernetes Nodes, but I discovered it also gave me routable pods, so my pod cidr was exposed in my network via BGP. 
-To keep this network inside NSX I had to add a route-map on my Tier-0 blocking this cidr. This only stop my POD cidr from being advertised outside NSX (Tier0) but not inside NSX. 
+To keep this network inside NSX I had to add a route-map on my Tier-0 blocking this cidr. This only stop my POD cidr from being advertised outside NSX (Tier0) but not inside NSX. I would like to have the option to at least place the nat rules on the Tier1 for only the pod CIDR.
 
 [Here](https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid-Integrated-Edition/1.18/tkgi/GUID-nsxt-topologies.html) is the topology diagrams, the Cluster Network (I assume is the pod-cidr) is following the kubernetes nodes topology.
 
@@ -231,7 +231,7 @@ More on that later.
 
 {{% /notice %}}
 
-Also I was not able to enable the NSX-T Policy API using the TKGI MC, it could not find any of my NSX objects created using Policy API, so I decided to continue using manager api. I will later enable Policy API using Ops Man. This just made this post a bit longer as I also have to add a section where I use Policy API.  
+Also I was not able to enable the NSX-T Policy API using the TKGI MC, it could not find any of my NSX objects created using Policy API, so I decided to continue using manager api. Maybe using Ops Man, the manual approach, will make this easier. But again, this is my lab and there may be some small config it does not like there. In other real world environments it may behave different.   
 
 ![validation_error](images/image-20231123202050937.png)
 
@@ -251,11 +251,11 @@ After creating my new Tier1 router as active standby, selecting my edge cluster 
 
 ![networking](images/image-20231123120614535.png)
 
-Here I will select Antrea. I will do that because I want to use NSX ALB as the loadbalancer provider and Antrea as the CNI. I know I will not get the benefit from NCP automatically creating the networks for me in NSX and some other NCP features as bridging, easy choice whether I want to NAT or no NAT etc. But this blog post is about running TKGi together with NSX, NSX ALB and Antrea. NSX will still be my main network provider in this setup as the networks are easily created in NSX and I have the benefit of using the DFW for my worker nodes. But I dont get the labels from NCP though.. Maybe I will update the post with an NSX integrated installation also.. 
+Here I will select Antrea. I will do that because I want to use NSX ALB as the loadbalancer provider and Antrea as the CNI. I know I will not get the benefit from NCP automatically creating the networks for me in NSX and some other NCP features as bridging, easy choice whether I want to NAT or no NAT etc. But this blog post is about running TKGi together with NSX, NSX ALB and Antrea. NSX will still be my main network provider in this setup as networks are easily created in NSX and I have the benefit of using the DFW for my worker nodes and the Antrea NSX Integration I have written about [here](https://blog.andreasm.io/2023/06/01/managing-antrea-in-vsphere-with-tanzu/#integrating-antrea-with-nsx-t). 
 
 For more information on the differnet network topologies have a look [here](https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid-Integrated-Edition/1.18/tkgi/GUID-console-deploy-wizard.html#networking)
 
-This first installation of TKGi can be called a foundation, that means we can have several TKGi installations with their own OPs manager, Bosh etc, sharing some common components as NSX (not using same Tier0 but dedicated Tier0s pr foundation). The benefits of running multiple TKGi foundations is that we can have unique configurations done pr foundation. See more [here](https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid-Integrated-Edition/1.18/tkgi/GUID-nsxt-multi.html?hWord=N4IghgNiBcIGYHsCuA7AJmALgSwSkAvkA)
+This first installation of TKGi can be called a foundation, that means we can have several TKGi installations with their own Ops Managers, Bosh instances etc, sharing some common components as NSX (not using same Tier0 but dedicated Tier0s pr foundation). The benefits of running multiple TKGi foundations is that we can have unique configurations done pr foundation. See more [here](https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid-Integrated-Edition/1.18/tkgi/GUID-nsxt-multi.html?hWord=N4IghgNiBcIGYHsCuA7AJmALgSwSkAvkA)
 
 Now that I have selected the Topology Antrea, I will fill out the necessary network information accordingly. The Deployment Network Resource is for the TKGi management components and the Service Network Resource is for the Kubernetes Cluster nodes.
 
@@ -358,9 +358,9 @@ Now the fun starts.
 From the TKGI Management Console click continue and you should get to the "welcome page" for your TKGi foundation with all the details of the components installed. 
 ![tkgi-mgmt-console-welcome](images/image-20231127084357673.png)
 
-Notice that the NSX Policy API is *disabled*. I could not get the TKGi MC to use Policy API during deployment. So I decided to leave that unchecked. I will later in this post deploy TKGi using the manual approach and enable the Policy API there. Then I can explore the differences etc.. The biggest impact is that certain objects created in NSX by TKGi (NCP) will be created using Manager API. Manager API is going away so it is best if we dont rely too much on that API going forward. 
+Notice that the NSX Policy API is *disabled*. I could not get the TKGi MC to use Policy API during deployment in my lab. So I decided to leave that unchecked. The biggest impact of this is that certain objects created in NSX by TKGi (NCP) will be created using Manager API. 
 
-The plan now is to to deploy a workload cluster using the plan *Small*. but before I do that I will create a Network Profile from the TKGi MC that disables the NSX-T loadbalancer for both L4 and L7 for the workload cluster. What this means is that NSX-T loadbalancer will be used only to provide a loadbalanced API endpoint for my workload cluster control planes. But from within the workload clusters themselves (Kubernetes clusters) I will need to provide my own layer4 and layer7 provider. And guess what that will be.. Yes, the NSX Advanced LoadBalancer.  
+The plan now is to to deploy a workload cluster using the plan *Small*. but before I do that I will create a Network Profile from the TKGi MC that disables the NSX-T loadbalancer for both L4 and L7 for the Kubernetes cluster. What this means is that NSX-T loadbalancer will be used only to provide a loadbalanced API endpoint for my workload cluster control planes. But from within the workload clusters themselves (Kubernetes clusters) I will need to provide my own layer4 and layer7 provider. And guess what that will be.. Yes, the NSX Advanced LoadBalancer.  
 
 ### Create Network Profile from TKGi MC
 
@@ -419,7 +419,8 @@ Now next step is to log into the newly created cluster and deploy AKO for the L4
 
 {{% notice warning "Info" %}}
 
-As I did deploy this cluster using NSX Manager API, the only way of configuring the Cloud in the NSX Advanced Loadbalancer is vCenter Cloud. According to the offical documentation found [here](https://docs.vmware.com/en/VMware-NSX-Advanced-Load-Balancer/1.11/Avi-Kubernetes-Operator-Guide/GUID-2778C485-E48F-4C5E-8EC7-CB96F6CA5CBB.html#cloud-configuration-5). I will use a NSX Cloud anyway, so consider this a non-supported approach. I will not use the NCP created Segments using Manager API, I have created my own T1 and segments for my Avi cloud using Policy API.  
+As I did deploy this cluster using NSX Manager API, the only way of configuring the Cloud in the NSX Advanced Loadbalancer is vCenter Cloud. According to the offical documentation found [here](https://docs.vmware.com/en/VMware-NSX-Advanced-Load-Balancer/1.11/Avi-Kubernetes-Operator-Guide/GUID-2778C485-E48F-4C5E-8EC7-CB96F6CA5CBB.html#cloud-configuration-5). I will use a NSX Cloud anyway, so consider this a non-supported approach. I will not use the NCP/TKGi created Segments using Manager API for any of the Avi components, I have created my own T1 and segments for my Avi cloud using Policy API. So this would be interesting to explorer further. But with TKGi in Policy mode it is supported. 
+In the link above one of the concerns is that SEs needs to traverse the Tier-0 to reach the backends. But this will be the case even if using policy api as the T1s created by TKGi/NCP will be created as centralized tier1s and will be handled by the NSX Edges, so I am not so sure how this can be done differently. 
 
 {{% /notice %}}
 
@@ -437,7 +438,7 @@ Then the segments:
 
 ![pks-segments](images/image-20231127130118079.png)
 
-This one is interesting. If you are used to any other CNIs than NCP you will notice that all the Kubernetes Namespaces created in your Kubernetes cluster reflects a NSX segment. Example the segment *pks-0b7d0725-c67b-4e14-b6d0-52f799cb3556-kube-system*, contains all the pods as logical ports in that namespace. A nice feature of NCP. This is really useful for IPAM cases, isolation and maintaning control of any pod in the Kubernetes clusters. All Logical ports are enforced by the NSX Distributed Firewall also.
+This one is interesting. If you are used to any other CNIs than NCP you will notice here that all the Kubernetes Namespaces created in your Kubernetes clusters reflects a NSX segment. Example the segment *pks-0b7d0725-c67b-4e14-b6d0-52f799cb3556-kube-system*, contains all the pods as logical ports in that namespace. A nice feature of NCP. This is really useful in strict IPAM cases, isolation and maintaning control of any pod in the Kubernetes clusters. All Logical ports are enforced by the NSX Distributed Firewall also.
 
  NAT rules:
 ![nat](images/image-20231127133759706.png)
@@ -830,7 +831,7 @@ Works like a charm...
 
 
 
-Now back to my notice above about doing this in an unsupported way and placing the SEs on different T1. By just doing a traceflow from one of the SEs data nic to the worker nodes of my Kubernetes cluster, it will involve the Edge cluster as the destination T1 is centralised (being active/passive and placed on an Edge cluster). But when using products like TKGi, TKGs the auto created Tier1 routers tend to be created as centralized routers, so we will alway have this issue when traffic is going through the Tier-0/Edges. 
+Now back to my notice above about doing this in an unsupported way and placing the SEs on different T1s (which I cant understand how is possible to do anyway). By just doing a traceflow from one of the SEs data nic to the worker nodes of my Kubernetes cluster, it will involve the Edge cluster as the destination T1 is centralised (being active/passive and placed on an Edge cluster). But when using products like TKGi, TKGs the auto created Tier1 routers tend to be created as centralized routers, so we will alway have this issue when traffic is going through the Tier-0/Edges. 
 
 ![traceflow](images/image-20231127201836688.png)
 
@@ -840,236 +841,29 @@ A quick diagram of how this topology looks like networking wise:
 
 ![nsx-topology](images/image-20231127221214444.png)
 
+Here my Tier1 routers for the PKS segments will be created by TKGi and I cant configre Avi to use somehting that does not exist. 
 
+Well, it was a nice test. It worked.. Let me tear it all down and go ahead with an installation using Antrea as the CNI. 
 
-Well, it was a nice test. It worked.. Let me tear it all down and change to Policy API. 
 
-## Deploy workload clusters using NSX-T BYOT (Policy API) - not using TKGi MC
 
-For this exercise I have to do a new deployment of TKGI using Ops Man instead of using TKGi MC. This means a couple of steps, deploying the Ops Man, then configure Bosh, then add the TKGi tile and configure it. From there I should be good to just create my workload cluster. But lets quickly go through the Ops Man installation, Bosh and TKGi configurations. 
 
-Prequisities for this exercise:
 
-- Downloaded the Ops Man *ops-manager-vsphere-3.0.18+LTS-T.ova* from network.pivotal.io
-- Downloaded the *pivotal-container-service-1.18.0-build.46.pivotal* from network.pivotal.io
-- Downloaded the bosh-stemcell-1.301-vsphere-esxi-ubuntu-jammy-go_agent.tgz (or any version between 1.260-1.301) from network.pivotal.io
-- Downloaded the *tkgi-linux-amd64-1.18.0-build.74* (tkgi cli) from network.pivotal.io
 
 
+## Deploy workload clusters using Antrea
 
-### Deploy Ops Man 
+In this approach there will be no automatic assignement of a L4 loadbalancer for the Kubernetes API endpoints, that is something I need to manually provide myself, and I will be using NSX ALB for that purpose also. 
 
-Grab the ops-manager-vsphere-3.0.18+LTS-T.ova and deploy it from your vCenter server. Give it an IP address in your preferred management network, and networ settings accordingly.
+Here is my TKGi installation for this section:
 
-As soon as it has been provisioned, power it on and open a browser to do the initial configs.
+![tkgi-antrea](images/image-20231201100222581.png)
 
-![init-1](images/image-20231128082909022.png)
 
-I select Internal Authentication 
 
-![init-2](images/image-20231128082945921.png)
+First I will need to create a Kubernetes cluster. I will not use the TKGi MC to deploy the cluster now, I will use the TKGi CLI to to that, just to make it a bit more interesting. I still have the option to use TKGi MC, but I have already used that approach above.  More info on TKGi CLI [here](https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid-Integrated-Edition/1.18/tkgi/GUID-cli-index.html)
 
-define a username and password for the local admin account. 
-
-![init-3](images/image-20231128083105001.png)
-
-
-
-Then I just need to log into Ops Manager using the newly created admin account.
-
-<img src=images/image-20231128221405788.png style="width:500px" />
-
-
-
-### Configure Bosh
-
-After Ops Man has been deployed the first thing I need to configure is Bosh. Below is my Bosh config I have used:
-
-![vcenter-conf-1](images/image-20231128220421098.png)
-
-
-
-![vcenter-conf-2](images/image-20231128220525615.png)
-
-
-
-![vcenter-conf-3](images/image-20231128220600818.png)
-
-Click save, then its Director config settings:
-
-![director](images/image-20231128220649271.png)
-
-Availability Zones
-
-Only created one for now.
-
-![AZs](images/image-20231128220741600.png)
-
-Networks
-
-![networks](images/image-20231128220821653.png)
-
-Assign AZs and Networks:
-
-![azs-networks](images/image-20231128220847836.png)
-
-The rest I left default.
-
-The click on Installation Dashboard and Review Pending Changes and Apply Changes
-
-![apply-changes](images/image-20231128221004694.png)
-
-Sit back and wait.. 
-
-![progress](images/image-20231128221104097.png)
-
-![done](images/image-20231128221143382.png)
-
-
-
-When its done, I will just go back and add the rest of my Availavility Zones then it is time to upload the TKGi tile.
-
-### Configure TKGi
-
-I need to head back to the Dashboard again, click Import Product and upload the TKGi tile.
-
-![pks-tile](images/image-20231128221525336.png)
-
-![uploading](images/image-20231128221554722.png)
-
-![added](images/image-20231128222103682.png)
-
-Click the + sign
-
-![added-2](images/image-20231128222150571.png)
-
-Now I need to configure the TKGi tile also.
-
-Here is the config I have used:
-
-![az-networks](images/image-20231128224301050.png)
-
-![tkgi-api](images/image-20231128224410503.png)
-
-Cloud Provider:
-
-![cloud-provider](images/image-20231128225118746.png)
-
-
-
-Networking
-
-![networking-1](images/image-20231128224956160.png)
-
-Click generate to auto-generate a certificate
-
-![network-2](images/image-20231128225037290.png)
-
-![pks-tile](images/image-20231127234456676.png)
-
-Notice that it will use the logical name of the NSX objects instead of using UUID as is the manager api way of doing it. 
-
-**Obsolete...**
-
-I will log into the Ops Manager grabbing the password for the admin user from Metadata section in the TKGi MC. 
-
-![bosh-vcenter-config](images/image-20231127222728558.png)
-
-If I scroll down to the end in this section I will find the API selection. 
-
-![bosh-api-selection](images/image-20231127234657016.png)
-
-I will select the checkbox *Use NSX-T Policy API* and I will also take the opportunity to enable Human Readable VM Names. Then click save. 
-
-![saved](images/image-20231127222952274.png)
-
-After I have done the necessary settings in the Bosh tile, I need to head over to the PKS tile and do the following settings there:
-
-
-
-Here I need to change all the manager api references from UUID to real object names (human readable).
-
- 
-
-Then I will do an update under Review Pending Changes clicking on Apply changes. 
-
-![apply-changes](images/image-20231127223043798.png)
-
-![some-waiting-time](images/image-20231127223108528.png)
-
-```yaml
-Release 'vsphere-csi/3.1.0-build.1' for stemcell 'ubuntu-jammy/1.260' already exists.
- instance_groups:
- - name: pivotal-container-service
-   jobs:
-   - name: pks-api
-     properties:
-       pks:
-         nsxt:
--           policy_mode: false
-+           policy_mode: true
-   - name: pks-nsx-t-osb-proxy
-     properties:
-       nsxt:
-         floating_ip_pool_ids:
-+         - tkgi-floating-ip-pool-1
--         - 6ecfa795-2a15-414b-b06c-7ec7ae25e319
--         ip_block_id: bd327d73-4b9d-46cf-9281-3e0ade234b32
-+         ip_block_id: tkgi-node-ip-block-1
--         pod_ip_block_id: 677c018c-181e-4a1c-a38b-a94a3cafdfb1
-+         pod_ip_block_id: tkgi-pod-ip-block-1
--         policy_api: false
-+         policy_api: true
--         t0_router_id: 4bb1e636-15f9-4c35-a23d-c151911eb7cb
-+         t0_router_id: Tier-0
-   - name: pks-nsx-t-precheck
-     properties:
-       floating-ip-pool-ids:
-+       - tkgi-floating-ip-pool-1
--       - 6ecfa795-2a15-414b-b06c-7ec7ae25e319
--       ip-block-id: 677c018c-181e-4a1c-a38b-a94a3cafdfb1
-+       ip-block-id: tkgi-pod-ip-block-1
--       nodes-ip-block-id: bd327d73-4b9d-46cf-9281-3e0ade234b32
-+       nodes-ip-block-id: tkgi-node-ip-block-1
--       policy-api: false
-+       policy-api: true
--       t0-router-id: 4bb1e636-15f9-4c35-a23d-c151911eb7cb
-+       t0-router-id: Tier-0
-   - name: pks-nsx-t-ops-files
-     properties:
-       floating-ip-pool-ids:
-+       - tkgi-floating-ip-pool-1
--       - 6ecfa795-2a15-414b-b06c-7ec7ae25e319
--       nodes-ip-block-id: bd327d73-4b9d-46cf-9281-3e0ade234b32
-+       nodes-ip-block-id: tkgi-node-ip-block-1
--       pod-ip-block-id: 677c018c-181e-4a1c-a38b-a94a3cafdfb1
-+       pod-ip-block-id: tkgi-pod-ip-block-1
--       policy-api: false
-+       policy-api: true
--       t0-router-id: 4bb1e636-15f9-4c35-a23d-c151911eb7cb
-+       t0-router-id: Tier-0
-   - name: antrea-ops-files
-     properties:
-       floating-ip-pool-ids:
-+       - tkgi-floating-ip-pool-1
--       - 6ecfa795-2a15-414b-b06c-7ec7ae25e319
--       nodes-ip-block-id: bd327d73-4b9d-46cf-9281-3e0ade234b32
-+       nodes-ip-block-id: tkgi-node-ip-block-1
--       pod-ip-block-id: 677c018c-181e-4a1c-a38b-a94a3cafdfb1
-+       pod-ip-block-id: tkgi-pod-ip-block-1
--       policy-api: false
-+       policy-api: true
--       t0-router-id: 4bb1e636-15f9-4c35-a23d-c151911eb7cb
-+       t0-router-id: Tier-0
-```
-
-![done](images/image-20231127234154986.png)
-
-
-
-When this is done I will now use the TKGi cli to create a cluster, I dont think the TKGI MC knows how to use the Policy API and I can see it still reports Policy API as Disabled. So thats why I will use TKGi CLI instead. More info on TKGi CLI [here](https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid-Integrated-Edition/1.18/tkgi/GUID-cli-index.html)
-
-
+Login to the TKGi API
 
 ```bash
 andreasm@ubuntu02:~/tkgi$ tkgi login -a tkgi-api.this-is-a.domain.net -u admin -p 'password' --ca-cert ca/tkgi-ca.crt
@@ -1083,39 +877,454 @@ All the relevant information can be found in the TKGi MC Deployment Metadata pag
 
 
 
-Now its just all about creating the same cluster as I did in TKGi MC just using cli instead:
+Now its just all about creating the same cluster as I did in TKGi MC just using cli instead. There is no need to create any network profiles this time as there is no NSX-T that provides any loadbalancer functionality. It is a "vanilla" Kubernetes cluster with Antrea as the CNI, so I will need to add the services I need. I will start by listing the plans available. I will go with the medium plan, deploy 3 control plane nodes and 3 worker nodes. The reason for three control plane nodes is because I would like to utilize the Avi LB for the the Kubernetes API endpoint and the it is much more interesting to have more than 1 cp node as the loadbalancer should have something to loadbalance. The purpose of a loadbalancer....
 
 ```bash
-andreasm@ubuntu02:~/tkgi$ tkgi network-profiles
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ tkgi network-profiles
 
-Name          Description
-ako-provider
+Name  Description
+# No profiles as its not needed
 
-andreasm@ubuntu02:~/tkgi$ tkgi plans
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ tkgi plans
 
-Name       ID                                     Description
-Small      8A0E21A8-8072-4D80-B365-D1F502085560   This plan will configure a lightweight Kubernetes cluster. Not recommended for production workloads.
-Medium     58375a45-17f7-4291-acf1-455bfdc8e371   Example: This plan will configure a medium sized Kubernetes cluster, suitable for more pods.
-Large      241118e5-69b2-4ef9-b47f-4d2ab071aff5   Example: This plan will configure a large Kubernetes cluster for resource heavy workloads, or a high number of workloads.
-small-3-3  2fa824527-318d-4253-9f8e-0025863b8c8a  Example: This plan will configure a large kubernetes cluster for resource heavy workloads, or a high number of workloads.
+Name    ID                                    Description
+Small   8A0E21A8-8072-4D80-B365-D1F502085560  This plan will configure a lightweight Kubernetes cluster. Not recommended for production workloads.
+Medium  58375a45-17f7-4291-acf1-455bfdc8e371  Example: This plan will configure a medium sized Kubernetes cluster, suitable for more pods.
+Large   241118e5-69b2-4ef9-b47f-4d2ab071aff5  Example: This plan will configure a large Kubernetes cluster for resource heavy workloads, or a high number of workloads.
 
+```
+
+Now, lets create a cluster
+
+```bash
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ tkgi create-cluster tkgi-cluster-1-antrea --external-hostname tkgi-cluster-1-antrea.this-is-a.domain.net --plan Medium --num-nodes 3
+
+PKS Version:              1.18.0-build.46
+Name:                     tkgi-cluster-1-antrea
+K8s Version:              1.27.5
+Plan Name:                Medium
+UUID:                     518d850c-ca34-4163-85cb-dda5d915abda
+Last Action:              CREATE
+Last Action State:        in progress
+Last Action Description:  Creating cluster
+Kubernetes Master Host:   tkgi-cluster-1-antrea.this-is-a.domain.net
+Kubernetes Master Port:   8443
+Worker Nodes:             3
+Kubernetes Master IP(s):  In Progress
+Network Profile Name:
+Kubernetes Profile Name:
+Compute Profile Name:
+NSX Policy:               false
+Tags:
+
+Use 'tkgi cluster tkgi-cluster-1-antrea' to monitor the state of your cluster
+```
+
+In vCenter I can see that TKGi has been so kind to spread my Kubernetes cluster across all three availability zones:
+
+<img src=images/image-20231201102725337.png style="width:500px" />
+
+
+
+And in my TKGi MC:
+![nodes](images/image-20231201103243628.png)
+
+After a while it is ready:
+
+```bash
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ tkgi clusters
+
+PKS Version      Name                   k8s Version  Plan Name  UUID                                  Status     Action
+1.18.0-build.46  tkgi-cluster-1-antrea  1.27.5       Medium     518d850c-ca34-4163-85cb-dda5d915abda  succeeded  CREATE
+
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ tkgi cluster tkgi-cluster-1-antrea
+
+PKS Version:              1.18.0-build.46
+Name:                     tkgi-cluster-1-antrea
+K8s Version:              1.27.5
+Plan Name:                Medium
+UUID:                     518d850c-ca34-4163-85cb-dda5d915abda
+Last Action:              CREATE
+Last Action State:        succeeded
+Last Action Description:  Instance provisioning completed
+Kubernetes Master Host:   tkgi-cluster-1-antrea.this-is-a.domain.net
+Kubernetes Master Port:   8443
+Worker Nodes:             3
+Kubernetes Master IP(s):  10.146.41.4, 10.146.41.2, 10.146.41.3
+Network Profile Name:
+Kubernetes Profile Name:
+Compute Profile Name:
+NSX Policy:               false
+Tags:
 ```
 
 
 
+In TKGiMC
+
+![success](images/image-20231201104658879.png)
+
+Now as I can see from the output above, I can reach my cluster using any of my 3 control plane nodes. I would like to reach them using one singe entry, and with the real external name. I will now go ahead and create the Virtual Service in NSX Advanced Loadbalancer.
+
+### Configure NSX Advanced Loadbalancer as Kuberntes API endpoint provider
+
+In NSX ALB, go to Virtual Services and create a new Virtual Sevice, and select advanced.
+
+<img src=images/image-20231201104856791.png style="width:300px" />
+
+Then I will configure my Virtual Service accordingly below:
+
+![vrf](images/image-20231201103655436.png)
+
+The Virtual Service Settings:
+
+![vs](images/image-20231201104211003.png)
+
+The pool containing my Control Plane nodes (notice the control plane nodes dont use the defaul Kubernetes 6443 port, it is using 8443):
+
+![pool-1](images/image-20231201104234017.png)
+
+![pool-2](images/image-20231201104252809.png)
+
+![pool-3](images/image-20231201104312323.png)
+
+![pool-4](images/image-20231201104333141.png)
+
+![pool-5](images/image-20231201104407397.png)
+
+Then it is the VS VIP. Here I will also add a FQDN/DNS entry called tkgi-cluster-1-antrea.this-is-a.domain.net
+
+![vs-vip](images/image-20231201104436991.png)
+
+Last step I just select the SE group I want to use.
+
+![save](images/image-20231201104510044.png)
+
+Finish. 
+
+And my Virtual Service should now be green and I can use this entrypoint to reach my newly created Kubernetes Cluster.
+
+![vs-k8s-api](images/image-20231201112132810.png)
+
+The FQDN/DNS record is being automatically created by the Avi DNS service. So I should be able to use DNS instead of ip:
+
+```bash
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ ping tkgi-cluster-1-antrea.this-is-a.domain.net
+PING tkgi-cluster-1-antrea.this-is-a.domain.net (10.146.101.10) 56(84) bytes of data.
+64 bytes from 10.146.101.10 (10.146.101.10): icmp_seq=1 ttl=63 time=0.562 ms
+64 bytes from 10.146.101.10 (10.146.101.10): icmp_seq=2 ttl=63 time=0.602 ms
+```
+
+Getting the Kubernetes context and logging in:
+
+![cluster-info](images/image-20231201112448886.png)
+
+```bash
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ kubectl config set-cluster tkgi-cluster-1-antrea --server=https://tkgi-cluster-1-antrea.this-is-a.domain.net:8443 && \
+kubectl config set clusters.tkgi-cluster-1-antrea.certificate-authority-data Ci0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlET3pDQ0FpT2dBd0lCQWdJVVlGdDNxVFJLYXQ5T3hxOS9kYzdzbkNnSXRMa3dEUVlKS29aSWh2Y05BUUVMCkJRQXdMVEVMTUFrR0ExVUVBeE1DUTBFeERUQUxCZ05WQkFzVEJGUkxSMGt4RHpBTkJnTlZCQW9UQmxaTmQyRnkKWlRBZUZ3MHlNekV5TURFd09URXpNREZhRncweU56RXlNREV3T1RFek1ERmFNQzB4Q3pBSkJnTlZCQU1UQWtOQgpNUTB3Q3dZRFZRUUxFd1JVUzBkSk1ROHdEUVlEVlFRS0V3WldUWGRoY21Vd2dnRWlNQTBHQ1NxR1NJYjNEUUVCCkFRVUFBNElCRHdBd2dnRUtBb0lCQVFDNS9lcDdFLzFQOXJPanpxNlNJVkRaN2dDTEJ0L21GZW5oQVNNQUM0WUEKUUVmUnlzWlloZUhxRkZxVENEcEpRZzFuUDFmZzNEdDhhVWNpaGR6VEEremJvS0R6WStjWk9EVy9yM1YvR2Y1bwpIdHd2SDIrWkEyT1lydlVrOGExVUwvb1hKNHdlWFBsWUdndWJoeXcrSU44WUdGdEVQQnlmaTQrSEFQdDFveWlTCnN5VUF1bHFiOUwyU29xQ3Zmc3cwY2cyN0l5RktvN1FUSmFiTnd1MXdQbnhnWCtwa2M4dTdsSnZucWJnMm1OeUYKYVpxZGRqMHN1YmplSG9VN0Z3b3U5ZHN4SVVCYlZSbWxQVkc1S1JSN3pVdWNSTjdLKzYyS1p2ZWMwRGNsaW13SApONEhqUFJSczN4OEpVRXFEajU5MWcrT0NUTnFqK0pIVm9sQnFJbi9RcUlOVkFnTUJBQUdqVXpCUk1CMEdBMVVkCkRnUVdCQlRUMVRleVlMcGtaRzZnZGxXU05pVXlIaURUeURBZkJnTlZIU01FR0RBV2dCVFQxVGV5WUxwa1pHNmcKZGxXU05pVXlIaURUeURBUEJnTlZIUk1CQWY4RUJUQURBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBdApqY09iOFFjUmxWM2h6YXc2R2YzdnpxeFRXYXl4b1NiK1ZFSCtUTEFuZERRaVZQMjR2OS9uektYVUl5M0pPQnlQCnVmNnJJQ2Viekt6WUtDNC9hb2JpRmJBcmRiajd3c1UyNGMvUHdPdUgya0l2SnY0Q3lwOHZ3Umh3aUdnZUZCNFoKMEdLNkJ0VGdKVW9QblhuZnYreGZrRzFMN0Jod0Z6aC9YM2lNSmp4S21tenpLcXRBZG5aajMvbFhaUlAzVUFSbgpuQTlBakVDbkpxSU5ENGhLK1p4cjhaVy81a0NtM2xWL3BRMHZMSXF6czBmN1RMS2hHYXhieFExeDBpRmxwS3JoCkIzU1lhTDdQTmJCUzYzWE50ZjlZQnNPYmFmNFErbFFlVlRMQ2ZkZGwxN0ZzaXJ5T0xQK09aK2pmUnJQSmdPbmcKR281VU8xZ0RyR1dkWHpYK1NRZmgKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo= && \
+kubectl config set-credentials 93a89395-658d-4058-b1f2-5a47a50b51f9 --token=eyJhbGciOiJSUzI1NiIsImtpZCI6IkVCUzkyVFExNktOTzV5bF9ITG1aYWNiYzMxQk9IZnVXMHF2MFNMQ1FqU2cifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6IjkzYTg5Mzk1LTY1OGQtNDA1OC1iMWYyLTVhNDdhNTBiNTFmOSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiI5M2E4OTM5NS02NThkLTQwNTgtYjFmMi01YTQ3YTUwYjUxZjkiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiI4NDk0YjZjNi03OTU0LTRiMWMtOWMwMC0yYTdjODFiMDkzZTIiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDo5M2E4OTM5NS02NThkLTQwNTgtYjFmMi01YTQ3YTUwYjUxZjkifQ.CJg_eMksCi9eaEaKsB1tjy083owleoBH9tYM2olEpRyU5GQOc3tkRE0r9SqUhe67FB9JWruyuA6QwgyOGxGfJvi1r_spoQeQg7Xzn50N1OtKPocdTDlWUVgxXeqR1OBgPE3pfSIyvX7Hhf9TN-5oM7GSrCmwtVGhFyI3SH1VukYg63PjwrsBMlwi1l-WvOkKgDmishC7-bn2sep2z0GEGMZHC6eipt7kYOVsK19QSq-U9Z2yDWfOgctmRShZx0V0BbvqXonHFej8yD79nFEasX5BsrWhUXEldjU2teKB-cQjPFju-GjSKJEOybtRf_Pu0XBjJngaHOpjMzX-s9Xolg && \
+kubectl config set-context tkgi-cluster-1-antrea --cluster=tkgi-cluster-1-antrea --user=93a89395-658d-4058-b1f2-5a47a50b51f9 && \
+kubectl config use-context tkgi-cluster-1-antrea
+Cluster "tkgi-cluster-1-antrea" set.
+Property "clusters.tkgi-cluster-1-antrea.certificate-authority-data" set.
+User "93a89395-658d-4058-b1f2-5a47a50b51f9" set.
+Context "tkgi-cluster-1-antrea" created.
+Switched to context "tkgi-cluster-1-antrea".
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ k config current-context
+tkgi-cluster-1-antrea
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ k get nodes
+NAME                                   STATUS   ROLES    AGE   VERSION
+7c0f802f-0ecf-47c7-adc6-2dbf3f8b3ccb   Ready    <none>   54m   v1.27.5+vmware.1
+9b83d6a1-402a-46b2-9645-cebfe5db5f23   Ready    <none>   58m   v1.27.5+vmware.1
+dac2d224-22cb-4254-be93-bebf131f40e7   Ready    <none>   50m   v1.27.5+vmware.1
+```
+
+Now I just need to do the same steps as in the section where I used NSX/NCP to configure NSX ALB as my L4 and L7 provider in my Kubernetes cluster 
+
+### Configure NSX Advanced Loadbalancer as Layer 4 and Layer 7 provider inside Kubernetes cluster
+
+I am logged into my Kubernetes cluster *tkgi-cluster-1-antrea*
+
+I need to check whether a certain Antrea feature is enabled, the NodePortLocal. So I will check the configmap of Antrea and confirm whether this is enabled or not. I do think it is default enabled from a certain Antrea version and up, but its good to be sure. 
+
+```bash
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ k get configmaps -n kube-system antrea-config -oyaml
+    # Enable NodePortLocal feature to make the Pods reachable externally through NodePort
+      NodePortLocal: true
+```
+
+  The reason I want to know this is because I can then configure AKO to use NPL instead of NodePort or ClusterIP. NPL has some benefits over the two. 
+
+Now, prepare my AKO value yaml. Below is the the value yaml I will use when deploying AKO for this cluster:
+
+```yaml
+# Default values for ako.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: projects.registry.vmware.com/ako/ako
+  pullPolicy: IfNotPresent
+
+### This section outlines the generic AKO settings
+AKOSettings:
+  primaryInstance: true # Defines AKO instance is primary or not. Value `true` indicates that AKO instance is primary. In a multiple AKO deployment in a cluster, only one AKO instance should be primary. Default value: true.
+  enableEvents: 'true' # Enables/disables Event broadcasting via AKO
+  logLevel: WARN   # enum: INFO|DEBUG|WARN|ERROR
+  fullSyncFrequency: '1800' # This frequency controls how often AKO polls the Avi controller to update itself with cloud configurations.
+  apiServerPort: 8080 # Internal port for AKO's API server for the liveness probe of the AKO pod default=8080
+  deleteConfig: 'false' # Has to be set to true in configmap if user wants to delete AKO created objects from AVI
+  disableStaticRouteSync: 'false' # If the POD networks are reachable from the Avi SE, set this knob to true.
+  clusterName: tkgi-cluster-1-antrea   # A unique identifier for the kubernetes cluster, that helps distinguish the objects for this cluster in the avi controller. // MUST-EDIT
+  cniPlugin: 'antrea' # Set the string if your CNI is calico or openshift or ovn-kubernetes. For Cilium CNI, set the string as cilium only when using Cluster Scope mode for IPAM and leave it empty if using Kubernetes Host Scope mode for IPAM. enum: calico|canal|flannel|openshift|antrea|ncp|ovn-kubernetes|cilium
+  enableEVH: false # This enables the Enhanced Virtual Hosting Model in Avi Controller for the Virtual Services
+  layer7Only: false # If this flag is switched on, then AKO will only do layer 7 loadbalancing.
+  # NamespaceSelector contains label key and value used for namespacemigration
+  # Same label has to be present on namespace/s which needs migration/sync to AKO
+  namespaceSelector:
+    labelKey: ''
+    labelValue: ''
+  servicesAPI: false # Flag that enables AKO in services API mode: https://kubernetes-sigs.github.io/service-apis/. Currently implemented only for L4. This flag uses the upstream GA APIs which are not backward compatible
+                     # with the advancedL4 APIs which uses a fork and a version of v1alpha1pre1
+  vipPerNamespace: 'false' # Enabling this flag would tell AKO to create Parent VS per Namespace in EVH mode
+  istioEnabled: false # This flag needs to be enabled when AKO is be to brought up in an Istio environment
+  # This is the list of system namespaces from which AKO will not listen any Kubernetes or Openshift object event.
+  blockedNamespaceList: []
+  # blockedNamespaceList:
+  #   - kube-system
+  #   - kube-public
+  ipFamily: '' # This flag can take values V4 or V6 (default V4). This is for the backend pools to use ipv6 or ipv4. For frontside VS, use v6cidr
+  useDefaultSecretsOnly: 'false' # If this flag is set to true, AKO will only handle default secrets from the namespace where AKO is installed.
+                                 # This flag is applicable only to Openshift clusters.
+
+### This section outlines the network settings for virtualservices.
+NetworkSettings:
+  ## This list of network and cidrs are used in pool placement network for vcenter cloud.
+  ## Node Network details are not needed when in nodeport mode / static routes are disabled / non vcenter clouds.
+  ## Either networkName or networkUUID should be specified.
+  ## If duplicate networks are present for the network name, networkUUID should be used for appropriate network.
+  nodeNetworkList:
+    - networkName: "ls-tkgi-service-network"
+      cidrs:
+        - 10.146.41.0/24
+  #       - 11.0.0.1/24
+  enableRHI: false # This is a cluster wide setting for BGP peering.
+  nsxtT1LR: '/infra/tier-1s/The-Tier-1' # T1 Logical Segment mapping for backend network. Only applies to NSX-T cloud.
+  bgpPeerLabels: [] # Select BGP peers using bgpPeerLabels, for selective VsVip advertisement.
+  # bgpPeerLabels:
+  #   - peer1
+  #   - peer2
+
+  # Network information of the VIP network. Multiple networks allowed only for AWS Cloud.
+  # Either networkName or networkUUID should be specified.
+  # If duplicate networks are present for the network name, networkUUID should be used for appropriate network.
+  vipNetworkList:
+   - networkName: vip-l4-incluster-tkgi
+     cidr: 10.146.102.0/24
+  #    v6cidr: 2002::1234:abcd:ffff:c0a8:101/64 # Setting this will enable the VS networks to use ipv6
+
+### This section outlines all the knobs  used to control Layer 7 loadbalancing settings in AKO.
+L7Settings:
+  defaultIngController: 'true'
+  noPGForSNI: false # Switching this knob to true, will get rid of poolgroups from SNI VSes. Do not use this flag, if you don't want http caching. This will be deprecated once the controller support caching on PGs.
+  serviceType: NodePortLocal # enum NodePort|ClusterIP|NodePortLocal
+  shardVSSize: SMALL   # Use this to control the layer 7 VS numbers. This applies to both secure/insecure VSes but does not apply for passthrough. ENUMs: LARGE, MEDIUM, SMALL, DEDICATED
+  passthroughShardSize: SMALL   # Control the passthrough virtualservice numbers using this ENUM. ENUMs: LARGE, MEDIUM, SMALL
+  enableMCI: 'false' # Enabling this flag would tell AKO to start processing multi-cluster ingress objects.
+
+### This section outlines all the knobs  used to control Layer 4 loadbalancing settings in AKO.
+L4Settings:
+  defaultDomain: '' # If multiple sub-domains are configured in the cloud, use this knob to set the default sub-domain to use for L4 VSes.
+  autoFQDN: flat   # ENUM: default(<svc>.<ns>.<subdomain>), flat (<svc>-<ns>.<subdomain>), "disabled" If the value is disabled then the FQDN generation is disabled.
+
+### This section outlines settings on the Avi controller that affects AKO's functionality.
+ControllerSettings:
+  serviceEngineGroupName: se-group-generic   # Name of the ServiceEngine Group.
+  controllerVersion: '22.1.4' # The controller API version
+  cloudName: nsx-t-lhr   # The configured cloud name on the Avi controller.
+  controllerHost: '172.60.146.50' # IP address or Hostname of Avi Controller
+  tenantName: admin   # Name of the tenant where all the AKO objects will be created in AVI.
+
+nodePortSelector: # Only applicable if serviceType is NodePort
+  key: ''
+  value: ''
+
+resources:
+  limits:
+    cpu: 350m
+    memory: 400Mi
+  requests:
+    cpu: 200m
+    memory: 300Mi
+
+securityContext: {}
+
+podSecurityContext: {}
+
+rbac:
+  # Creates the pod security policy if set to true
+  pspEnable: false
+```
+
+Now its time do deploy AKO
+
+```bash
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ k create ns avi-system
+namespace/avi-system created
+
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ helm install --generate-name oci://projects.registry.vmware.com/ako/helm-charts/ako --version 1.10.3 -f ako-values.1.10.3.yaml --namespace avi-system
+Pulled: projects.registry.vmware.com/ako/helm-charts/ako:1.10.3
+Digest: sha256:1f2f9b89f4166737ed0d0acf4ebfb5853fb6f67b08ca1c8dae48e1dd99d31ab6
+NAME: ako-1701427075
+LAST DEPLOYED: Fri Dec  1 10:38:03 2023
+NAMESPACE: avi-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ k get ingressclasses.networking.k8s.io
+NAME     CONTROLLER              PARAMETERS   AGE
+avi-lb   ako.vmware.com/avi-lb   <none>       19s
+
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ k get pods -n avi-system
+NAME    READY   STATUS    RESTARTS   AGE
+ako-0   1/1     Running   0          36s
+
+andreasm@ubuntu02:~/tkgi/cluster-1-antrea$ k logs -n avi-system ako-0
+2023-12-01T10:38:15.457Z	INFO	api/api.go:52	Setting route for GET /api/status
+2023-12-01T10:38:15.458Z	INFO	ako-main/main.go:72	AKO is running with version: v1.10.3
+2023-12-01T10:38:15.458Z	INFO	ako-main/main.go:82	We are running inside kubernetes cluster. Won't use kubeconfig files.
+2023-12-01T10:38:15.458Z	INFO	api/api.go:110	Starting API server at :8080
+2023-12-01T10:38:15.540Z	INFO	ako-main/main.go:157	Kubernetes cluster apiserver version 1.27
+2023-12-01T10:38:15.551Z	INFO	utils/utils.go:168	Initializing configmap informer in avi-system
+2023-12-01T10:38:15.551Z	INFO	lib/dynamic_client.go:137	Skipped initializing dynamic informers for cniPlugin antrea
+2023-12-01T10:38:16.029Z	INFO	utils/avi_rest_utils.go:116	Overwriting the controller version 22.1.4 to max Avi version 22.1.3
+2023-12-01T10:38:16.030Z	INFO	utils/avi_rest_utils.go:119	Setting the client version to the current controller version 22.1.3
+2023-12-01T10:38:17.176Z	INFO	cache/controller_obj_cache.go:2345	Avi cluster state is CLUSTER_UP_NO_HA
+2023-12-01T10:38:17.337Z	INFO	cache/controller_obj_cache.go:3116	Setting cloud vType: CLOUD_NSXT
+2023-12-01T10:38:17.337Z	INFO	cache/controller_obj_cache.go:3119	Setting cloud uuid: cloud-b739e6b0-f0c8-4259-b36b-450d227c633c
+2023-12-01T10:38:17.337Z	INFO	lib/lib.go:291	Setting AKOUser: ako-tkgi-cluster-1-antrea for Avi Objects
+2023-12-01T10:38:17.337Z	INFO	cache/controller_obj_cache.go:2855	Skipping the check for SE group labels
+2023-12-01T10:38:17.337Z	INFO	cache/controller_obj_cache.go:3395	Skipping the check for Node Network
+2023-12-01T10:38:17.442Z	INFO	cache/controller_obj_cache.go:3526	Setting VRF The-Tier-1 found from network vip-l4-incluster-tkgi
+2023-12-01T10:38:17.443Z	INFO	record/event.go:282	Event(v1.ObjectReference{Kind:"Pod", Namespace:"avi-system", Name:"ako-0", UID:"3891605f-8d92-43ed-8b4f-a03b7bf3e0d4", APIVersion:"v1", ResourceVersion:"21070", FieldPath:""}): type: 'Normal' reason: 'ValidatedUserInput' User input validation completed.
+2023-12-01T10:38:17.449Z	INFO	lib/lib.go:230	Setting Disable Sync to: false
+2023-12-01T10:38:17.456Z	INFO	k8s/ako_init.go:271	avi k8s configmap created
+```
 
 
-Now sit back and relax and wait for what will be created in NSX.. Manager or Policy API objects?
+
+Thats it.. Now its time for some test applications. Exact same procedure as previous. The Yelb app and the Banana/Apple Ingress application. First out the L4 ServiceType Loadbalancer (Yelb). 
+
+```bash
+andreasm@ubuntu02:~/tkgi$ k create ns yelb
+namespace/yelb created
+andreasm@ubuntu02:~/tkgi$ cd examples/
+andreasm@ubuntu02:~/tkgi/examples$ k apply -f yelb-lb-backend.yaml
+service/redis-server created
+service/yelb-db created
+service/yelb-appserver created
+deployment.apps/redis-server created
+deployment.apps/yelb-db created
+deployment.apps/yelb-appserver created
+```
+
+Waiting for them to be downloaded and started, then the frontend and I should get an service in NSX ALB created for me.
+
+```bash
+andreasm@ubuntu02:~/tkgi/examples$ k get pods -n yelb
+NAME                             READY   STATUS    RESTARTS   AGE
+redis-server-6cf478df95-t96fn    1/1     Running   0          48s
+yelb-appserver-bf75dbb5b-vdrr5   1/1     Running   0          48s
+yelb-db-d4c64d9c-mmfbz           1/1     Running   0          48s
+
+andreasm@ubuntu02:~/tkgi/examples$ k apply -f yelb-lb-frontend
+yelb-lb-frontend-w-lb.class.yaml  yelb-lb-frontend.yaml
+andreasm@ubuntu02:~/tkgi/examples$ k apply -f yelb-lb-frontend.yaml
+service/yelb-ui created
+deployment.apps/yelb-ui created
+andreasm@ubuntu02:~/tkgi/examples$ k get svc -n yelb
+NAME             TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)        AGE
+redis-server     ClusterIP      10.20.99.56     <none>           6379/TCP       93s
+yelb-appserver   ClusterIP      10.20.190.198   <none>           4567/TCP       93s
+yelb-db          ClusterIP      10.20.241.6     <none>           5432/TCP       93s
+yelb-ui          LoadBalancer   10.20.150.139   10.146.102.100   80:32498/TCP   4s
+```
 
 
 
+Anything in NSX ALB?
+
+![yelb](images/image-20231201114252482.png)
+
+Yes it is, does it work?
+
+```html
+andreasm@ubuntu02:~/tkgi/examples$ curl yelb-ui-yelb.this-is-a.domain.net
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Yelb</title>
+    <base href="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=2">
+</head>
+<body>
+<yelb>Loading...</yelb>
+<script type="text/javascript" src="inline.bundle.js"></script><script type="text/javascript" src="styles.bundle.js"></script><script type="text/javascript" src="scripts.bundle.js"></script><script type="text/javascript" src="vendor.bundle.js"></script><script type="text/javascript" src="main.bundle.js"></script></body>
+</html>
+```
+
+Yes it does. Now the last step is an Ingress. 
+
+Same procedure as previous there also.
+
+```bash
+andreasm@ubuntu02:~/tkgi/examples$ k create ns fruit
+namespace/fruit created
+andreasm@ubuntu02:~/tkgi/examples$ k apply  -f apple.yaml -f banana.yaml
+pod/apple-app created
+service/apple-service created
+pod/banana-app created
+service/banana-service created
+
+andreasm@ubuntu02:~/tkgi/examples$ k get svc -n fruit
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+apple-service    ClusterIP   10.20.143.112   <none>        5678/TCP   21s
+banana-service   ClusterIP   10.20.184.169   <none>        5678/TCP   21s
+```
+
+Now the Ingress
+
+```bash
+andreasm@ubuntu02:~/tkgi/examples$ k apply -f ingress-example-generic.yaml
+ingress.networking.k8s.io/ingress-example created
+andreasm@ubuntu02:~/tkgi/examples$ k get ingress -n fruit
+NAME              CLASS    HOSTS                             ADDRESS          PORTS   AGE
+ingress-example   avi-lb   fruit-tkgi.this-is-a.domain.net   10.146.102.102   80      5s
+```
+
+Anything in NSX-ALB?
+
+![ingress](images/image-20231201114648451.png)
+
+Yes it is, notice even the ports and the backend IPs.. It is using NodeportLocal and pointing to the nodes holding the pods apple and banana. 
 
 
-## Deploy workload clusters using Antrea
 
-### Configure NSX Advanced Loadbalancer as Layer 4 and Layer 7 provider inside workload clusters and also the workload clusters API endpoint.
+Does it work?
 
-In this approach there will be no automatic assignement of a L4 loadbalancer for the Kubernetes API endpoints, that is something I need to manually provide myself, and I will be using NSX ALB for that purpose also. 
+```bash
+andreasm@ubuntu02:~/tkgi/examples$ curl fruit-tkgi.this-is-a.domain.net/banana
+banana
+andreasm@ubuntu02:~/tkgi/examples$ curl fruit-tkgi.this-is-a.domain.net/apple
+apple
+```
+
+Yes it does. This concludes this excercise. Continue for the closout section...
 
 ## A note on the VIP
 
@@ -1124,7 +1333,23 @@ The simplest method (if not having the benefit of using NSX) is advertising the 
 
 ![se-data-vip](images/image-20231127204237154.png)
 
-But what if one does not want to use the same network as the SE dataplane network. Well, that can be done also. But then we suddenly 
+But what if one does not want to use the same network as the SE dataplane network. Well, that can be done also. But then we suddenly need to consider how to advertise this VIP. It can be done using a specific nic on the SE only used for VIPs (this also consumes the available nics on the SEs) or it can be used by just creating a VIP address and advertise/inform the network where it comes from and how to reach it. This approach is what I have been using in this whole post. I will quickly explain how this can be done with NSX ALB configured with a NSX-T cloud. Very basic explained. This way I will configure the SEs with min 2 nics. One for the management, to NSX ALB controller connectivity, and one as a dedicated dataplane nic. When I create a VIP IP profile in NSX-ALB I can create Virtual Services to use these VIP IP profiles as ip addresses for my VS VIPs. The benefit of using a NSX cloud here is that Avi will automatically inject static routes on the Tier-1 router to announce where this VIP comes from, where the static route is a host route /32 pointng to the SEs that are realising the VIP. So the Tier will advertise this to the Tier-0 (if confiugured in NSX to do so) and the Tier-0 will further advertise it to its BGP peer and out in the "wild" (physical network). 
+
+If not using NSX, Avi also supports BGP natively and can advertise the vips on its own. Meaning the SEs needs to be confgured to peer with BGP neighbours or one can use static routes. In terms of redundancy, availability BGP is the preferred method. 
+
+![bgp in avi](images/image-20231201115813298.png)
+
+
+
+A diagram using NSX cloud and VIPs not tied to any SE nic or network, but a VIP true to its name (Virtual IP). 
+
+![vip-static-routes](images/image-20231201121006110.png)
+
+Thats it for me..
+
+
+
+Lets see what I will write about the next time. Something completely different maybe... who knows what the future might bring. 
 
 
 
