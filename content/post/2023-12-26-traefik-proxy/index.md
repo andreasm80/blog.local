@@ -735,9 +735,9 @@ Then I use reflector to share/sync the certificates across namespaces. Read more
 
 ## Monitoring with Prometheus and Grafana
 
-Another nice feature is Traefiks built in Prometheus metrics. These Prometheus metrics can be used as datasource in Grafana. So here is how I configured Prometheus and Grafana. 
+Another nice feature is Traefik's built in Prometheus metrics. These Prometheus metrics can then be used as datasource in Grafana. So here is how I configured Prometheus and Grafana. 
 
-I followed this [blog's](https://roundly-consulting.com/blog/grafana-with-prometheus-for-traefik-in-minikube) procedure to configure Traefik with Prometheus.
+I followed these two blog's [here](https://traefik.io/blog/capture-traefik-metrics-for-apps-on-kubernetes-with-prometheus/) and [here](https://roundly-consulting.com/blog/grafana-with-prometheus-for-traefik-in-minikube), used them in combination to configure Traefik with Prometheus.
 
 ### Prometheus
 
@@ -790,9 +790,11 @@ spec:
   type: ClusterIP
 ```
 
-Again as I have not enabled any services in the Helm values during installation of Traefik I need to create a service that expose the metrics entrypoint using ClusterIP. I am using ClusterIP as I am not planning on making it available outside the same Kubernetes cluster as Traefik is running in.
+As I followed the two blogs above there is a couple of approaches to make this work, and this first file is kind of optional if you dont want to expose the metrics through an IngressRoute or other means outside your Kubernetes cluster. 
 
-Then the second file is the Prometheus configMap telling Promethus what to scrape:
+But for an easy way to just check whether there is metrics coming one can temporarily expose this information. Again as I have not enabled any services in the Helm values during installation of Traefik I need to create a service that expose the metrics entrypoint using ClusterIP. I am using ClusterIP as I am not planning on making it available outside the same Kubernetes cluster as Traefik is running in.
+
+Then the second file is the Prometheus configMap telling Promethus what to scrape. I found that the information covered in the Traefik blog [post](https://traefik.io/blog/capture-traefik-metrics-for-apps-on-kubernetes-with-prometheus/) gave more information in Prometheus so I used that one:
 
 ```yaml
 apiVersion: v1
@@ -807,13 +809,42 @@ data:
       evaluation_interval: 5s
     scrape_configs:
     - job_name: 'traefik'
-      static_configs:
-      - targets: ['traefik-metrics.traefik.svc.cluster.local:9100']
+      kubernetes_sd_configs:
+        - role: pod
+          selectors:
+            - role: pod
+              label: "app.kubernetes.io/name=traefik"
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\\d+)?;(\\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+          action: replace
+          target_label: __scheme__
+          regex: (https?)
 ```
 
-The target is the ClusterIP service I created in the first yaml file. Just telling Prometheus where to get the metrics from. 
+This approach will scrape the metrics from the relevant Traefik pods, using annotation. But it also means I need to give the Prometheus pod access to scrape pods not in its own namespace. So I will go ahead and create a service account, role and role binding for that:
 
-Then I created the third yaml file that creates the PersistenVolumeClaim for my Prometheus instance:
+```bash
+andreasm@linuxmgmt01:~/prod-cluster-1/traefik/traefik-dashboard$ kubectl -n prometheus create serviceaccount prometheus
+serviceaccount/prometheus created
+andreasm@linuxmgmt01:~/prod-cluster-1/traefik/traefik-dashboard$ k create clusterrole prometheus --verb=get,list,watch --resource=pods,services,endpoints
+clusterrole.rbac.authorization.k8s.io/prometheus created
+andreasm@linuxmgmt01:~/prod-cluster-1/traefik/traefik-dashboard$ kubectl create clusterrolebinding prometheus --clusterrole=prometheus --serviceaccount=prometheus:prometheus
+clusterrolebinding.rbac.authorization.k8s.io/prometheus created 
+```
+
+Then I created the third yaml file that creates the PersistentVolumeClaim for my Prometheus instance:
 
 ```yaml
 apiVersion: v1
@@ -847,6 +878,7 @@ spec:
       labels:
         app: prometheus
     spec:
+      serviceAccountName: prometheus # Remember to add the serviceaccount for scrape access
       containers:
       - name: prometheus
         image: prom/prometheus:latest
@@ -909,7 +941,7 @@ spec:
 
 Here comes the DNS record into play, the record I created earlier. Now after I have applied all the above yaml Prometheus should be up and running and I can use the IngressRoute to access the Prometheus Dashboard from my laptop.
 
-![prometheus-dashboard](images/image-20231228142829554.png)
+![prometheus-target](images/image-20231228233759384.png)
 
 ### Grafana
 
