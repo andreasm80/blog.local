@@ -737,7 +737,7 @@ Then I use reflector to share/sync the certificates across namespaces. Read more
 
 Another nice feature is Traefik's built in Prometheus metrics. These Prometheus metrics can then be used as datasource in Grafana. So here is how I configured Prometheus and Grafana. 
 
-I followed these two blog's [here](https://traefik.io/blog/capture-traefik-metrics-for-apps-on-kubernetes-with-prometheus/) and [here](https://roundly-consulting.com/blog/grafana-with-prometheus-for-traefik-in-minikube), used them in combination to configure Traefik with Prometheus.
+I followed these two blog post's [here](https://traefik.io/blog/capture-traefik-metrics-for-apps-on-kubernetes-with-prometheus/) and [here](https://roundly-consulting.com/blog/grafana-with-prometheus-for-traefik-in-minikube), used them in combination to configure Traefik with Prometheus.
 
 ### Prometheus
 
@@ -790,11 +790,11 @@ spec:
   type: ClusterIP
 ```
 
-As I followed the two blogs above there is a couple of approaches to make this work, and this first file is kind of optional if you dont want to expose the metrics through an IngressRoute or other means outside your Kubernetes cluster. 
+As I followed the two blogs above there is a couple of approaches to make this work.  One approach is to to expose the metrics using ClusterIP by applying the yaml above. Then the Prometheus target is refering to this svc (requires Prometheus to be runnning on same cluster).  The other approach is to configure Prometheus scraping the Traefik pods. 
 
-But for an easy way to just check whether there is metrics coming one can temporarily expose this information. Again as I have not enabled any services in the Helm values during installation of Traefik I need to create a service that expose the metrics entrypoint using ClusterIP. I am using ClusterIP as I am not planning on making it available outside the same Kubernetes cluster as Traefik is running in.
+One can also use this ClusterIP service later on with an IngressRoute to expose it outside its Kubernetes cluster for an easy way to just check whether there is metrics coming or need to access this metrics externally. If scraping the pods, this service is not needed as Prometheus will scrape the Traefik pods directly.
 
-Then the second file is the Prometheus configMap telling Promethus what to scrape. I found that the information covered in the Traefik blog [post](https://traefik.io/blog/capture-traefik-metrics-for-apps-on-kubernetes-with-prometheus/) gave more information in Prometheus so I used that one:
+Then I need to create a  Prometheus configMap telling Promethus what and how to scrape. I will paste below two ways Prometheus can scrape the metrics. The first yaml will scrape the pods directly using the kubernetes_sd_config and filter on the annotations on the Traefik pods. 
 
 ```yaml
 apiVersion: v1
@@ -843,6 +843,27 @@ clusterrole.rbac.authorization.k8s.io/prometheus created
 andreasm@linuxmgmt01:~/prod-cluster-1/traefik/traefik-dashboard$ kubectl create clusterrolebinding prometheus --clusterrole=prometheus --serviceaccount=prometheus:prometheus
 clusterrolebinding.rbac.authorization.k8s.io/prometheus created 
 ```
+
+The second approach is to point to the ClusterIP metrics service (defined above) and let Prometheus scrape this service instead. This approach does not need the serviceAccount.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+    scrape_configs:
+    - job_name: 'traefik'
+      static_configs:
+      - targets: ['traefik-metrics.traefik.svc.cluster.local:9100']
+```
+
+
 
 Then I created the third yaml file that creates the PersistentVolumeClaim for my Prometheus instance:
 
@@ -939,9 +960,17 @@ spec:
           port: 9090
 ```
 
-Here comes the DNS record into play, the record I created earlier. Now after I have applied all the above yaml Prometheus should be up and running and I can use the IngressRoute to access the Prometheus Dashboard from my laptop.
+Here comes the DNS record into play, the record I created earlier. Now after I have applied all the above yamls Prometheus should be up and running and I can use the IngressRoute to access the Prometheus Dashboard from my laptop.
 
-![prometheus-target](images/image-20231228233759384.png)
+Screnshot below is when scraping the pods directly
+
+![prometheus-pod-target](images/image-20231228233759384.png)
+
+Screenshot below is scraping the metrics-service:
+
+![prometheus-service-scraping](images/image-20231230184538838.png)
+
+
 
 ### Grafana
 
