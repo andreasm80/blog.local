@@ -276,6 +276,22 @@ Thats it.... :smile:
 
 Version 1.14.5 is the latest stable at the writing of this post. 
 
+### Install Cilium on a cluster with no kube-proxy
+
+If I have prepared my cluster as above with no kube-proxy I need to install Cilium using the following command:
+
+```bash
+API_SERVER_IP=10.160.1.111
+API_SERVER_PORT=6443
+helm install cilium cilium/cilium --version 1.14.5 -f cilium.1.14.5.values-prod-cluster-1.yaml \
+    --namespace kube-system \
+    --set kubeProxyReplacement=strict \
+    --set k8sServiceHost=${API_SERVER_IP} \
+    --set k8sServicePort=${API_SERVER_PORT}
+```
+
+Where the API_SERVER_PORT is one of my k8s control plane node (I did try to use the loadbalanced IP for the k8s api endpoint as I have 3 control plane nodes but that did not work out so I went with the IP of my first cp node). The value file is the value file I am using to set all the Cilium settings, more on that later.
+
 Now, whats inside my Kubernetes cluster now:
 
 ```bash
