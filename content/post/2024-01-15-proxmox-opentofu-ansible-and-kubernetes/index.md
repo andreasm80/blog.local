@@ -794,7 +794,7 @@ resource "null_resource" "ansible_command" {
   }
 ```
 
- This will create the *inventory.ini* in the */proxmox/kubespray/inventory/k8s-cluster-02/* for Kubespray/Ansible to use. Then I will fire a command to trigger the ansible command:
+ This will create the *inventory.ini* in the */proxmox/kubespray/inventory/k8s-cluster-02/* for Kubespray/Ansible to use. Then it will fire a command refering to a bash script (more on that further down) to trigger the Ansible command:
 
 ```bash
 ansible-playbook -i inventory/k8s-cluster-02/inventory.ini --become --become-user=root cluster.yml -u ubuntu
@@ -825,7 +825,7 @@ ansible-playbook -i inventory/k8s-cluster-02/inventory.ini --become --become-use
 
 I will create this file as a subfolder under my *proxmox* folder. 
 
-This is now the content of my proxmox subfolder:
+This is now the content of my proxmox folder:
 
 ```bash
 andreasm@linuxmgmt01:~/terraform/proxmox$ tree -L 1
@@ -838,4 +838,427 @@ andreasm@linuxmgmt01:~/terraform/proxmox$ tree -L 1
 
 4 directories, 1 file
 ```
+
+
+
+And this is the content in the k8s-cluster-02 folder where I have my OpenTofu tasks defined:
+
+```bash
+andreasm@linuxmgmt01:~/terraform/proxmox/k8s-cluster-02$ tree -L 1
+.
+├── ansible.tf
+├── credentials.auto.tfvars
+├── k8s-cluster-02.tf
+├── provider.tf
+├── ubuntu_cloud_config.tf
+└── variables.tf
+
+0 directories, 6 files
+```
+
+
+
+Its time to put it all to a test
+
+### A fully automated provisioning of Kubernetes on Proxmox using OpenTofu, Ansible and Kubespray
+
+To get this show started, it is the same procedure as it was with my cloud image task. Need to run tofu init, then create a plan, check the output and finally approve it. So lets see how this goes. 
+
+From within my *./proxmox/k8s-cluster-02* folder:
+
+```bash
+andreasm@linuxmgmt01:~/terraform/proxmox/k8s-cluster-02$ tofu init
+
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding latest version of hashicorp/null...
+- Finding bpg/proxmox versions matching "0.43.2"...
+- Finding latest version of hashicorp/local...
+- Installing hashicorp/null v3.2.2...
+- Installed hashicorp/null v3.2.2 (signed, key ID 0C0AF313E5FD9F80)
+- Installing bpg/proxmox v0.43.2...
+- Installed bpg/proxmox v0.43.2 (signed, key ID DAA1958557A27403)
+- Installing hashicorp/local v2.4.1...
+- Installed hashicorp/local v2.4.1 (signed, key ID 0C0AF313E5FD9F80)
+
+Providers are signed by their developers.
+If you'd like to know more about provider signing, you can read about it here:
+https://opentofu.org/docs/cli/plugins/signing/
+
+OpenTofu has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that OpenTofu can guarantee to make the same selections by default when
+you run "tofu init" in the future.
+
+OpenTofu has been successfully initialized!
+
+You may now begin working with OpenTofu. Try running "tofu plan" to see
+any changes that are required for your infrastructure. All OpenTofu commands
+should now work.
+
+If you ever set or change modules or backend configuration for OpenTofu,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+```
+
+
+
+Then create the plan:
+
+```bash
+OpenTofu used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+OpenTofu will perform the following actions:
+
+  # local_file.ansible_inventory will be created
+  + resource "local_file" "ansible_inventory" {
+      + content              = (known after apply)
+      + content_base64sha256 = (known after apply)
+      + content_base64sha512 = (known after apply)
+      + content_md5          = (known after apply)
+      + content_sha1         = (known after apply)
+      + content_sha256       = (known after apply)
+      + content_sha512       = (known after apply)
+      + directory_permission = "0777"
+      + file_permission      = "0777"
+      + filename             = "/home/andreasm/terraform/proxmox/kubespray/inventory/k8s-cluster-02/inventory.ini"
+      + id                   = (known after apply)
+    }
+
+  # null_resource.ansible_command will be created
+  + resource "null_resource" "ansible_command" {
+      + id = (known after apply)
+    }
+
+  # proxmox_virtual_environment_file.ubuntu_cloud_init will be created
+  + resource "proxmox_virtual_environment_file" "ubuntu_cloud_init" {
+      + content_type           = "snippets"
+      + datastore_id           = "local"
+      + file_modification_date = (known after apply)
+      + file_name              = (known after apply)
+      + file_size              = (known after apply)
+      + file_tag               = (known after apply)
+      + id                     = (known after apply)
+      + node_name              = "proxmox-02"
+      + overwrite              = true
+      + timeout_upload         = 1800
+
+<<redacted>>
+Plan: 9 to add, 0 to change, 0 to destroy.
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Saved the plan to: plan
+
+To perform exactly these actions, run the following command to apply:
+    tofu apply "plan"
+```
+
+
+
+It looks good to me, lets apply it:
+
+```bash
+andreasm@linuxmgmt01:~/terraform/proxmox/k8s-cluster-02$ tofu apply plan
+proxmox_virtual_environment_file.ubuntu_cloud_init: Creating...
+proxmox_virtual_environment_file.ubuntu_cloud_init: Creation complete after 1s [id=local:snippets/ubuntu.cloud-config.yaml]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Creating...
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Creating...
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Creating...
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Creating...
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Creating...
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Creating...
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [10s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [10s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [10s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [20s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [20s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [20s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [30s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [30s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [30s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [40s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [40s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [40s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [40s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [40s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [40s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [50s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [50s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [50s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [50s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [50s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [50s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Creation complete after 1m32s [id=1005]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Creation complete after 1m32s [id=1002]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Creation complete after 1m33s [id=1006]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Creation complete after 1m33s [id=1007]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Creation complete after 1m34s [id=1003]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Creation complete after 1m37s [id=1001]
+```
+
+1m37s to create my 6 VMs, ready for the Kubernetes installation.
+
+
+
+And in Proxmox I have 6 new VMs with correct name, tags and all:
+
+![my-new-kubernetes-cluster](images/image-20240115224119296.png)
+
+Let me check if the *inventory.ini* file has been created correct:
+
+```yaml
+andreasm@linuxmgmt01:~/terraform/proxmox/kubespray/inventory/k8s-cluster-02$ cat inventory.ini
+[all]
+k8s-cp-vm-1-cl-02 ansible_host=10.160.1.21
+k8s-cp-vm-2-cl-02 ansible_host=10.160.1.22
+k8s-cp-vm-3-cl-02 ansible_host=10.160.1.23
+k8s-node-vm-1-cl-02 ansible_host=10.160.1.25
+k8s-node-vm-2-cl-02 ansible_host=10.160.1.26
+k8s-node-vm-3-cl-02 ansible_host=10.160.1.27
+
+[kube_control_plane]
+k8s-cp-vm-1-cl-02
+k8s-cp-vm-2-cl-02
+k8s-cp-vm-3-cl-02
+
+[etcd]
+k8s-cp-vm-1-cl-02
+k8s-cp-vm-2-cl-02
+k8s-cp-vm-3-cl-02
+
+[kube_node]
+k8s-node-vm-1-cl-02
+k8s-node-vm-2-cl-02
+k8s-node-vm-3-cl-02
+
+[k8s_cluster:children]
+kube_node
+kube_control_plane
+```
+
+And the last task the ansible_command:
+
+```bash
+local_file.ansible_inventory: Creating...
+local_file.ansible_inventory: Creation complete after 0s [id=1d19a8be76746178f26336defc9ce96c6e82a791]
+null_resource.ansible_command: Creating...
+null_resource.ansible_command: Provisioning with 'local-exec'...
+null_resource.ansible_command (local-exec): Executing: ["/bin/bash" "-c" "./kubespray.k8s-cluster-02.sh > k8s-cluster-02/ansible_output.log 2>&1"]
+null_resource.ansible_command: Still creating... [10s elapsed]
+null_resource.ansible_command: Still creating... [20s elapsed]
+null_resource.ansible_command: Still creating... [30s elapsed]
+null_resource.ansible_command: Still creating... [40s elapsed]
+null_resource.ansible_command: Still creating... [50s elapsed]
+<<redacted>>
+null_resource.ansible_command: Still creating... [16m50s elapsed]
+null_resource.ansible_command: Still creating... [17m0s elapsed]
+null_resource.ansible_command: Creation complete after 17m4s [id=5215143035945962122]
+
+Apply complete! Resources: 9 added, 0 changed, 0 destroyed.
+```
+
+That took 17m4s to deploy a fully working Kubernetes cluster with no intervention from me at all. 
+
+From the ansible_output.log:
+
+```bash
+PLAY RECAP *********************************************************************
+k8s-cp-vm-1-cl-02          : ok=691  changed=139  unreachable=0    failed=0    skipped=1080 rescued=0    ignored=6
+k8s-cp-vm-2-cl-02          : ok=646  changed=131  unreachable=0    failed=0    skipped=1050 rescued=0    ignored=3
+k8s-cp-vm-3-cl-02          : ok=648  changed=132  unreachable=0    failed=0    skipped=1048 rescued=0    ignored=3
+k8s-node-vm-1-cl-02        : ok=553  changed=93   unreachable=0    failed=0    skipped=840  rescued=0    ignored=1
+k8s-node-vm-2-cl-02        : ok=509  changed=90   unreachable=0    failed=0    skipped=739  rescued=0    ignored=1
+k8s-node-vm-3-cl-02        : ok=509  changed=90   unreachable=0    failed=0    skipped=739  rescued=0    ignored=1
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+Monday 15 January 2024  21:59:02 +0000 (0:00:00.288)       0:17:01.376 ********
+===============================================================================
+download : Download_file | Download item ------------------------------- 71.29s
+download : Download_file | Download item ------------------------------- 36.04s
+kubernetes/kubeadm : Join to cluster ----------------------------------- 19.06s
+container-engine/containerd : Download_file | Download item ------------ 16.73s
+download : Download_container | Download image if required ------------- 15.65s
+container-engine/runc : Download_file | Download item ------------------ 15.53s
+container-engine/nerdctl : Download_file | Download item --------------- 14.75s
+container-engine/crictl : Download_file | Download item ---------------- 14.66s
+download : Download_container | Download image if required ------------- 13.75s
+container-engine/crictl : Extract_file | Unpacking archive ------------- 13.35s
+kubernetes/control-plane : Kubeadm | Initialize first master ----------- 10.16s
+container-engine/nerdctl : Extract_file | Unpacking archive ------------- 9.99s
+kubernetes/preinstall : Install packages requirements ------------------- 9.93s
+kubernetes/control-plane : Joining control plane node to the cluster. --- 9.21s
+container-engine/runc : Download_file | Validate mirrors ---------------- 9.20s
+container-engine/crictl : Download_file | Validate mirrors -------------- 9.15s
+container-engine/nerdctl : Download_file | Validate mirrors ------------- 9.12s
+container-engine/containerd : Download_file | Validate mirrors ---------- 9.06s
+container-engine/containerd : Containerd | Unpack containerd archive ---- 8.99s
+download : Download_container | Download image if required -------------- 8.19s
+```
+
+I guess I am gonna spin up a couple of Kubernetes clusters going forward :smile:
+
+If something should fail I have configured the ansible_command to pipe the output to a file called *ansible_output.log* I can check. This pipes out the whole Kubespray operation. Some simple tests to do is also checking if Ansible can reach the VMs (after they have been deployed ofcourse). This command needs to be run within the python environment again. 
+
+```bash
+# activate the environment
+andreasm@linuxmgmt01:~/terraform/proxmox$ source $VENVDIR/bin/activate
+# ping all nodes
+(kubespray-venv) andreasm@linuxmgmt01:~/terraform/proxmox$ ansible -i inventory/k8s-cluster-02/inventory.ini -m ping all -u ubuntu
+```
+
+Now let me log into one of the Kubernetes Control plane and check if there is a Kubernetes cluster ready or not:
+
+```bash
+root@k8s-cp-vm-1-cl-02:/home/ubuntu# kubectl get nodes
+NAME                  STATUS   ROLES           AGE     VERSION
+k8s-cp-vm-1-cl-02     Ready    control-plane   6m13s   v1.28.5
+k8s-cp-vm-2-cl-02     Ready    control-plane   6m1s    v1.28.5
+k8s-cp-vm-3-cl-02     Ready    control-plane   5m57s   v1.28.5
+k8s-node-vm-1-cl-02   Ready    <none>          5m24s   v1.28.5
+k8s-node-vm-2-cl-02   Ready    <none>          5m23s   v1.28.5
+k8s-node-vm-3-cl-02   Ready    <none>          5m19s   v1.28.5
+root@k8s-cp-vm-1-cl-02:/home/ubuntu# kubectl get pods -A
+NAMESPACE     NAME                                        READY   STATUS    RESTARTS   AGE
+kube-system   calico-kube-controllers-648dffd99-lr82q     1/1     Running   0          4m25s
+kube-system   calico-node-b25gf                           1/1     Running   0          4m52s
+kube-system   calico-node-h7lpr                           1/1     Running   0          4m52s
+kube-system   calico-node-jdkb9                           1/1     Running   0          4m52s
+kube-system   calico-node-vsgqq                           1/1     Running   0          4m52s
+kube-system   calico-node-w6vrc                           1/1     Running   0          4m52s
+kube-system   calico-node-x95mh                           1/1     Running   0          4m52s
+kube-system   coredns-77f7cc69db-29t6b                    1/1     Running   0          4m13s
+kube-system   coredns-77f7cc69db-2ph9d                    1/1     Running   0          4m10s
+kube-system   dns-autoscaler-8576bb9f5b-8bzqp             1/1     Running   0          4m11s
+kube-system   kube-apiserver-k8s-cp-vm-1-cl-02            1/1     Running   1          6m14s
+kube-system   kube-apiserver-k8s-cp-vm-2-cl-02            1/1     Running   1          5m55s
+kube-system   kube-apiserver-k8s-cp-vm-3-cl-02            1/1     Running   1          6m1s
+kube-system   kube-controller-manager-k8s-cp-vm-1-cl-02   1/1     Running   2          6m16s
+kube-system   kube-controller-manager-k8s-cp-vm-2-cl-02   1/1     Running   2          5m56s
+kube-system   kube-controller-manager-k8s-cp-vm-3-cl-02   1/1     Running   2          6m1s
+kube-system   kube-proxy-6jt89                            1/1     Running   0          5m22s
+kube-system   kube-proxy-9w5f2                            1/1     Running   0          5m22s
+kube-system   kube-proxy-k7l9g                            1/1     Running   0          5m22s
+kube-system   kube-proxy-p7wqt                            1/1     Running   0          5m22s
+kube-system   kube-proxy-qfmg5                            1/1     Running   0          5m22s
+kube-system   kube-proxy-v6tcn                            1/1     Running   0          5m22s
+kube-system   kube-scheduler-k8s-cp-vm-1-cl-02            1/1     Running   1          6m14s
+kube-system   kube-scheduler-k8s-cp-vm-2-cl-02            1/1     Running   1          5m56s
+kube-system   kube-scheduler-k8s-cp-vm-3-cl-02            1/1     Running   1          6m
+kube-system   nginx-proxy-k8s-node-vm-1-cl-02             1/1     Running   0          5m25s
+kube-system   nginx-proxy-k8s-node-vm-2-cl-02             1/1     Running   0          5m20s
+kube-system   nginx-proxy-k8s-node-vm-3-cl-02             1/1     Running   0          5m20s
+kube-system   nodelocaldns-4z72v                          1/1     Running   0          4m9s
+kube-system   nodelocaldns-8wv4j                          1/1     Running   0          4m9s
+kube-system   nodelocaldns-kl6fw                          1/1     Running   0          4m9s
+kube-system   nodelocaldns-pqxpj                          1/1     Running   0          4m9s
+kube-system   nodelocaldns-qmrq8                          1/1     Running   0          4m9s
+kube-system   nodelocaldns-vqnbd                          1/1     Running   0          4m9s
+root@k8s-cp-vm-1-cl-02:/home/ubuntu#
+```
+
+Nice nice nice. Now I can go ahead and grab the kubeconfig, configure my loadbalancer to loadbalance the Kubernetes API. 
+
+### Cleaning up
+
+When I am done with my Kubernetes cluster its just about doing a *tofu destroy* command and everything is neatly cleaned up. 
+
+There are two ways I can clean up. If I want to keep the nodes running but just reset the Kubernetes installation I can execute the following command:
+
+```bash
+# from the Python environment
+(kubespray-venv) andreasm@linuxmgmt01:~/terraform/proxmox$ ansible-playbook -i inventory/k8s-cluster-02/hosts.yaml --become --become-user=root reset.yml -u ubuntu
+```
+
+Or a full wipe, including the deployed VMs:
+
+```bash
+# Inside the k8s-cluster-02 OpenTofu project folder
+andreasm@linuxmgmt01:~/terraform/proxmox/k8s-cluster-02$ tofu destroy
+Do you really want to destroy all resources?
+  OpenTofu will destroy all your managed infrastructure, as shown above.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+  Enter a value:yes
+null_resource.ansible_command: Destroying... [id=5215143035945962122]
+null_resource.ansible_command: Destruction complete after 0s
+local_file.ansible_inventory: Destroying... [id=1d19a8be76746178f26336defc9ce96c6e82a791]
+local_file.ansible_inventory: Destruction complete after 0s
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Destroying... [id=1002]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Destroying... [id=1003]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Destroying... [id=1005]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Destroying... [id=1007]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Destroying... [id=1006]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Destroying... [id=1001]
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Destruction complete after 7s
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Destruction complete after 7s
+proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Destruction complete after 9s
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still destroying... [id=1001, 10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Destruction complete after 12s
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 40s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 40s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 50s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 50s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 1m0s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 1m10s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 1m20s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still destroying... [id=1002, 1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still destroying... [id=1003, 1m30s elapsed]
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Destruction complete after 1m37s
+proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Destruction complete after 1m37s
+proxmox_virtual_environment_file.ubuntu_cloud_init: Destroying... [id=local:snippets/ubuntu.cloud-config.yaml]
+proxmox_virtual_environment_file.ubuntu_cloud_init: Destruction complete after 0s
+
+Destroy complete! Resources: 9 destroyed.
+```
+
+Now all the VMs, everything that has been deployed with OpenTofu is gone again. And it takes a couple of seconds or minutes depending on whether I have configured the provider to do a shutdown of the VMs or stop on destroy. I am currently using shutdown. 
+
+## Summary
+
+There is so much more that can be adjusted, improved and explored in general. But this post was just how I have done it now to solve a task I have been waiting to finally get some time to do. I will maybe do a follow up post where I do some improvements after some time using it and gained more experience on it. This includes improving the OpenTofu configs and Kubespray.
 
