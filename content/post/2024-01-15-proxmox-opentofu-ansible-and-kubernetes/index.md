@@ -25,15 +25,22 @@ comment: false # Disable comment if false.
 
 # I need a Kubernetes cluster, again
 
-I am using a lot of my spare time playing around with my lab exploring different topics. Very much of that time again is spent with Kubernetes. So many times have I deployed a new Kubernetes cluster, then after some time decommissioned it again. They way I have typically done it is using a Ubuntu template I have created, cloned it, manually adjusted all clones as needed, then manually installed Kubernetes. This takes a lot of times overall and it also stops me doing certain tasks as sometimes I just think nah.. not again. Maybe another day and I do something else instead. Now has the time come to automate these tasks so I can look forward to everytime I need a new Kubernetes cluster.
+I am using a lot of my spare time playing around with my lab exploring different topics. Very much of that time again is spent with Kubernetes. It has been so many times have I deployed a new Kubernetes cluster, then after some time decommissioned it again. They way I have typically done it is using a Ubuntu template I have created, cloned it, manually adjusted all clones as needed, then manually installed Kubernetes. This takes a lot of time overall and it also stops me doing certain tasks as sometimes I just think nah.. not again. Maybe another day and I do something else instead. And, when a human being is set to do a repetive task it is destined to fail at some stage, forgot a setting, why is this one vm not working as the other vms and so on.  Now the time has come to automate these tasks with the following goal in mind:
 
-I have been running Home Assistant for many years, there I have a bunch of automations automating all kinds of things in my home which just makes my everyday life a bit happier. Most of these automations just work in the background doing their stuff as a good automation should. Automating my lab deployments is something I have been thinking of getting into several times, and now I decided to get this show started. So, as usual, a lot of tinkering, trial and error until I managed to get something working the way I wanted. Probably room for improvement in several areas, that is something I will most likely use my time on post this blog post also. Speaking of blog post, after using some time on this I had to create a blog post on it. My goal later on is a fully automated lab from VM creation, Kubernetes runtime, and applications. And when they are decommisioned I can easily spin up everything with preserving persistent data etc. Lets see. 
+- Reduce deployment time to a minum
+- Eliminate human errors
+- Consistent outcome every time
+- Make it even more fun to deploy a Kubernetes cluster
+
+
+
+I have been running Home Assistant for many years, there I have a bunch of automations automating all kinds of things in my home which just makes my everyday life a bit happier. Most of these automations just work in the background doing their stuff as a good automation should. Automating my lab deployments is something I have been thinking of getting into several times, and now I decided to get this show started. So, as usual, a lot of tinkering, trial and error until I managed to get something working the way I wanted. Probably room for improvement in several areas, that is something I will most likely use my time on "post" this blog post. Speaking of blog post, after using some time on this I had to create a blog post on it. My goal later on is a fully automated lab from VM creation, Kubernetes runtime, and applications. And when they are decommisioned I can easily spin up everything again with persistent data etc. Lets see.  
 
 For now, this post will cover what I have done and configured so far to be able to automatically deploy the VMs for my Kubernetes clusters then the provisioning of Kubernetes itself. 
 
 ## My lab
 
-My lab consists of two fairly spec'ed servers with a bunch of CPU cores, a lot of RAM, and a decent amount of SSDs. Networkingwise they are using 10GB ethernet. When it comes to power usage they are kind of friendly to my electricity bill with my "required" vms running on them, but can potentially ruin that if I throw a lot of stuff at them to chew on. 
+My lab consists of two fairly spec'ed servers with a bunch of CPU cores, a lot of RAM, and a decent amount of SSDs. In regards to network they are using 10GB ethernet. In terms of power usage they are kind of friendly to my electricity bill with my "required" vms running on them, but can potentially ruin that if I throw a lot of stuff at them to chew on. 
 
 <img src=images/image-20240115152236095.png style="width:400px" />
 
@@ -41,11 +48,13 @@ My lab consists of two fairly spec'ed servers with a bunch of CPU cores, a lot o
 
 *The total power usage above includes my switch, UPS and some other small devices. So its not that bad considering how much I can get out of it.* 
 
-But with automation I can easily spin up some resources to be consumed for a certain period and delete again if not needed. My required VMs, that are always on, are things like Bind dns servers, PfSense, Frigate, DCS server, a couple of linux "mgmt" vms,  Home Assistant, a couple of Kubernetes clusters hosting my Unifi controller, Traefik Proxy etc.
+But with automation I can easily spin up some resources to be consumed for a certain period and delete again if not needed. My required VMs, that are always on, are things like Bind dns servers, PfSense, Truenas, Frigate, DCS server, a couple of linux "mgmt" vms,  Home Assistant, a couple of Kubernetes clusters hosting my Unifi controller, Traefik Proxy, Grafana etc.
 
-For the virtualization layer on my two servers I am using Proxmox, one of the reason is that it did support PCI passthrough of my Coral TPU. I have been running Proxmox for many years and I find it to be a very decent alternative. It does what I want it to do and Proxmox has a great community!
+For the virtualization layer on my two servers I am using Proxmox, one of the reason is that it supports PCI passthrough of my Coral TPU. I have been running Proxmox for many years and I find it to be a very decent alternative. It does what I want it to do and Proxmox has a great community!
 
-Proxmox has been configured with these two servers as a cluster. I have not configured any VMs in HA, but with a Proxmox cluster I can easily migrate VMs between the hosts, even without shared storage, and single web-ui to manage both servers. To be "quorate" I have a little cute RPi3 with its beefy 32 GB SD card, 2GB RAM and 1GB ethernet as a [Qdevice](https://pve.proxmox.com/wiki/Cluster_Manager#_corosync_external_vote_support)
+Proxmox has been configured with these two servers as a cluster. I have not configured any VMs in HA, but with a Proxmox cluster I can easily migrate VMs between the hosts, even without shared storage, and single web-ui to manage both servers. To be "quorate" I have a cute little RPi3 with its beefy 32 GB SD card, 2GB RAM and 1GB ethernet as a [Qdevice](https://pve.proxmox.com/wiki/Cluster_Manager#_corosync_external_vote_support)
+
+{{% notice info "Info" %}}
 
 On that note, one does not necessarily need have them in a cluster to do vm migration. I recently moved a bunch of VMs over two these two new servers and it was easy peasy using this command:
 
@@ -56,11 +65,22 @@ qm remote-migrate <src vm_id> <dst vm_id> 'apitoken=PVEAPIToken=root@pam!migrate
 
 I found this with the great help of the Proxmox community [here](https://forum.proxmox.com/threads/framework-for-remote-migration-to-cluster-external-proxmox-ve-hosts.118444/page-2) 
 
+{{% /notice %}}
+
 Both Proxmox servers have their own local ZFS storage. In both of them I have created a dedicated zfs pool with identical name which I use for zfs replication for some of the more "critical" VMs, and  as a bonus it also reduces the migration time drastically for these VMs when I move them between my servers. The "cluster" network (vmbr1) is directly connected 2x 10GB ethernet (not through my physical switch). The other 2x 10GB interfaces are connected to my switch for all my other network needs like VM network (vmbr0) and Proxmox management. 
 
 Throughout this post I will be using a dedicated linux vm for all my commands, interactions. So every time I install something, it is on this linux vm. 
 
 But I am digressing, enough of the intro, get on with the automation part you were supposed to write about. Got it. 
+
+In this post I will use the following products:
+
+- Proxmox - [homepage](https://www.proxmox.com/en/)
+- Ubuntu - [homepage](https://ubuntu.com/)
+- OpenTofu - [homepage](https://opentofu.org/)
+- bpg/proxmox terraform provider - [registry](https://registry.terraform.io/providers/bpg/proxmox/latest) and [github](https://github.com/bpg/terraform-provider-proxmox)
+- Ansible - [homepage](https://www.ansible.com/community)
+- Kubespray - [homepage](https://kubespray.io/#/) and [github](https://github.com/kubernetes-sigs/kubespray/tree/master)
 
 ## Provision VMs in Proxmox using OpenTofu
 
@@ -74,7 +94,7 @@ To get started with OpenTofu there are some preparations do be done. Lets start 
 
 ### Install OpenTofu 
 
-To get started with OpenTofu I deployed it on my linux machine using Snap, but several other alternatives is available se more on the official OpenTofu [docs](https://opentofu.org/docs/intro/install/snap) page.
+To get started with OpenTofu I deployed it on my linux machine using Snap, but several other alternatives is available. See more on the official OpenTofu [docs](https://opentofu.org/docs/intro/install/snap) page.
 
 ```bash
 sudo snap install --classic opentofu
@@ -164,13 +184,13 @@ sudo pveum user token add terraform@pve provider --privsep=0
     
 ```
 
-Now I have create the API user to be used with my bpg. Though it is not sufficient as I also need to define a ssh keypair on my Linux jumphost for passwordless SSH authentication which I will need to copy to my Proxmox nodes. This is done like this:
+Now I have create the API user to be used with my bpg/proxmox provider. Though it is not sufficient as I also need to define a ssh keypair on my Linux jumphost for passwordless SSH authentication which I will need to copy to my Proxmox nodes. This is done like this:
 
 ```bash
 andreasm@linuxmgmt01:~$ ssh-copy-id -i id_rsa.pub root@172.18.5.102 # -i pointing to the pub key I want to use and specify the root user
 ```
 
-Now, I can log into my Proxmox node using SSH without password from my Linux jumphost. But, its not sufficient. I need to load the key into the keystore. If I dont do that the automations that require SSH access will fail with this error message:
+Now, I can log into my Proxmox node using SSH without password from my Linux jumphost. But, when used in combination with opentofu its not sufficient. I need to load the key into the keystore. If I dont do that the automations that require SSH access will fail with this error message:
 
 ```bash
 Error: failed to open SSH client: unable to authenticate user "root" over SSH to "172.18.5.102:22". Please verify that ssh-agent is correctly loaded with an authorized key via 'ssh-add -L' (NOTE: configurations in ~/.ssh/config are not considered by golang's ssh implementation). The exact error from ssh.Dial: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password], no supported methods remain
@@ -248,7 +268,7 @@ proxmox/
 
 ```
 
-Inside that folder I will create the following files provider.tf file, variable.tf, credentials.auto.tfvars with the content described above. 
+Inside that folder I will start by creating the following files: provider.tf file, variable.tf and credentials.auto.tfvars with the content described above. 
 
 ```bash
 proxmox-images/
@@ -259,7 +279,7 @@ proxmox-images/
 0 directories, 3 files
 ```
 
-But these file dont to anything other than provides the relevant information to connect and interact with Proxmox. What I need is a OpenTofu resource with a task that needs to be done. So I will prepare a file called ubuntu_cloud_image.tf with the following content:
+But these files dont to anything other than provides the relevant information to connect and interact with Proxmox. What I need is a OpenTofu resource with a task that needs to be done. So I will prepare a file called ubuntu_cloud_image.tf with the following content:
 
 ```yaml
 resource "proxmox_virtual_environment_file" "ubuntu_cloud_image" {
@@ -279,7 +299,7 @@ resource "proxmox_virtual_environment_file" "ubuntu_cloud_image" {
 
  What this file does is instructing OpenTofu where to grab my Ubuntu cloud image from, then upload it to my Proxmox node 2 and a specific datastore on that node. So I have defined a *resource* to define this task. More info on this [here](https://github.com/bpg/terraform-provider-proxmox/tree/main/howtos/cloud-image).
 
-Within this same .tf file I can define several resources download several cloud images. I could have called the file cloud-images.tf instead and just defined all the images I wanted to download/upload to Proxmox. 
+Within this same .tf file I can define several resources to download several cloud images. I could have called the file cloud-images.tf instead and just defined all the images I wanted to download/upload to Proxmox. 
 I have decided to keep this task as a separate project/folder. 
 
 When I save this file I will now have 4 files in my *proxmox-image* folder:
@@ -377,7 +397,7 @@ To perform exactly these actions, run the following command to apply:
     tofu apply "plan"
 ```
 
-I am using the -out plan to just keep a record of the plan. It could be called whatever I wanted. Now OpenTofu tells me what its intention are, and if I am happy with the plan, I will just have to apply it. 
+I am using the -out plan to just keep a record of the plan. It could be called whatever I wanted. Now OpenTofu tells me what its intention are, and if I am happy with the plan, I just need to apply it. 
 
 So lets apply it:
 
@@ -390,7 +410,7 @@ proxmox_virtual_environment_file.ubuntu_cloud_image: Creation complete after 20s
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 ```
 
-And after 20 seconds I have my Ubuntu cloud image uploaded to my Proxmox node:
+And after 20 seconds I have my Ubuntu cloud image uploaded to my Proxmox node (*jammy-server-cloudimg-amd64.img*):
 
 ![jammy-server-cloud-image](images/image-20240115202924543.png)
 
@@ -400,7 +420,7 @@ Next up is to deploy a bunch of VMs to be used for a Kubernetes cluster
 
 ## Deploy VMs using OpenTofu and install Kubernetes using Ansible and Kubespray
 
-In this section I will automate everything from deploying VMs to install Kubernetes on these VMs. This task will involve OpenTofu, Ansible and Kubespray. It will deploy 6 virtual machines, with two different resource configuration. It will deploy 3 vms intended to be used as Kubernetes controlplane nodes, and 3 vms intended to be Kubernetes worker nodes. Thats the task for OpenTofu, as soon as OpenTofu has done its part it will trigger an Ansible playbook to initiate Kubespray to install Kubernetes on all my nodes. This should be a fully automated task from me just executing *tofu apply plan* to a ready Kubernetes cluster. 
+In this section I will automate everything from deploying VMs to install Kubernetes on these VMs. This task will involve OpenTofu, Ansible and Kubespray. It will deploy 6 virtual machines, with two different resource configurations. It will deploy 3 vms intended to be used as Kubernetes controlplane nodes, and 3 vms intended to be Kubernetes worker nodes. Thats the task for OpenTofu, as soon as OpenTofu has done its part it will trigger an Ansible playbook to initiate Kubespray to install Kubernetes on all my nodes. This should then end up in a fully automated task from me just executing *tofu apply plan* to a ready Kubernetes cluster. 
 
 I will start by creating another subfolder in my *proxmox* folder called *k8s-cluster-02*. In this folder I will reuse the following files:
 
@@ -418,7 +438,6 @@ These files I will just copy from my *proxmox-images* folder. I will also need d
 ```bash
 k8s-cluster-02/
 ├── ansible.tf
-├── ansible_output.log
 ├── credentials.auto.tfvars
 ├── k8s-cluster-02.tf
 ├── provider.tf
@@ -432,7 +451,7 @@ I will go through all the files one by one. But there is still some preparations
 
 ### Prepare OpenTofu to deploy my VMs
 
-In addition to the three common files I have copied from the previous project, I will need to create a *proxmox_virtual_environment_vm* resource definition. The content of this file will be saved as *k8s-cluster-02.tf* and looks like this:
+In addition to the three common files I have copied from the previous project, I will need to create two *proxmox_virtual_environment_vm* resource definitions (one for each VM type). The content of this file will be saved as *k8s-cluster-02.tf* and looks like this:
 
 ```yaml
 resource "proxmox_virtual_environment_vm" "k8s-cp-vms-cl02" {
@@ -648,6 +667,22 @@ Now I can go ahead and perform *tofu init* in this folder, but I am still not re
 
 If you have not heard about Kubespray before, head over [here](https://github.com/kubernetes-sigs/kubespray/tree/master) for more info. I have been following the guides from Kubespray to get it working, and its very well documented. 
 
+Kubespray is a really powerful way to deploy Kubernetes with a lot of options and customizations. I just want to highlight Kubespray in this section as it does a really great job in automating Kubernetes deployment.
+
+A quote from the Kubespray pages:
+
+> # [Comparison](https://kubespray.io/#/docs/comparisons?id=comparison)
+>
+> ## [Kubespray vs Kops](https://kubespray.io/#/docs/comparisons?id=kubespray-vs-kops)
+>
+> Kubespray runs on bare metal and most clouds, using Ansible as its substrate for provisioning and orchestration. [Kops](https://github.com/kubernetes/kops) performs the provisioning and orchestration itself, and as such is less flexible in deployment platforms. For people with familiarity with Ansible, existing Ansible deployments or the desire to run a Kubernetes cluster across multiple platforms, Kubespray is a good choice. Kops, however, is more tightly integrated with the unique features of the clouds it supports so it could be a better choice if you know that you will only be using one platform for the foreseeable future.
+>
+> ## [Kubespray vs Kubeadm](https://kubespray.io/#/docs/comparisons?id=kubespray-vs-kubeadm)
+>
+> [Kubeadm](https://github.com/kubernetes/kubeadm) provides domain Knowledge of Kubernetes clusters' life cycle management, including self-hosted layouts, dynamic discovery services and so on. Had it belonged to the new [operators world](https://coreos.com/blog/introducing-operators.html), it may have been named a "Kubernetes cluster operator". Kubespray however, does generic configuration management tasks from the "OS operators" ansible world, plus some initial K8s clustering (with networking plugins included) and control plane bootstrapping.
+>
+> Kubespray has started using `kubeadm` internally for cluster creation since v2.3 in order to consume life cycle management domain knowledge from it and offload generic OS configuration things from it, which hopefully benefits both sides.
+
 On my Linux jumphost I have done the following to prepare for Kubespray
 
 ```bash
@@ -665,7 +700,7 @@ sudo apt install python3.12 python3-pip python3-virtualenv
 
 ```
 
-Dont try to install Ansible in the system, it will not work. Follow the Kubespray documentation to install ansible in a Python Virtual Environment. 
+Don't try to install Ansible in the systemwide, it will not work. Follow the Kubespray documentation to install ansible in a Python Virtual Environment. 
 
 ```bash
 andreasm@linuxmgmt01:~/terraform/proxmox$ VENVDIR=kubespray-venv
@@ -741,9 +776,21 @@ kube_node
 calico_rr
 ```
 
-This is just a sample, but nice to know how it should be defined. I will create a OpenTofu task to create this inventory file for me with the corresponding VMs I am deploying in the same task/project. This will autopopulate this *inventory.ini* file with all the necessary information. So I can just go ahead and delete the *inventory.ini* file that has been copied from the *sample* folder to my new *k8s-cluster-02* folder. The other folders and files contains several variables/settings I can adjust to my liking. Like different CNIs, Kubernetes version etc. But I will not cover these here, head over to the official Kubespray docs for more info on that. I will deploy my Kubernetes cluster "stock", except the *inventory.ini* file. 
+This is just a sample, but nice to know how it should be defined. I will create a OpenTofu task to create this inventory file for me with the corresponding VMs I am deploying in the same task/project. This will autopopulate this *inventory.ini* file with all the necessary information. So I can just go ahead and delete the *inventory.ini* file that has been copied from the *sample* folder to my new *k8s-cluster-02* folder. The other folders and files contains several variables/settings I can adjust to my liking. Like different CNIs, Kubernetes version etc. But I will not cover these here, head over to the official Kubespray docs for more info on that. These are the files/folder:
 
-Now Kubespray is ready to execute Ansible to configure my Kubernetes cluster as soon as my OpenTofu provisioned VMs has been deployed. The last step I need to to now is to confgiure a new .tf file to create this *inventory.ini* file and kick of the Ansible command to fire up Kubespray. 
+```bash
+andreasm@linuxmgmt01:~/terraform/proxmox/kubespray/inventory/k8s-cluster-02/group_vars$ tree -L 1
+.
+├── all
+├── etcd.yml
+└── k8s_cluster
+
+2 directories, 1 file
+```
+
+I will deploy my Kubernetes cluster "stock" so these files are left untouched for now, except the *inventory.ini* file. 
+
+Now Kubespray is ready to execute Ansible to configure my Kubernetes cluster as soon as my OpenTofu provisioned VMs has been deployed. The last step I need to do is to confgiure a new .tf file to create this *inventory.ini* file and kick of the Ansible command to fire up Kubespray. 
 
 ### Configure OpenTofu to kick off Kubespray
 
@@ -794,13 +841,13 @@ resource "null_resource" "ansible_command" {
   }
 ```
 
- This will create the *inventory.ini* in the */proxmox/kubespray/inventory/k8s-cluster-02/* for Kubespray/Ansible to use. Then it will fire a command refering to a bash script (more on that further down) to trigger the Ansible command:
+ This will create the *inventory.ini* in the */proxmox/kubespray/inventory/k8s-cluster-02/* for Kubespray to use. Then it will fire a command refering to a bash script (more on that further down) to trigger the Ansible command:
 
 ```bash
 ansible-playbook -i inventory/k8s-cluster-02/inventory.ini --become --become-user=root cluster.yml -u ubuntu
 ```
 
-For this to work I had to create a bash script that activated the Ansible environment:
+For this to work I had to create a bash script that activated the Kubespray virtual environment:
 
 ```bash
 #!/bin/bash
@@ -823,7 +870,7 @@ cd "$KUBESPRAYDIR" || exit
 ansible-playbook -i inventory/k8s-cluster-02/inventory.ini --become --become-user=root cluster.yml -u ubuntu
 ```
 
-I will create this file as a subfolder under my *proxmox* folder. 
+I will create and save this file in my *proxmox* folder. 
 
 This is now the content of my proxmox folder:
 
@@ -976,48 +1023,7 @@ proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [10s el
 proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [10s elapsed]
 proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [10s elapsed]
 proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [10s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [20s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [20s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [20s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [20s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [20s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [20s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [30s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [30s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [30s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [30s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [30s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [30s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [40s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [40s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [40s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [40s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [40s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [40s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [50s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [50s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [50s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [50s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [50s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [50s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m0s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m0s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m0s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [1m0s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [1m0s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [1m0s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m10s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m10s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m10s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [1m10s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [1m10s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [1m10s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m20s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m20s elapsed]
-proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m20s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[1]: Still creating... [1m20s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Still creating... [1m20s elapsed]
-proxmox_virtual_environment_vm.k8s-cp-vms-cl02[2]: Still creating... [1m20s elapsed]
+<<redacted>>
 proxmox_virtual_environment_vm.k8s-worker-vms-cl02[2]: Still creating... [1m30s elapsed]
 proxmox_virtual_environment_vm.k8s-worker-vms-cl02[1]: Still creating... [1m30s elapsed]
 proxmox_virtual_environment_vm.k8s-worker-vms-cl02[0]: Still creating... [1m30s elapsed]
@@ -1036,7 +1042,7 @@ proxmox_virtual_environment_vm.k8s-cp-vms-cl02[0]: Creation complete after 1m37s
 
 
 
-And in Proxmox I have 6 new VMs with correct name, tags and all:
+And in Proxmox I have 6 new VMs with correct name, vm_id, tags and all:
 
 ![my-new-kubernetes-cluster](images/image-20240115224119296.png)
 
@@ -1072,7 +1078,7 @@ kube_node
 kube_control_plane
 ```
 
-And the last task the ansible_command:
+Now the last task the ansible_command:
 
 ```bash
 local_file.ansible_inventory: Creating...
@@ -1133,7 +1139,7 @@ download : Download_container | Download image if required -------------- 8.19s
 
 I guess I am gonna spin up a couple of Kubernetes clusters going forward :smile:
 
-If something should fail I have configured the ansible_command to pipe the output to a file called *ansible_output.log* I can check. This pipes out the whole Kubespray operation. Some simple tests to do is also checking if Ansible can reach the VMs (after they have been deployed ofcourse). This command needs to be run within the python environment again. 
+If something should fail I have configured the *ansible_command* to pipe the output to a file called *ansible_output.log* I can check. This pipes out the whole Kubespray operation. Some simple tests to do is also checking if Ansible can reach the VMs (after they have been deployed ofcourse). This command needs to be run within the python environment again. 
 
 ```bash
 # activate the environment
@@ -1192,17 +1198,17 @@ kube-system   nodelocaldns-vqnbd                          1/1     Running   0   
 root@k8s-cp-vm-1-cl-02:/home/ubuntu#
 ```
 
-Nice nice nice. Now I can go ahead and grab the kubeconfig, configure my loadbalancer to loadbalance the Kubernetes API. 
+Nice nice nice. Now I can go ahead and grab the kubeconfig, configure my loadbalancer to loadbalance the Kubernetes API and start using my newly decomposable provisioned cluster. 
 
 ### Cleaning up
 
-When I am done with my Kubernetes cluster its just about doing a *tofu destroy* command and everything is neatly cleaned up. 
+When I am done with my Kubernetes cluster its just about doing a *tofu destroy* command and everything is neatly cleaned up. I have not configured any persistent storage yet. So if I have deployed some apps on this cluster and decides to delete it any data that has been created I want to keep will be deleted. So its wise to look into how to keep certain data even after the deletion of my cluster.
 
 There are two ways I can clean up. If I want to keep the nodes running but just reset the Kubernetes installation I can execute the following command:
 
 ```bash
-# from the Python environment
-(kubespray-venv) andreasm@linuxmgmt01:~/terraform/proxmox$ ansible-playbook -i inventory/k8s-cluster-02/hosts.yaml --become --become-user=root reset.yml -u ubuntu
+# from the Kubespray environment
+(kubespray-venv) andreasm@linuxmgmt01:~/terraform/proxmox/kubespray$ ansible-playbook -i inventory/k8s-cluster-02/hosts.yaml --become --become-user=root reset.yml -u ubuntu
 ```
 
 Or a full wipe, including the deployed VMs:
@@ -1256,9 +1262,9 @@ proxmox_virtual_environment_file.ubuntu_cloud_init: Destruction complete after 0
 Destroy complete! Resources: 9 destroyed.
 ```
 
-Now all the VMs, everything that has been deployed with OpenTofu is gone again. And it takes a couple of seconds or minutes depending on whether I have configured the provider to do a shutdown of the VMs or stop on destroy. I am currently using shutdown. 
+Now all the VMs, everything that has been deployed with OpenTofu is gone again. And it takes a couple of seconds or minutes depending on whether I have configured the provider to do a shutdown or stop of the VMs on *tofu destroy*. I am currently using shutdown. 
 
 ## Summary
 
-There is so much more that can be adjusted, improved and explored in general. But this post was just how I have done it now to solve a task I have been waiting to finally get some time to do. I will maybe do a follow up post where I do some improvements after some time using it and gained more experience on it. This includes improving the OpenTofu configs and Kubespray.
+There is so much more that can be adjusted, improved and explored in general. But this post is just how I have done it now to solve a task I have been waiting to finally get some time to do. I will maybe do a follow up post where I do some improvements after some time using it and gained more experience on it. This includes improving the OpenTofu configs and Kubespray. 
 
