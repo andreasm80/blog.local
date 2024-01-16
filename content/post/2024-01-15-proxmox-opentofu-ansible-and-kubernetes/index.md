@@ -1,8 +1,8 @@
 ---
 author: "Andreas M"
-title: "Proxmox with OpenTofu Ansible and Kubernetes"
+title: "Proxmox with OpenTofu Kubespray and Kubernetes"
 date: 2024-01-15T14:15:19+01:00 
-description: "Automating with Terraform, Ansible on Proxmox"
+description: "Automating with Terraform, Ansible and Kubespray on Proxmox"
 draft: false 
 toc: true
 #featureimage: ""
