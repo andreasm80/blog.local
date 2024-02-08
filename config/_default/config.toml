@@ -9,6 +9,8 @@ theme = ["github.com/chipzoller/hugo-clarity"]
 disqusShortname = ""
 enableEmoji = true
 
+enableRobotsTXT = true
+
 # Custom CSS
 customCSS = ["sass/_override.sass"]
 
