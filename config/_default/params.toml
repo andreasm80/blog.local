@@ -5,11 +5,11 @@ enableSearch = true
 # socials
 #twitter = "@andreasmarqv"
 #largeTwitterCard = false # set to true if you want to show a large twitter card image. The default is a small twitter card image
-introDescription = "This blog is a WIP, sometimes I just throw up some topics for myself to remember to be finished later. Stay tuned..."
+introDescription = "This is Andreas Marqvardsen's blog, a Lead Solution Engineer at VMware by Broadcom. This blog focuses on Kubernetes, Kubernetes infrastructure such as networking and security and stuff he finds interesting."
 introURL = "about/" # set the url for the 'read more' button below the introDescription, or set to false to not show the button
-description = "A blog about NSX, Tanzu and stuff I find interesting" # Set your site's meta tag (SEO) description here. Alternatively set this description in your home page content file e.g. content/_index.md. Whatever is set in the latter will take precedence.
-keywords = ["nsx", "vmware", "kubernetes"] # Set your site's meta tag (SEO) keywords here. Alternatively set these in your home page content file e.g. content/_index.md. Whatever is set in the latter.
-showShare = false # Uncomment to not show share buttons on each post. Also available in each post's front matter.
+description = "A blog about networking, Kubernetes and stuff I find interesting" # Set your site's meta tag (SEO) description here. Alternatively set this description in your home page content file e.g. content/_index.md. Whatever is set in the latter will take precedence.
+keywords = ["nsx", "vmware", "networking", "infrastucture", "lodbalancing", "tanzu", "security", "cni", "antrea", "cilium", "kubernetes"] # Set your site's meta tag (SEO) keywords here. Alternatively set these in your home page content file e.g. content/_index.md. Whatever is set in the latter.
+showShare = true # Uncomment to not show share buttons on each post. Also available in each post's front matter.
 toc = true
 #enableEmoji = true
 # Google analytics Id
