@@ -28,7 +28,13 @@ comment: false # Disable comment if false.
 
 # Introduction:
 
-What if I only have 1 NSX manager cluster and 1 Avi controller cluster managing several several vSphere clusters, and dont want to install additional NSX/Avi manager clusters, but I want to deploy  2 or more vSphere with Tanzu/Supervisor deployments? And I also want to use the new integration between NSX and Avi where I can combine NSX as the networking stack for vSphere with Tanzu and Avi as the Load Balancer? To add a bit more complexity to it I also want to have separate AVI Service Engines managing my different Supervisor Cluster API endpoints, in other words I do not want them to share the Service Engines between different Supervisor installations. In this post I will go through how to accomplish this. Including some explanations how the components involved makes the decision which NSX cloud in Avi to use for the respective Supervisor Cluster. 
+Since vSphere 8 U2 it is possible to combine NSX and Avi as the networking and loadbalancing stack for vSphere with Tanzu. For more information on how to configure that head over to [this post](https://blog.andreasm.io/2023/09/23/vsphere-with-tanzu-8-u2-using-nsx-and-nsx-advanced-loadbalancer/). In that post I also go through how this new integration works. But I only use one vSphere with Tanzu deployment in that post, meaning only a single Supervisor cluster is deployed. I have been contacted several times recently regarding how this new integration functions when planning to deploy multiple Supervisors (more than one vSphere cluster where vSphere with Tanzu is enabled on), while using the same NSX manager and Avi controller for all Supervisor clusters.    
+
+Some context to these requests and before I dive into the actual configurations and deployment:
+
+The plan is to have vSphere with Tanzu enabled on two or more vSphere clusters, but I dont want them to share any Avi Service Engines or NSX Edge clusters. The only thing they have in common is that they are being managed by the same vCenter Server, NSX manager and Avi controller. The keyword is as much separation on compute and network as possible where sharing some common management instances like NSX manager cluster, vCenter Server and Avi controller cluster.
+
+In this post I will go through how to accomplish this, including some explanations how the components involved makes the decision which NSX cloud in Avi to use for the respective Supervisor Cluster. 
 My lab consist of the following:
 
 - 1x NSX manager cluster, managing both my vSphere clusters
@@ -36,7 +42,7 @@ My lab consist of the following:
 - 2x vSphere clusters, Supervisor installed on both of them 
 - 1x Avi controller cluster
 
-The plan is to have vSphere with Tanzu enabled on both my vSphere clusters, but I dont want them to share any Avi Service Engines or NSX Edge clusters. The only thing they have in common is that they are being managed by the same vCenter Server, NSX manager and Avi controller. So lets dig in to it and see how that goes. The keyword is as much separation on compute and network as possible where sharing some common management instances like NSX manager cluster, vCenter Server and Avi controller cluster.
+
 
 *To make this post a bit shorter I am skipping all the necessary requirements/preparation/installation of NSX and Avi and will just refer to my previous posts how to do that:*
 
@@ -52,13 +58,19 @@ Before jumping in, this is a diagram of what I want to end up with:
 
 
 
-
+So lets dig in to it and see how that goes.
 
 ## Preparations in NSX
 
-In NSX the important part is to configure each vSphere Clusters that will have their own instance of vSphere with Tanzu or Supervisor with their own unique NSX Overlay Transportzone.
+In NSX the important part is to configure each vSphere cluster that will have their own instance of vSphere with Tanzu with their own unique NSX Overlay Transport Zone. This is a requirement for Avi to create dedicated Service Engine groups which will ultimately serve my two vSphere with Tanzu instances.
 
-So in my lab I have two vSphere Cluster, both configured with NSX, but using two different NSX Overlay Transportzone. It does not matter if they are utilizing the same TEP VLAN, but the logical boundary, as an overlay transportzone is, is limited to only involve the clusters isolated. Like this:
+> **Transport Zone**: Collection of transport nodes that defines the maximum span for logical switches. A transport zone represents a set of similarly provisioned hypervisors and the logical switches that connect VMs on those hypervisors. It also has been registered with the NSX management plane and has NSX modules installed. For a hypervisor host or NSX Edge to be part of the NSX overlay, it must be added to the NSX transport zone.
+
+So in my lab I have two vSphere clusters, both configured with NSX, but using two different NSX Overlay Transport Zones. It does not matter if they are utilizing the same TEP VLAN (*defined in your host uplink profile), but the logical boundary, as an Overlay Transport Zone is, is limited to only involve the clusters isolated.
+
+> (*) **Tunnel Endpoint (TEP) Profile**: Each transport node has a Tunnel Endpoint (TEP) responsible for encapsulating the overlay VM traffic inside a VLAN header and routing the packet to a destination TEP for further processing. TEPs are the source and destination IP addresses used in the external IP header to identify the ESXi hosts that originate and end the NSX encapsulation of overlay frames. Traffic can be routed to another TEP on a different host or the NSX Edge gateway to access the physical network. TEPs create a GENEVE tunnel between the source and destination endpoints.
+
+ Like this:
 
 ![two-overlay-transportzones](images/image-20240409140425099.png)
 
@@ -70,11 +82,19 @@ In my NSX Environment I have it configured like this.
 
 Using two different Transport Node Profiles:
 
+
+
 ![tn-profile](images/image-20240409140633109.png)
 
 ![tn-profile-2](images/image-20240409140708087.png)
 
-Where in the respective transport node profiles two different overlay transport zones have been defined:
+> **Transport Node Profile**: This specifies the common transport parameters for network virtualization components in an NSX environment. It includes configurations for both the overlay and underlay network settings, such as N-VDS (NSX Virtual Distributed Switch) settings, teaming policies, and uplink profiles. Transport profiles are used to streamline the deployment and management of transport nodes by applying a consistent set of networking settings, enhancing the network's efficiency and reliability.
+
+
+
+Where in the respective Transport Node Profiles two different Overlay Transport Zones have been defined:
+
+
 
 Cluster-1:
 
@@ -86,13 +106,15 @@ Cluster-2:
 
 ### NSX Edge Clusters
 
-For many customers they have reasons to separate not only the compute part (different vSphere clusters for different departments, environments, customers (tenancy) but also network separation). So I decided to deploy a dedicated Edge cluster pr vSphere compute cluster. So I am in full controll of the traffic coming in and out of my different vSphere cluster, not only logical but also physical. What I end up with is one Tier-0 router pr vSphere Cluster/Supervisor Cluster (at a minimum as vSphere with Tanzu supports multiple Tier-0 routers even in the same Supervisor Cluster see this [post](https://blog.andreasm.io/2023/04/14/tanzu-with-vsphere-and-different-tier-0s/) how to configure vSphere with Tanzu using different Tier-0 routers).
+For many customers they have reasons to separate not only the compute part (different vSphere clusters for different departments, environments and customers (tenancy)) but also network separation. So I decided to deploy a dedicated Edge cluster per vSphere compute cluster. So I am in full control of the traffic coming in and out of my different vSphere clusters, not only logical but also physical. What I end up with is one Tier-0 router per vSphere cluster/Supervisor cluster. 
+
+*vSphere with Tanzu supports multiple Tier-0 routers even in the same Supervisor cluster see this [post](https://blog.andreasm.io/2023/04/14/tanzu-with-vsphere-and-different-tier-0s/) how to configure vSphere with Tanzu using different Tier-0 routers.*
 
 So here is my network topology in NSX:
 
 ![topology](images/image-20240409143947921.png)
 
-In the picture above, I have my Cluster 1 on the left where the **sfo-m01-ec01-to-gw01** is managing ingress and egress for my NSX overlay networks and on the right the **workload-tier-0** managing ingress and egress for my Cluster-2. 
+In the picture above, I have my "Cluster-1" on the left where the Tier-0 **sfo-m01-ec01-to-gw01** is managing ingress and egress for my NSX overlay networks and on the right the Tier-0 ""**workload-tier-0**"" managing ingress and egress for my "Cluster-2". 
 
 Thats it for the NSX preparations. Next up is the Avi preparations.
 
@@ -100,7 +122,7 @@ Thats it for the NSX preparations. Next up is the Avi preparations.
 
 ## AVI preparations
 
-In Avi, I need to configure two NSX clouds, using the same NSX manager cluster, but for Avi it is two different clouds. **The reason for that is because the Supervisor installation is using the NSX Overlay Transportzone as an identifier** for which NSX cloud to use when it sends request to Avi to create a Virtual Service to provide my K8s Api Endpoint. 
+In Avi, I need to configure two NSX clouds using the same NSX manager cluster, but for Avi it will be considered as two different clouds. **The reason for that is because the Supervisor installation is using the NSX Overlay Transport Zone as an identifier** for which NSX cloud to use when it sends requests to Avi to create a Virtual Service to provide my K8s api endpoints. 
 
 ### AVI Clouds
 
@@ -118,7 +140,7 @@ If we take a quick peek inside both of them, starting with the *nsx-m01* cloud, 
 
 
 
-The fields in red are common settings between the two clouds. The other values are unique. Under DNS Profile one could also define a custom DNS profile ofcourse, I just went with the same DNS profile in my lab. It would make sense to have two different DNS profiles also to keep the red line of separation complete.
+The fields in red are common settings between the two clouds. The other values are unique. notice the different Transport Zones which should match the Transport Zone for each respective cluster. Under DNS Profile one could also define a custom DNS profile of course, I just went with the same DNS profile in my lab. It would make sense to have two different DNS profiles also to keep the red line of separation complete.
 
 **nsx-m01-2**
 
@@ -128,7 +150,7 @@ The fields in red are common settings between the two clouds. The other values a
 
 ### Avi Cloud Resource - Service Engine Group and Networks
 
-Under Avi Cloud Resources I have defined the Default Service Engine group according to the vSphere Clusters/NSX clouds they belong to. Cloud **nsx-m01** is using cluster **sfo-m01-cl01** so I have configured the Default SE group accordingly so they take SE placement into consideration. Meaning the SEs will be placed in the right vSphere Cluster. This is important as the Default Service Engine Group will be used as a template for vSphere with Tanzu to create a Service Engine group.
+Under Avi Cloud Resources I have defined the Default Service Engine group according to the vSphere Clusters/NSX clouds they belong to. Cloud **nsx-m01** is using cluster **sfo-m01-cl01** so I have configured the Default SE group accordingly so they take SE placement into consideration. Meaning the SEs will be placed in the right vSphere Cluster. This is important as the Default Service Engine Group will be used as a template for vSphere with Tanzu to create the dedicated Service Engine group per cluster.
 
 **Cloud nsx-m01**
 
