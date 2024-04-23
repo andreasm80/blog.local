@@ -405,7 +405,130 @@ data:
 
 With AntreaProxy all enabled kube-proxy is not automatically removed (if one have a Kubernetes cluster with kube-proxy deployed). So in a cluster with kube-proxy already running, there is a couple of steps that needs to be done to remove kube-proxy and enable AntreaProxy all. 
 
-If one enables AntreaProxy:all and Kube-Proxy is still there, Kube-Proxy will take precedence. There is two ways to delete kube-proxy, during cluster bootstrap or post cluster bootstrap. Below I will go through how to delete kube-proxy on a already running cluster with kube-proxy already deployed. 
+If one enables AntreaProxy:all and Kube-Proxy is still there, Kube-Proxy will take precedence. There is two ways to delete kube-proxy, during cluster bootstrap (`kubeadm init --skip-phases=addon/kube-proxy`) or post cluster bootstrap. Below I will go through how to delete kube-proxy on a already running cluster with kube-proxy already deployed. 
+
+I will follow the offical documentation from Antrea Github repo [here](kubectl -n kube-system delete ds/kube-proxy):
+
+```bash
+# Delete the kube-proxy DaemonSet
+andreasm@linuxmgmt01:~/prod-cluster-2$ kubectl -n kube-system delete ds/kube-proxy
+daemonset.apps "kube-proxy" deleted
+# Delete the kube-proxy ConfigMap to prevent kube-proxy from being re-deployed
+# by kubeadm during "upgrade apply". This workaround will not take effect for
+# kubeadm versions older than v1.19 as the following patch is required:
+# https://github.com/kubernetes/kubernetes/pull/89593
+andreasm@linuxmgmt01:~/prod-cluster-2$ kubectl -n kube-system delete cm/kube-proxy
+configmap "kube-proxy" deleted
+# Delete existing kube-proxy rules; there are several options for doing that
+# Option 1 (if using kube-proxy in iptables mode), run the following on each Node:
+iptables-save | grep -v KUBE | iptables-restore
+# This option is not valid for me as I use IPVS
+# Option 2 (any mode), restart all Nodes # I chose this option
+# Option 3 (any mode), run the following on each Node:
+kube-proxy --cleanup 
+# You can create a DaemonSet to easily run the above command on all Nodes, using
+# the kube-proxy container image
+```
+
+
+
+After the steps above I will need to edit the Antrea ConfigMap with the following:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: antrea-config
+  namespace: kube-system
+data:
+  antrea-agent.conf: |
+    kubeAPIServerOverride: "https://k8s-dev-cluster-3.domain.int"
+    antreaProxy:
+      proxyAll: true
+```
+
+Last step is to restart the Antrea controller and Antrea agents and see if they come up again.
+
+```bash
+k rollout restart -n kube-system deployment/antrea-controller
+k delete pods -n kube-system -l component=antrea-agent
+
+```
+
+```bash
+andreasm@linuxmgmt01:~/prod-cluster-2$ k get pods -A
+NAMESPACE     NAME                                        READY   STATUS    RESTARTS        AGE
+kube-system   antrea-agent-7pc6r                          2/2     Running   0               37s
+kube-system   antrea-agent-b6c58                          2/2     Running   0               37s
+kube-system   antrea-agent-pj62z                          2/2     Running   0               37s
+kube-system   antrea-agent-rcckh                          2/2     Running   0               37s
+kube-system   antrea-agent-tftv5                          2/2     Running   0               37s
+kube-system   antrea-agent-twpfs                          2/2     Running   0               38s
+kube-system   antrea-controller-6bd6b9569c-vhx7n          1/1     Running   0               50s
+```
+
+No kube-proxy pods:
+
+```bash
+andreasm@linuxmgmt01:~/prod-cluster-2$ k get pods -A
+NAMESPACE     NAME                                        READY   STATUS    RESTARTS        AGE
+kube-system   antrea-agent-7pc6r                          2/2     Running   0               72s
+kube-system   antrea-agent-b6c58                          2/2     Running   0               72s
+kube-system   antrea-agent-pj62z                          2/2     Running   0               72s
+kube-system   antrea-agent-rcckh                          2/2     Running   0               72s
+kube-system   antrea-agent-tftv5                          2/2     Running   0               72s
+kube-system   antrea-agent-twpfs                          2/2     Running   0               73s
+kube-system   antrea-controller-6bd6b9569c-vhx7n          1/1     Running   0               85s
+kube-system   coredns-77f7cc69db-jnh6m                    1/1     Running   1 (9m36s ago)   21h
+kube-system   coredns-77f7cc69db-wb5qs                    1/1     Running   1 (9m3s ago)    21h
+kube-system   dns-autoscaler-8576bb9f5b-5n7hv             1/1     Running   1 (9m36s ago)   21h
+kube-system   kube-apiserver-k8s-cp-vm-1-cl-03            1/1     Running   3 (8m55s ago)   21h
+kube-system   kube-apiserver-k8s-cp-vm-2-cl-03            1/1     Running   2 (9m36s ago)   21h
+kube-system   kube-apiserver-k8s-cp-vm-3-cl-03            1/1     Running   2 (9m3s ago)    21h
+kube-system   kube-controller-manager-k8s-cp-vm-1-cl-03   1/1     Running   4 (9m16s ago)   21h
+kube-system   kube-controller-manager-k8s-cp-vm-2-cl-03   1/1     Running   4 (9m36s ago)   21h
+kube-system   kube-controller-manager-k8s-cp-vm-3-cl-03   1/1     Running   4 (9m3s ago)    21h
+kube-system   kube-scheduler-k8s-cp-vm-1-cl-03            1/1     Running   3 (8m45s ago)   21h
+kube-system   kube-scheduler-k8s-cp-vm-2-cl-03            1/1     Running   2 (9m36s ago)   21h
+kube-system   kube-scheduler-k8s-cp-vm-3-cl-03            1/1     Running   3 (9m3s ago)    21h
+```
+
+
+
+No "kube-ipvs0" interface:
+
+```bash
+ubuntu@k8s-node-vm-1-cl-03:~$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether bc:24:11:f4:ee:ef brd ff:ff:ff:ff:ff:ff
+    altname enp0s18
+    inet 10.160.1.35/24 brd 10.160.1.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::be24:11ff:fef4:eeef/64 scope link
+       valid_lft forever preferred_lft forever
+3: ovs-system: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether ee:a3:e7:de:7d:3c brd ff:ff:ff:ff:ff:ff
+4: genev_sys_6081: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 65000 qdisc noqueue master ovs-system state UNKNOWN group default qlen 1000
+    link/ether e6:09:e7:ee:1f:fc brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::64c1:4aff:fe4d:f8b2/64 scope link
+       valid_lft forever preferred_lft forever
+5: antrea-gw0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/ether 62:78:99:77:56:60 brd ff:ff:ff:ff:ff:ff
+    inet 10.40.68.1/24 brd 10.40.68.255 scope global antrea-gw0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::6078:99ff:fe77:5660/64 scope link
+       valid_lft forever preferred_lft forever
+6: antrea-egress0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN group default
+    link/ether 3e:77:85:e2:e2:1a brd ff:ff:ff:ff:ff:ff
+```
+
+
 
 Now with no kube-proxy and AntreaProxy all enabled we can do some more magic.
 
@@ -437,7 +560,7 @@ ubuntu@k8s-node-vm-1-cl-02:~$ ip addr
        valid_lft forever preferred_lft forever # IP from my ExternalIPPool
 ```
 
- And here one can clearly see IPVS is handling this IP and is available on all nodes. So creating a static route and pointing to any of my Kubernetes nodes will get me the service. 
+ And here one can clearly see IPVS is handling this IP and is available on all nodes (if using kube-proxy with IPVS). So creating a static route and pointing to any of my Kubernetes nodes will get me to the service. 
 
 
 
@@ -472,13 +595,13 @@ data:
 
 
 
-To actually see some of that under the hood, there are a couple of commands that can be ran.
+Below I will go through ServiceExternalIP using kube-proxy and only AntreaProxy
 
 
 
-### Kube-Proxy using IPVS (IP Virtual Server)
+### ServiceExternalIP using Kube-Proxy and IPVS (IP Virtual Server)
 
-In this post I am using IPVS and not IPTables so I will just focus on IPVS. When using kube-proxy with IPVS kube-proxy sets up and manage the IPVS rules. IPVS residing in the Linux Kernel is then responsible for directing incoming traffic to backend pods, as in my digram below the Yelb-UI pods. 
+In this section I am on a cluster using kube-proxy with IPVS (not IPTables). When using kube-proxy with IPVS kube-proxy sets up and manage the IPVS rules. IPVS residing in the Linux Kernel is then responsible for directing incoming traffic to backend pods, as in my digram below the Yelb-UI pods. 
 
 
 
@@ -547,11 +670,41 @@ TCP  k8s-node-vm-1-cl-02:http rr
 
 
 
+```bash
+# All IPs involved in the yelb-ui service, pod, service etc
+ubuntu@k8s-node-vm-3-cl-02:~$ sudo ipvsadm -L -n
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  10.30.63.48:80 rr
+  -> 10.30.68.3:80                Masq    1      0          0
+TCP  10.30.69.1:31925 rr
+  -> 10.30.68.3:80                Masq    1      0          0
+TCP  10.160.1.27:31925 rr
+  -> 10.30.68.3:80                Masq    1      0          0
+TCP  10.169.1.40:80 rr
+  -> 10.30.68.3:80                Masq    1      0          0
+UDP  10.30.0.3:53 rr
+  -> 10.30.65.3:53                Masq    1      0          1
+  -> 10.30.66.2:53                Masq    1      0          1
+```
+
+```bash
+andreasm@linuxmgmt01:~/prod-cluster-2$ k get pods -n yelb -owide
+NAME                            READY   STATUS    RESTARTS      AGE    IP           NODE                  NOMINATED NODE   READINESS GATES
+redis-server-84f4bf49b5-lstpm   1/1     Running   2 (4d ago)    71d    10.30.67.4   k8s-node-vm-1-cl-02   <none>           <none>
+yelb-appserver-6dc7cd98-4c6s5   1/1     Running   5 (98m ago)   71d    10.30.68.4   k8s-node-vm-2-cl-02   <none>           <none>
+yelb-db-84d6f6fc6c-dlp68        1/1     Running   5 (98m ago)   71d    10.30.68.2   k8s-node-vm-2-cl-02   <none>           <none>
+yelb-ui-f544fc74f-vm2b2         1/1     Running   1 (98m ago)   123m   10.30.68.3   k8s-node-vm-2-cl-02   <none>           <none>
+```
 
 
-Antrea has its own proxy remember... 
+
+Next chapter will cover how this looks with AntreaProxy all. 
 
 ### ServiceExternalIP using only AntreaProxy. 
+
+
 
 Lets go through how this works
 
