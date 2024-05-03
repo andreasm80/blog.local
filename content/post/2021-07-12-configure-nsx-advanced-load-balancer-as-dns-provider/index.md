@@ -15,7 +15,7 @@ tags:
 
 NSX ALB has a very useful feature built-in, to function as DNS server for your domains defined in your NSX-ALB environment. Meaning that all host-records will be automatically resolved by fqdn as soon as the service is created.
 
-If you have followed my other post about how to configure the AKO (Avi Kubernetes Operator) [http://yikes.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/](http://yikes.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/) you are familiar with creating DNS profiles in NSX-ALB. The first step in configuring NSX-ALB as DNS provider is to configure one or more domain names in NSX-ALB.  
+If you have followed my other post about how to configure the AKO (Avi Kubernetes Operator) [here](http://blog.andreasm.io/2020/10/08/ako-with-antrea-on-native-k8s-cluster/) you are familiar with creating DNS profiles in NSX-ALB. The first step in configuring NSX-ALB as DNS provider is to configure one or more domain names in NSX-ALB.  
 Log in to the NSX-ALB controller GUI: -> Templates -> IPAM/DNS Profiles  
 Create a profile (if you dont already have one) give it a name and add one or more domain names:  
 

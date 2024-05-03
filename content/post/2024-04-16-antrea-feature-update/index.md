@@ -1,6 +1,6 @@
 ---
 author: "Andreas M"
-title: "Antrea Feature Update"
+title: "Exploring some Antrea Features"
 date: 2024-04-16T09:25:28+02:00 
 description: "A walkthrough on new and some older features in Antrea"
 draft: false 
@@ -29,18 +29,68 @@ In this post, I will highlight a couple of Antrea features that I'd like to disc
 - AntreaProxy
 - ServiceExternalIP
 - L7FLowExporter
-- Node Policy
 - NodeNetwork Policy
 - ExternalNode Policy
 - TopologyAwareHints
 - LodaBalancerModeDSR
 - TrafficControl
 
-As usual, head over to the official Antrea [documentation](https://antrea.io/docs/v1.15.1/) and Antrea [Github](https://github.com/antrea-io/antrea/blob/main/docs/feature-gates.md) repo for more information. This post will focus on the upstream version v1.15.1 of Antrea available on Github.
+As usual, head over to the official Antrea [documentation](https://antrea.io/docs/v1.15.1/) and Antrea [Github](https://github.com/antrea-io/antrea/blob/main/docs/feature-gates.md) repo for more information. This post will focus on the upstream version v1.15.1 of Antrea available on Github, my Kubernetes clusters will also be using upstream Kubernetes version 1.28.5+ running on Ubuntu nodes.
+
+Antrea FeatureGates is enabled/disabled using your Helm value file, or editing the Antrea ConfigMap. To quickly get a status over the feature gates, use the *antctl* cli tool:
+
+```bash
+andreasm@linuxmgmt01:~$ antctl get featuregates
+Antrea Agent Feature Gates
+FEATUREGATE                     STATUS       VERSION
+AntreaIPAM                      Disabled     ALPHA
+AntreaPolicy                    Enabled      BETA
+AntreaProxy                     Enabled      GA
+CleanupStaleUDPSvcConntrack     Disabled     ALPHA
+Egress                          Enabled      BETA
+EgressSeparateSubnet            Enabled      ALPHA
+EgressTrafficShaping            Disabled     ALPHA
+EndpointSlice                   Enabled      GA
+ExternalNode                    Disabled     ALPHA
+FlowExporter                    Disabled     ALPHA
+IPsecCertAuth                   Disabled     ALPHA
+L7FlowExporter                  Disabled     ALPHA
+L7NetworkPolicy                 Disabled     ALPHA
+LoadBalancerModeDSR             Disabled     ALPHA
+Multicast                       Enabled      BETA
+Multicluster                    Disabled     ALPHA
+NetworkPolicyStats              Enabled      BETA
+NodeNetworkPolicy               Disabled     ALPHA
+NodePortLocal                   Enabled      GA
+SecondaryNetwork                Disabled     ALPHA
+ServiceExternalIP               Enabled      ALPHA
+SupportBundleCollection         Disabled     ALPHA
+TopologyAwareHints              Enabled      BETA
+Traceflow                       Enabled      BETA
+TrafficControl                  Disabled     ALPHA
+
+Antrea Controller Feature Gates
+FEATUREGATE                 STATUS       VERSION
+AdminNetworkPolicy          Disabled     ALPHA
+AntreaIPAM                  Disabled     ALPHA
+AntreaPolicy                Enabled      BETA
+Egress                      Enabled      BETA
+IPsecCertAuth               Disabled     ALPHA
+L7NetworkPolicy             Disabled     ALPHA
+Multicast                   Enabled      BETA
+Multicluster                Disabled     ALPHA
+NetworkPolicyStats          Enabled      BETA
+NodeIPAM                    Enabled      BETA
+ServiceExternalIP           Enabled      ALPHA
+SupportBundleCollection     Disabled     ALPHA
+Traceflow                   Enabled      BETA
+```
+
+
 
 ## Antrea Egress using VLAN - new in Antrea v.1.15.0
 
-I have already covered Antrea Egress in another post [here](https://blog.andreasm.io/2023/02/20/antrea-egress/), where I use Daemonset to install FRR on the worker nodes. This allowed me to advertise the Egress addresses using BGP using a different subnet than the nodes themselves. Back then Antrea did not have support for Egress subnets in different network than the nodes. Now, in Antrea [v1.15.0](https://github.com/antrea-io/antrea/releases/tag/v1.15.0) there is support in Antrea Egress to use different subnets by using VLAN. This is a welcome update in Antrea.  
+I have already covered Antrea Egress in another post [here](https://blog.andreasm.io/2023/02/20/antrea-egress/), where I use Daemonset to install FRR on the worker nodes. This allowed me to advertise the Egress addresses using BGP using a different subnet than the nodes themselves. Back then Antrea did not have support for Egress subnets in different network than the nodes. Now, in Antrea [v1.15.0](https://github.com/antrea-io/antrea/releases/tag/v1.15.0) there is support in Antrea Egress to use different subnets. This is a welcome update in Antrea.  
 
 Before configuring Antrea Egress, the default behaviour for a pod when "egressing" or communicating externally outside its Kubernetes cluster is that its source address (POD CIDR) is translated using SNAT to the Kubernetes node the pod is currently running on. See below diagram:
 
@@ -48,11 +98,11 @@ Before configuring Antrea Egress, the default behaviour for a pod when "egressin
 
 Each time a pod needs to communicate outside its k8s node it will get the IP address from the node it is currently residing on.
 
-With Antrea Egress I can specify a specific IP address from a pool I confgure for the PODS to use (for the ones I need Egress configured on). Before Antrea v1.15.0 I could only use the same subnet as the Kubernetes nodes were using, meaning I had to reserve a range inside that subnet for Egress usage to avoid IP overlap, unless I did some DIY stuff like static routes or as in my post [here](https://blog.andreasm.io/2023/02/20/antrea-egress/). Now with Antrea v1.15.0 I can achieve something like this:
+With Antrea Egress I can specify a specific IP address from a pool (ExternalIPPool) I confgure for the pods to use (for the ones I need Egress configured on). Before Antrea v1.15.0 I could only use the same subnet as the Kubernetes nodes were using, meaning I had to reserve a range in that subnet for Egress usage to avoid IP overlap, unless I did some DIY stuff like static routes or as in my post [here](https://blog.andreasm.io/2023/02/20/antrea-egress/). Now with Antrea v1.15.0 Antrea supports Egress on a different subnet, it even supports using a optional VLAN tag like this:
 
 ![egress-vlan](images/image-20240417103628196.png)
 
-The last image illustrates Antrea Egress using the new option to use VLAN and specifying different subnets for my Egresses. In simple terms, what it does is creating a vlan interface on the nodes I decide to use as Egress nodes. Like this:
+I assign a VLAN tag in the ExternalIPPool which uses the same physical interface as the node itself is configured with, like eth0/ens18 etc). This require my node to be placed on a network that allows vlan trunks/in guest tagging, and allows me to easily separate the Egress subnets from the node subnet and specifying different subnets for my Egresses. In simple terms, what it does is creating a vlan interface on the nodes I decide to use as Egress nodes. Like this:
 
 ```bash
 11: antrea-ext.181@eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default
@@ -370,7 +420,7 @@ An illustration of what AntreaProxy handles when the feature gate AntreaProxy is
 
 ![antreaproxy-enabled](images/image-20240422103533076.png)
 
-
+*Stipulated lines illustrates the actual packet-flow, while the non-stipulated lines indicate which component being involved in the Kubernetes cluster to "prepare" for the forwarding of the packet from the yelb-ui pod to the yelb-app service.*
 
 The below diagrams explains what kube-proxy handles when the AntreaProxy is enabled:
 
@@ -381,6 +431,12 @@ The below diagrams explains what kube-proxy handles when the AntreaProxy is enab
 **External to service**
 
 ![external-to-service](images/image-20240422103643126.png)
+
+
+
+With both AntreaProxy and kube-proxy enabled at the same time we end up having two daemons with each their ruleset to forward traffic inside the Kubernetes cluster like this:
+
+![antproxy-kubeproxy](images/image-20240429085611322.png)
 
 
 
@@ -403,7 +459,7 @@ data:
       proxyAll: true
 ```
 
-With AntreaProxy all enabled kube-proxy is not automatically removed (if one have a Kubernetes cluster with kube-proxy deployed). So in a cluster with kube-proxy already running, there is a couple of steps that needs to be done to remove kube-proxy and enable AntreaProxy all. 
+With AntreaProxy all is enabled kube-proxy is not automatically removed (if one have a Kubernetes cluster with kube-proxy deployed). So in a cluster with kube-proxy already running, there is a couple of steps that needs to be done to remove kube-proxy and enable AntreaProxy all. 
 
 If one enables AntreaProxy:all and Kube-Proxy is still there, Kube-Proxy will take precedence. There is two ways to delete kube-proxy, during cluster bootstrap (`kubeadm init --skip-phases=addon/kube-proxy`) or post cluster bootstrap. Below I will go through how to delete kube-proxy on a already running cluster with kube-proxy already deployed. 
 
@@ -432,7 +488,7 @@ kube-proxy --cleanup
 
 
 
-After the steps above I will need to edit the Antrea ConfigMap with the following:
+After the steps above (icluding the restart of all nodes) I will need to edit the Antrea ConfigMap with the following:
 
 ```yaml
 kind: ConfigMap
@@ -530,17 +586,15 @@ ubuntu@k8s-node-vm-1-cl-03:~$ ip addr
 
 
 
-Now with no kube-proxy and AntreaProxy all enabled we can do some more magic.
-
-With that out of the way, lets continue on the Antrea features (which happen to involve AntreaProxy).
+With that out of the way, lets continue on the Antrea features.
 
 
 
-## Antrea ServiceExternalIP - from Antrea v1.5.x
+## Antrea ServiceExternalIP
 
 ServiceExternalIP is a feature in Antrea to provide external IP addresses for serviceType LoadBalancer. This feature is useful when there is no external/cloud/3rd party loadbalancer available to provide these external IP addresses. 
 
-Today ServiceExternalIP supports ip addresses allocated from the same subnet (L2) as the Kubernetes nodes, by reserving a range of addresses for this use. It also supports a different subnet (L3) than the Kubernetes nodes themselves but one have to define static routes (host routes x.x.x.x/32) in the underlaying router/gateway to one or several of the nodes in your Kubernetes Cluster.  After I apply a service using ServiceExternalIP all nodes will be aware of this IP address. 
+Today ServiceExternalIP supports ip addresses allocated from the same subnet (L2) as the Kubernetes nodes, by reserving a range of addresses for this use. It also supports a different subnet (L3) than the Kubernetes nodes themselves but one have to define static routes (host routes x.x.x.x/32) in the underlaying router/gateway to one or several of the nodes in your Kubernetes Cluster.  After I apply a service using ServiceExternalIP all nodes will be aware of this IP address and handle requests to the service regardless of which host receives them. 
 
 ```bash
 # worker node 2
@@ -560,7 +614,9 @@ ubuntu@k8s-node-vm-1-cl-02:~$ ip addr
        valid_lft forever preferred_lft forever # IP from my ExternalIPPool
 ```
 
- And here one can clearly see IPVS is handling this IP and is available on all nodes (if using kube-proxy with IPVS). So creating a static route and pointing to any of my Kubernetes nodes will get me to the service. 
+ And here one can see IPVS is handling this IP and is available on all nodes (if using kube-proxy with IPVS). So creating a static route and pointing to any of my Kubernetes nodes will get me to the service. 
+
+
 
 
 
@@ -601,13 +657,13 @@ Below I will go through ServiceExternalIP using kube-proxy and only AntreaProxy
 
 ### ServiceExternalIP using Kube-Proxy and IPVS (IP Virtual Server)
 
-In this section I am on a cluster using kube-proxy with IPVS (not IPTables). When using kube-proxy with IPVS kube-proxy sets up and manage the IPVS rules. IPVS residing in the Linux Kernel is then responsible for directing incoming traffic to backend pods, as in my digram below the Yelb-UI pods. 
+When using kube-proxy with IPVS kube-proxy sets up and manage the IPVS rules. IPVS residing in the Linux Kernel is then responsible for directing incoming traffic to backend pods, as in my digram below the Yelb-UI pods. 
 
 
 
 ![kube-proxy-ipvs](images/image-20240419131227703.png)
 
-Kube-proxy listens on incoming traffic, IPVS forwards the traffic to the corresponding backend-pods. 
+*Kube-proxy listens on incoming traffic, IPVS forwards the traffic to the corresponding backend-pods.*
 
 The service and corresponding endpoints:
 
@@ -704,26 +760,165 @@ Next chapter will cover how this looks with AntreaProxy all.
 
 ### ServiceExternalIP using only AntreaProxy. 
 
+Using ServiceExternalIP with only AntreaProxy there will be no IPVS, no kube-proxy involved. All rules will be configured in OVS. If there is no kube-proxy configured in the cluster there is no pre-reqs (as above) that needs to be done. To get some insight in how that looks I will dump some output below. 
+
+The service and the corresponding endpoints:
+
+```bash
+andreasm@linuxmgmt01:~$ k describe svc -n yelb yelb-ui
+Name:                     yelb-ui
+Namespace:                yelb
+Labels:                   app=yelb-ui
+                          tier=frontend
+Annotations:              service.antrea.io/external-ip-pool: service-external-ip-pool
+Selector:                 app=yelb-ui,tier=frontend
+Type:                     LoadBalancer
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.40.30.39
+IPs:                      10.40.30.39
+LoadBalancer Ingress:     10.160.1.40
+Port:                     <unset>  80/TCP
+TargetPort:               80/TCP
+NodePort:                 <unset>  31535/TCP
+Endpoints:                10.40.67.4:80,10.40.68.3:80,10.40.69.6:80
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   <none>
+```
+
+The pods representing the endpoints:
+
+```bash
+andreasm@linuxmgmt01:~$ k get pods -n yelb -owide
+NAME                            READY   STATUS    RESTARTS   AGE     IP           NODE                  NOMINATED NODE   READINESS GATES
+redis-server-84f4bf49b5-j6g8x   1/1     Running   0          5d22h   10.40.69.3   k8s-node-vm-3-cl-03   <none>           <none>
+yelb-appserver-6dc7cd98-wlflx   1/1     Running   0          5d22h   10.40.69.2   k8s-node-vm-3-cl-03   <none>           <none>
+yelb-db-84d6f6fc6c-qr2kv        1/1     Running   0          5d22h   10.40.67.2   k8s-node-vm-2-cl-03   <none>           <none>
+yelb-ui-f544fc74f-d84gd         1/1     Running   0          56s     10.40.69.6   k8s-node-vm-3-cl-03   <none>           <none>
+yelb-ui-f544fc74f-kvvht         1/1     Running   0          5d22h   10.40.67.4   k8s-node-vm-2-cl-03   <none>           <none>
+yelb-ui-f544fc74f-xqhrk         1/1     Running   0          56s     10.40.68.3   k8s-node-vm-1-cl-03   <none>           <none>
+```
+
+Output from IPVS:
+
+```bash
+ubuntu@k8s-node-vm-1-cl-03:~$ sudo ipvsadm -l
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+```
+
+So much empty.. 
+
+How does the OVS tables look like:
+
+```bash
+# endpoint pod 1:
+root@k8s-node-vm-1-cl-03:/# ovs-ofctl dump-flows br-int | grep 10.40.68.3
+ cookie=0x1010000000000, duration=433.630s, table=1, n_packets=4, n_bytes=168, idle_age=428, priority=200,arp,in_port=4,arp_spa=10.40.68.3,arp_sha=6e:4d:5b:e4:99:c9 actions=resubmit(,2)
+ cookie=0x1010000000000, duration=433.630s, table=4, n_packets=25, n_bytes=4443, idle_age=2, priority=200,ip,in_port=4,dl_src=6e:4d:5b:e4:99:c9,nw_src=10.40.68.3 actions=resubmit(,5)
+ cookie=0x1030000000000, duration=427.300s, table=12, n_packets=1, n_bytes=78, idle_age=10, priority=200,tcp,reg3=0xa284403,reg4=0x20050/0x7ffff actions=ct(commit,table=13,zone=65520,nat(dst=10.40.68.3:80),exec(load:0x1->NXM_NX_CT_MARK[4],move:NXM_NX_REG0[0..3]->NXM_NX_CT_MARK[0..3]))
+ cookie=0x1010000000000, duration=433.630s, table=17, n_packets=28, n_bytes=5264, idle_age=2, priority=200,ip,reg0=0x200/0x200,nw_dst=10.40.68.3 actions=mod_dl_src:62:78:99:77:56:60,mod_dl_dst:6e:4d:5b:e4:99:c9,resubmit(,19)
+ cookie=0x1030000000000, duration=427.300s, table=20, n_packets=0, n_bytes=0, idle_age=427, priority=190,ct_state=+new+trk,ip,nw_src=10.40.68.3,nw_dst=10.40.68.3 actions=ct(commit,table=21,zone=65520,exec(load:0x1->NXM_NX_CT_MARK[5],load:0x1->NXM_NX_CT_MARK[6]))
+# endpoint pod 2:
+root@k8s-node-vm-1-cl-03:/# ovs-ofctl dump-flows br-int | grep 10.40.67.4
+ cookie=0x1030000000000, duration=512942.550s, table=12, n_packets=18, n_bytes=1404, idle_age=65534, hard_age=65534, priority=200,tcp,reg3=0xa284304,reg4=0x20050/0x7ffff actions=ct(commit,table=13,zone=65520,nat(dst=10.40.67.4:80),exec(load:0x1->NXM_NX_CT_MARK[4],move:NXM_NX_REG0[0..3]->NXM_NX_CT_MARK[0..3]))
+```
 
 
-Lets go through how this works
+
+## L7FlowExporter - new in Antrea v.1.15.0
+
+FlowExport in Antrea is something I have covered previously [here](https://blog.andreasm.io/2023/06/01/managing-antrea-in-vsphere-with-tanzu/#flow-exporter---ipfix), but this time I would like to have a look at the new Layer7 FlowExport. Lets configure it and see some flows with Layer7 information. 
+
+To be able to use the L7FlowExporter and get the additional L7 flow information I need to enable the `L7FlowExporter` feature gate. So in my Antrea configMap:
+
+```yaml
+apiVersion: v1
+data:
+  antrea-agent.conf: |
+      L7FlowExporter: true      
+```
+
+Restart Antrea controller and agents:
+
+```bash
+andreasm@linuxmgmt01:~$ k edit configmaps -n kube-system antrea-config
+configmap/antrea-config edited
+andreasm@linuxmgmt01:~$ k rollout restart -n kube-system deployment/antrea-controller
+deployment.apps/antrea-controller restarted
+andreasm@linuxmgmt01:~$ k delete pods -n kube-system -l component=antrea-agent
+pod "antrea-agent-4wtgw" deleted
+pod "antrea-agent-8gjvw" deleted
+pod "antrea-agent-h72qd" deleted
+pod "antrea-agent-lg52n" deleted
+pod "antrea-agent-z8knw" deleted
+pod "antrea-agent-zf9l6" deleted
+```
+
+To further enable the L7 flow information I need to annotate either my pods or a whole namespace with the following key: `visibility.antrea.io/l7-export=X` the values can be ìngress, egress or both as it depends on which direction I want the L7 flow information. In the example below I will annotate my Ubuntu pod using the value `both`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    visibility.antrea.io/l7-export: both
+  name: ubuntu-20-04
+  
+# or just annotate the pod directly
+k annotate pod -n egress ubuntu-20-04-59d474f9df-dv9ms visibility.antrea.io/l7-export=both
+```
+
+Let see what kind of information I get when I try to access a web page using HTTP from the Ubuntu pod itself. 
+
+I will use Theia as my tool to receive and visualize my IPFIX flows, I have already covered Theia [here](https://blog.andreasm.io/2023/06/01/managing-antrea-in-vsphere-with-tanzu/#theia).
+
+{{% notice info "Info" %}}
+
+When enabling the L7FlowExport the current Theia installation does not have the correct columns in place in the Clickhouse DB leading to FlowAggregator pod failing. It will complain about the missing columns. The following tables *default.flows* and *default.flows_local* needs to add the following columns:
+
+* appProtocolName
+* httpVals
+* egressNodeName
+
+Inside the chi-clickhouse-clickhouse-0-0-0 pod execute the following:
+
+root@chi-clickhouse-clickhouse-0-0-0:/# clickhouse-client
+
+chi-clickhouse-clickhouse-0-0-0.chi-clickhouse-clickhouse-0-0.flow-visibility.svc.cluster.local :) ALTER TABLE default.flows ADD COLUMN appProtocolName String;
+
+Repeat for the other two columns, in both tables
+
+{{% /notice %}}
+
+Screenshot from the Grafana dashboard:
+
+![http-flow-information](images/image-20240503134419288.png)
+
+I can see the HTTP protocol and the httpVals column is displaying this information:
+
+```
+{"0":{"hostname":"www.vg.no","url":"/","http_user_agent":"curl/7.68.0","http_content_type":"","http_method":"GET","protocol":"HTTP/1.1","status":301,"length":0}}
+
+```
+
+I have remove a lot of columns in the screenshot above for clarity. For more information on Flow-Export head over [here](https://antrea.io/docs/v2.0.0/docs/network-flow-visibility/#flow-exporter) and [here](https://github.com/antrea-io/antrea/blob/main/docs/network-flow-visibility.md).
 
 
 
-Using different subnets, challenge when active node goes down. Static routes failover. What about failover in general?
+## Node NetworkPolicy and ExternalNode Policy
 
-Using same L2 subnet as the nodes, failover will be handled automatically as it will broadcast the ARP? 
+In this section I will have a look at two features that makes it possible to secure the Kubernetes nodes themselves using Antrea and external nodes, not being a Kubernetes node but a VM outside of the Kubernetes cluster. There can be many usecases for such a feature. If there is no physical firewall in between the segments or the nodes, still we need to enforce some kind of security to restrict certain lateral movement between nodes and or other VMs or bare-metal servers in the environment. 
 
-Lets try
-
-
-
-
-
-
+ 
 
 
 
 Kyverno
 
-Loadbalancer using VLAN?
+
+
+Who said Networking in Kubernetes wasn't fun, right? 
+

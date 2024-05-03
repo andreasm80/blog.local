@@ -22,7 +22,7 @@ tags:
 - SSL = Secure Sockets Layer
 - AKO = Avi Kubernetes Operator (AVI now a VMware product called NSX Advanced Load Balancer)
 
-In one of my previous [posts](https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/) I wrote about how to install and configure AKO (Avi Kubernetes Operator) to use as Service type LoadBalancer.
+In one of my previous [posts](https://blog.andreasm.io/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/) I wrote about how to install and configure AKO (Avi Kubernetes Operator) to use as Service type LoadBalancer.
 
 This post will try to cover the basics of how to use NSX Advanced LoadBalancer by using AKO to handle our Ingress requests (ingress-controller).  
 For more information on Ingress in [Kubernetes](https://kubernetes.io/docs/concepts/services-networking/ingress/)

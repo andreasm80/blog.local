@@ -409,7 +409,7 @@ NEXT
 
 Select the size of your SVCP and give the SVCP API endpoint a name. This is something that can be registered in DNS when deployment is finished and we know the IP it gets. 
 
-Finish and wait. Its the same (waiting) process as explained [here](https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#enable-workload-management)
+Finish and wait. Its the same (waiting) process as explained [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#enable-workload-management)
 
 If everything goes well we should have a Supervisor cluster up and running in not that many minutes. 20-30 mins?
 
@@ -462,7 +462,7 @@ Then under Security -> Distributed Firewall there will be a new section:
 
 ### vSphere Namespace
 
-When Supervisor is up and running next step is to create a vSphere Namespace. I will go ahead and create that, but will also use the "override network" to create a separate network for this Namespace and also disable NAT as I want to use this cluster for Antrea Egress explained [here](https://yikes.guzware.net/2023/02/20/antrea-egress/).
+When Supervisor is up and running next step is to create a vSphere Namespace. I will go ahead and create that, but will also use the "override network" to create a separate network for this Namespace and also disable NAT as I want to use this cluster for Antrea Egress explained [here](https://blog.andreasm.io/2023/02/20/antrea-egress/).
 
 A vSphere is a construct in vSphere to adjust indidivual access settings/permissions, resources, network settings or different networks for IP separation. Click on Create Namespace and fill in relevant info. I am choosing to *Override Supervisor network settings*.
 
@@ -478,15 +478,15 @@ This option to adjust the networks in such a degree is a great flexibility with 
 
 
 
-After the vSphere Namespace has been created it is the same procedure to deploy TKC clusters regardless of using VDS or NSX. So instead of me repeating myself and saving the environment for digital ink I will refere to the process I have already described [here](https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#vsphere-namespace)
+After the vSphere Namespace has been created it is the same procedure to deploy TKC clusters regardless of using VDS or NSX. So instead of me repeating myself and saving the environment for digital ink I will refere to the process I have already described [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#vsphere-namespace)
 
 ## Configure Avi as Ingress controller (L7) with NSX as L4 LB
 
-When using Antrea as the CNI in your TKC cluster (default in vSphere with Tanzu) make sure to enable NodePortLocal. This gives much better control and flexibility, follow how [here](https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#antrea-nodeportlocal) and NodePortLocal explained [here](https://antrea.io/docs/v1.10.0/docs/node-port-local/)
+When using Antrea as the CNI in your TKC cluster (default in vSphere with Tanzu) make sure to enable NodePortLocal. This gives much better control and flexibility, follow how [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#antrea-nodeportlocal) and NodePortLocal explained [here](https://antrea.io/docs/v1.10.0/docs/node-port-local/)
 
 ### Configure NSX cloud in Avi - network preparations
 
-As this guide is using NSX as the underlaying networking platform instead of VDS as [this](https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/) article is using, we also have the benefit of configuring the NSX cloud in Avi instead of the vCenter Cloud. This cloud do come with some additional benefits like automatic Security Group creation in NSX, VIP advertisement through the already configured T0, SE placement dataplane/data network on separate network and VRF context. 
+As this guide is using NSX as the underlaying networking platform instead of VDS as [this](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/) article is using, we also have the benefit of configuring the NSX cloud in Avi instead of the vCenter Cloud. This cloud do come with some additional benefits like automatic Security Group creation in NSX, VIP advertisement through the already configured T0, SE placement dataplane/data network on separate network and VRF context. 
 
 But before we can consume the NSX cloud we need to configure it. Assuming the Avi controller has already been deployed and initial config is done (username and password, dns, etc) log in to the controller and head over to Administration -> User Credentials:
 
@@ -701,11 +701,11 @@ zone "you-have.your-domain.here" {
 
 ## AKO in TKC
 
-I have already deployed a TKC cluster, which is described [here](https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#create-workload-cluster)
+I have already deployed a TKC cluster, which is described [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#create-workload-cluster)
 
 Also make sure Antrea is configured with NodePortLocal as described also in the link above. 
 
-So for Avi to work as Ingress controller we need to deploy AKO (Avi Kubernetes Operator). I have also explained these steps [here](https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#configure-avi-as-ingress-controller-l7)
+So for Avi to work as Ingress controller we need to deploy AKO (Avi Kubernetes Operator). I have also explained these steps [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#configure-avi-as-ingress-controller-l7)
 the only difference is how the value.yaml for AKO is configured. Below is how I have configured it to work in my NSX enabled environment with explanations:
 
 ```yaml
@@ -819,9 +819,9 @@ Check the logs of the AKO pod if it encountered some issues or not by issuing th
 kubectl logs -n avi-system ako-o
 ```
 
-If there is no errors there its time to deploy a couple of test applications and the Ingress itself. This is already described [here](https://yikes.guzware.net/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#configure-avi-as-ingress-controller-l7---continue)
+If there is no errors there its time to deploy a couple of test applications and the Ingress itself. This is already described [here](https://blog.andreasm.io/2022/10/26/vsphere-8-with-tanzu-using-vds-and-avi-loadbalancer/#configure-avi-as-ingress-controller-l7---continue)
 
-Thats it. Now L7 is enabled on your TKC cluster with Avi as Ingress controller. There is much that can be configured with AKO CRDs. I will try to update my post [here](https://yikes.guzware.net/2022/10/23/we-take-a-look-at-the-ako-crds/) to go through the different possibilites. In the meantime much information is described [here](https://avinetworks.com/docs/ako/1.8/custom-resource-definitions/)
+Thats it. Now L7 is enabled on your TKC cluster with Avi as Ingress controller. There is much that can be configured with AKO CRDs. I will try to update my post [here](https://blog.andreasm.io/2022/10/23/we-take-a-look-at-the-ako-crds/) to go through the different possibilites. In the meantime much information is described [here](https://avinetworks.com/docs/ako/1.8/custom-resource-definitions/)
 
 
 

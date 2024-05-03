@@ -47,7 +47,7 @@ Now I had the necessary connectivity and security policies in place for me to lo
 ### VMC on AWS K8s worker nodes
 
 In VMC vCenter I deployed three Ubuntu worker nodes, and configured them to be one master worker and two worker nodes by following my previous blog post covering these steps:  
-[http://yikes.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/#Deploy\_Kubernetes\_on\_Ubuntu\_2004](http://yikes.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/#Deploy_Kubernetes_on_Ubuntu_2004)  
+[here](http://blog.andreasm.io/2020/10/08/ako-with-antrea-on-native-k8s-cluster/#Deploy_Kubernetes_on_Ubuntu_2004)  
 
 ![](images/image-3.png)
 

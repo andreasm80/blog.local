@@ -107,7 +107,7 @@ A couple of seconds later you should be able to log in to the GUI of Harbor thro
 
 ### Certificate
 
-You can either use Cert-manager as explained [here](https://yikes.guzware.net/2022/10/11/cert-manager-and-letsencrypt/) or bring your own ca signed certificates. 
+You can either use Cert-manager as explained [here](https://blog.andreasm.io/2022/10/11/cert-manager-and-letsencrypt/) or bring your own ca signed certificates. 
 
 ## Harbor GUI
 

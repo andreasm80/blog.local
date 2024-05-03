@@ -28,12 +28,12 @@ This blog post will cover how *I* wanted to deploy Hugo to host my blog-page.
 To achieve what I wanted, deploy an highly available Hugo hosted blog page, I decided to run Hugo in Kubernetes. 
 For that I needed 
 
-* Kubernetes cluster, obviously, consisting of several workers for the the "hugo" pods to run on (already covered [here](https://yikes.guzware.net/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/#prepare-the-worker-and-master-nodes).
-*  Persistent storage (NFS in my case, already covered [here](https://yikes.guzware.net/2021/07/12/kubernetes-persistent-volumes-with-nfs/)) 
-* An Ingress controller (already covered [here](https://yikes.guzware.net/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/)) 
+* Kubernetes cluster, obviously, consisting of several workers for the the "hugo" pods to run on (already covered [here](https://blog.andreasm.io/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/#prepare-the-worker-and-master-nodes).
+*  Persistent storage (NFS in my case, already covered [here](https://blog.andreasm.io/2021/07/12/kubernetes-persistent-volumes-with-nfs/)) 
+* An Ingress controller (already covered [here](https://blog.andreasm.io/2021/07/11/k8s-ingress-with-nsx-advanced-load-balancer/)) 
 * A docker image with Hugo, nginx and go (will be covered here)
 * Docker installed so you can build the image
-* A place to host the docker image (Docker hub or Harbor registry will be covered [here](https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/))
+* A place to host the docker image (Docker hub or Harbor registry will be covered [here](https://blog.andreasm.io/2022/10/13/vmware-harbor-registry/))
 
 
 
@@ -113,10 +113,10 @@ When that is done I need to upload the tar to each of their local docker reposit
 docker -i load /home/username/hugo-image.v1.tar
 ```
 
-It is ok to know about this process if you are in non-internet environments etc, but even in non-internet environment we can do this with a private registry. And thats where Harbor can come to the rescue [link](https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/).
+It is ok to know about this process if you are in non-internet environments etc, but even in non-internet environment we can do this with a private registry. And thats where Harbor can come to the rescue [link](https://blog.andreasm.io/2022/10/13/vmware-harbor-registry/).
 
 With Harbor I can have all my images hosted centrally but dont need access to the internet as it is hosted in my own environment.  
-I could also use Docker [hub](https://hub.docker.com/). Create an account there, and use it as my repository. I prefer the Harbor registry, as it provides many [features](https://yikes.guzware.net/2022/10/13/vmware-harbor-registry/). The continuation of this post will use Harbor, the procedure to upload/download images is the same process as with Docker hub but you log in to your own Harbor registry instead of Docker hub.  
+I could also use Docker [hub](https://hub.docker.com/). Create an account there, and use it as my repository. I prefer the Harbor registry, as it provides many [features](https://blog.andreasm.io/2022/10/13/vmware-harbor-registry/). The continuation of this post will use Harbor, the procedure to upload/download images is the same process as with Docker hub but you log in to your own Harbor registry instead of Docker hub.  
 
 Uploading my newly created image is done like this:
 
