@@ -31,9 +31,6 @@ In this post, I will highlight a couple of Antrea features that I'd like to disc
 - L7FLowExporter
 - NodeNetwork Policy
 - ExternalNode Policy
-- TopologyAwareHints
-- LodaBalancerModeDSR
-- TrafficControl
 
 As usual, head over to the official Antrea [documentation](https://antrea.io/docs/v1.15.1/) and Antrea [Github](https://github.com/antrea-io/antrea/blob/main/docs/feature-gates.md) repo for more information. This post will focus on the upstream version v1.15.1 of Antrea available on Github, my Kubernetes clusters will also be using upstream Kubernetes version 1.28.5+ running on Ubuntu nodes.
 
@@ -828,6 +825,8 @@ root@k8s-node-vm-1-cl-03:/# ovs-ofctl dump-flows br-int | grep 10.40.67.4
 
 
 
+
+
 ## L7FlowExporter - new in Antrea v.1.15.0
 
 FlowExport in Antrea is something I have covered previously [here](https://blog.andreasm.io/2023/06/01/managing-antrea-in-vsphere-with-tanzu/#flow-exporter---ipfix), but this time I would like to have a look at the new Layer7 FlowExport. Lets configure it and see some flows with Layer7 information. 
@@ -1114,21 +1113,8 @@ For information on how to configure this, head over to the following pages [here
 
 
 
+## Outro
 
-
-
-
-
-
-Traceflow
-
-
-
-
-
-Kyverno
-
-
-
-Who said Networking in Kubernetes wasn't fun, right? 
+Thats it for this time. Some features I find interesting in Antrea, head over to the official Antrea docs page [here](antrea.io) and Github repo [here](https://github.com/antrea-io/antrea/tree/main) for always updated and more information. Speaking of updated information, in time of writing this blog post Antrea 2.0 is released! 
+[Antrea v2.0](https://github.com/antrea-io/antrea/releases/tag/v2.0.0)
 
