@@ -910,9 +910,219 @@ I have remove a lot of columns in the screenshot above for clarity. For more inf
 
 ## Node NetworkPolicy and ExternalNode Policy
 
-In this section I will have a look at two features that makes it possible to secure the Kubernetes nodes themselves using Antrea and external nodes, not being a Kubernetes node but a VM outside of the Kubernetes cluster. There can be many usecases for such a feature. If there is no physical firewall in between the segments or the nodes, still we need to enforce some kind of security to restrict certain lateral movement between nodes and or other VMs or bare-metal servers in the environment. 
+In this section I will have a look at two features that makes it possible to secure the Kubernetes nodes themselves using Antrea and external nodes, not being a Kubernetes node but a VM outside of the Kubernetes cluster. There can be many usecases for such a feature. If there is no physical firewall in between the segments or the nodes, still we need to enforce some kind of security to restrict certain lateral movement between nodes and or other VMs or bare-metal servers in the environment. Being able to do microsegmentation is important. 
 
- 
+###  Node NetworkPolicy - new in Antrea v1.15
+
+![node-policy-1](images/image-20240505115441833.png)
+
+The diagram above tries to illustrate a communication pattern where the Kubernetes nodes is hosting a service running on port 80/TCP and some external resources is trying to reach those services. I will define a policy that will only allow access originating from certain subnets and drop all else. If I am exposing the service using an external LoadBalancer I could potentially restrict access to this service coming only from the LoadBalancer itself, nothing else. Lets have a look at the rule itself and apply it in i a real Kubernetes cluster. 
+
+The example rule I am using in this case is taken from the official Antrea documentation [here](https://github.com/antrea-io/antrea/blob/main/docs/antrea-node-network-policy.md) with some modifications by me.
+
+The rule (notice the kind, it is a ClusterNetworkPolicy):
+
+```yaml
+apiVersion: crd.antrea.io/v1beta1
+kind: ClusterNetworkPolicy
+metadata:
+  name: restrict-http-to-node
+spec:
+  priority: 5
+  tier: application
+  appliedTo:
+    - nodeSelector:
+        matchExpressions:
+        - key: "kubernetes.io/hostname"
+          operator: "In"
+          values: ["k8s-node-vm-1-cl-02", "k8s-node-vm-2-cl-02", "k8s-node-vm-3-cl-02"]
+  ingress:
+    - name: allow-cidr
+      action: Allow
+      from:
+        - ipBlock:
+            cidr: 10.100.5.0/24
+        - ipBlock:
+            cidr: 172.18.6.0/24
+      ports:
+        - protocol: TCP
+          port: 80
+    - name: drop-other
+      action: Drop
+      ports:
+        - protocol: TCP
+          port: 80
+```
+
+The policy above will be applied to all nodes having the key/value label `kubernetes.io/hostname: k8s-worker-node`allowing port 80/TCP from 10.100.5.0/24 and 172.18.6.0/24 and  block all else trying to reach port 80/TCP. 
+
+Now before I can go ahead and apply this policy and I need to enable the feature gate NodeNetworkPolicy:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: antrea-config
+  namespace: kube-system
+data:
+  antrea-agent.conf: |
+    featureGates:
+      NodeNetworkPolicy: true
+```
+
+Restart all Antrea pods:
+
+```bash
+andreasm@linuxmgmt01:~$ k delete pods -n kube-system -l app=antrea
+pod "antrea-agent-gz9nt" deleted
+pod "antrea-agent-mcck5" deleted
+pod "antrea-agent-qqr6l" deleted
+pod "antrea-agent-spmz8" deleted
+pod "antrea-agent-vnll7" deleted
+pod "antrea-agent-xrr2p" deleted
+pod "antrea-controller-576fdb765-h7tbc" deleted
+```
+
+After the policy has been applied I can check easily if it is in effect by using the command below:
+
+```bash
+andreasm@linuxmgmt01:~/prod-cluster-2/antrea-policies$ k get acnp
+NAME                    TIER          PRIORITY   DESIRED NODES   CURRENT NODES   AGE
+restrict-http-to-node   application   5          3               3               16m
+```
+
+My cluster consists of 3 control plane nodes and 3 worker nodes. I can see my policy as been applied to at least 3, which I assume is my worker nodes. Lets dig into that deeper a bit later. But lets see if the policy is being enforced. 
+
+From my laptop or from my linux vm, from both subnets that should be allowed:
+
+```bash
+andreasm@linuxmgmt01:~$ curl http://10.169.1.40
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Yelb</title>
+    <base href="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=2">
+</head>
+<body>
+<yelb>Loading...</yelb>
+<script type="text/javascript" src="inline.bundle.js"></script><script type="text/javascript" src="styles.bundle.js"></script><script type="text/javascript" src="scripts.bundle.js"></script><script type="text/javascript" src="vendor.bundle.js"></script><script type="text/javascript" src="main.bundle.js"></script></body>
+</html>
+
+# From my laptop
+andreasm@laptop:~$ curl http://10.169.1.40
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Yelb</title>
+    <base href="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=2">
+</head>
+<body>
+<yelb>Loading...</yelb>
+<script type="text/javascript" src="inline.bundle.js"></script><script type="text/javascript" src="styles.bundle.js"></script><script type="text/javascript" src="scripts.bundle.js"></script><script type="text/javascript" src="vendor.bundle.js"></script><script type="text/javascript" src="main.bundle.js"></script></body>
+</html>
+```
+
+
+
+From any other subnet (other machines) from any other subnet not defined as allowed:
+
+```bash
+andreasm@linuxmgmt02:~$ ip addr
+2: ens18: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether f6:97:82:3b:9a:9e brd ff:ff:ff:ff:ff:ff
+    inet 172.18.5.40/24 brd 172.18.5.255 scope global ens18
+       valid_lft forever preferred_lft forever
+       
+andreasm@linuxmgmt02:~$ curl http://10.169.1.40
+curl: (28) Failed to connect to 10.169.1.40 port 80: Connection timed out
+```
+
+
+
+Another example can be to drop certain ports between the nodes in a Kubernetes cluster itself with an example policy like this:
+
+```yaml
+apiVersion: crd.antrea.io/v1beta1
+kind: ClusterNetworkPolicy
+metadata:
+  name: egress-drop-node-to-node
+spec:
+  priority: 5
+  tier: application
+  appliedTo:
+    - nodeSelector:
+        matchExpressions:
+        - key: "kubernetes.io/hostname"
+          operator: "In"
+          values: ["k8s-node-vm-1-cl-02", "k8s-node-vm-2-cl-02", "k8s-node-vm-3-cl-02"]
+  egress:
+    - name: drop-22
+      action: Drop
+      to:
+        - nodeSelector:
+            matchExpressions:
+            - key: "kubernetes.io/hostname"
+              operator: "In"
+              values: ["k8s-node-vm-1-cl-02", "k8s-node-vm-2-cl-02", "k8s-node-vm-3-cl-02"]
+      ports:
+        - protocol: TCP
+          port: 22
+```
+
+
+
+![node-2-node-ssh](images/image-20240505140038911.png)
+
+Now if I try to reach the any of my Kubernetes worker nodes from any of my Kubernetes nodes using SSH:
+
+```bash
+# node 1 to node 2 over SSH
+ubuntu@k8s-node-vm-1-cl-02:~$ ssh ubuntu@10.160.1.26
+ssh: connect to host 10.160.1.26 port 22: Connection timed out
+```
+
+```bash
+# node 1 to any other machine over SSH
+ubuntu@k8s-node-vm-1-cl-02:~$ ssh andreasm@10.100.5.10
+The authenticity of host '10.100.5.10 (10.100.5.10)' can't be established.
+ED25519 key fingerprint is SHA256:Ue0UyrCk679JwN8QbaRLviCdEfxg7lnu+3RXVryujA8.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+```
+
+
+
+Play around with this new feature making it possible to also apply and enforce security policies on the nodes themselves opens up for a much more granual and controlled environment if one have these requirements. On edge usecases this can also be very valuable.
+
+### ExternalNode Policy
+
+I just want to highlight this feature in its own chapter as I feel it is relevant, and may be a very good combination with the NodePolicy feature. A Kubernetes cluster with its running workload is often depending on external backend services, like external DB/DNS/NTP services hosted somewhere else in the datacenter. 
+
+With Antrea ExternalNode policy it is possible to manage security policies on non Kubernetes workload, like any regular virtual machine or bare-metal server using Antrea NetworkPolicy from your Kubernetes/API. See illustration below:
+
+![external-node](images/image-20240505143235685.png)
+
+
+
+For information on how to configure this, head over to the following pages [here](https://github.com/antrea-io/antrea/blob/main/docs/external-node.md) and [here](https://github.com/antrea-io/antrea/blob/main/docs/external-node.md#install-antrea-agent-on-vm). 
+
+
+
+
+
+
+
+
+
+Traceflow
+
+
 
 
 
