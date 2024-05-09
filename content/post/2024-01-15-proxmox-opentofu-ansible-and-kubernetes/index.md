@@ -1264,6 +1264,318 @@ Destroy complete! Resources: 9 destroyed.
 
 Now all the VMs, everything that has been deployed with OpenTofu is gone again. And it takes a couple of seconds or minutes depending on whether I have configured the provider to do a shutdown or stop of the VMs on *tofu destroy*. I am currently using shutdown. 
 
+
+
+## Preparing a bunch of hosts for Rancher RKE2 clusters
+
+I decided to give Rancher a run in another post (post this post) and discovered I needed to solve hostnames in the VMs being created. RKE2 requires all nodes have unique hostnames, see [here](https://docs.rke2.io/install/requirements) Kubespray took care of that for me above, but if I just wanted to deploy a bunch of VMs with nothing more than the OS itself deployed, that means only provisioned using OpenTofu, I needed some way to also update the hostname inside the VMs also. Below is two updated resource that handles this for me. So now I can just deploy as many VMs I want, hostname is being taken care of by the OpenTofu deployment, and I can just hand them to Rancher to create my RKE2 clusters on. 
+
+### Proxmox VM resource 
+
+```yaml
+resource "proxmox_virtual_environment_vm" "rke2-cp-vms-cl01" {
+  count       = 3
+  name        = "rke2-cp-vm-${count.index + 1}-cl-01"
+  description = "Managed by Terraform"
+  tags        = ["terraform", "ubuntu", "k8s-cp"]
+
+  timeout_clone = 180
+  timeout_create = 180
+  timeout_migrate = 180
+  timeout_reboot = 180
+  timeout_shutdown_vm = 180
+  timeout_start_vm = 180
+  timeout_stop_vm = 180
+
+  node_name = "proxmox-02"
+  vm_id     = "102${count.index + 1}"
+
+  cpu {
+    cores = 4
+    type = "host"
+  }
+
+  memory {
+    dedicated = 6144
+  }
+
+
+  agent {
+    # read 'Qemu guest agent' section, change to true only when ready
+    enabled = true
+  }
+
+  startup {
+    order      = "3"
+    up_delay   = "60"
+    down_delay = "60"
+  }
+
+  disk {
+    datastore_id = "raid-10-node02"
+    file_id      = "local:iso/jammy-server-cloudimg-amd64.img"
+    interface    = "virtio0"
+    iothread     = true
+    discard      = "on"
+    size         = 40
+    file_format  = "raw"
+  }
+
+
+  initialization {
+    dns {
+      servers = ["10.100.1.7", "10.100.1.6"]
+      domain = "my-domain.net"
+    }
+    ip_config {
+      ipv4 {
+        address = "10.170.0.1${count.index + 1}/24"
+        gateway = "10.170.0.1"
+      }
+    }
+    datastore_id = "raid-10-node02"
+
+    user_data_file_id = proxmox_virtual_environment_file.rke2-cp-vms-cl01[count.index].id
+  }
+
+  network_device {
+    bridge = "vmbr0"
+    vlan_id = "217"
+  }
+
+  operating_system {
+    type = "l26"
+  }
+
+  keyboard_layout = "no"
+
+
+
+  lifecycle {
+    ignore_changes = [
+      network_device,
+    ]
+  }
+  depends_on = [proxmox_virtual_environment_file.rke2-cp-vms-cl01]
+
+}
+
+resource "proxmox_virtual_environment_vm" "rke2-worker-vms-cl01" {
+  count       = 3
+  name        = "rke2-node-vm-${count.index + 1}-cl-01"
+  description = "Managed by Terraform"
+  tags        = ["terraform", "ubuntu", "k8s-node"]
+
+  node_name = "proxmox-02"
+  vm_id     = "102${count.index + 5}"
+
+
+  timeout_clone = 180
+  timeout_create = 180
+  timeout_migrate = 180
+  timeout_reboot = 180
+  timeout_shutdown_vm = 180
+  timeout_start_vm = 180
+  timeout_stop_vm = 180
+
+  cpu {
+    cores = 4
+    type = "host"
+  }
+
+  memory {
+    dedicated = 6144
+  }
+
+
+  agent {
+    # read 'Qemu guest agent' section, change to true only when ready
+    enabled = true
+  }
+
+  startup {
+    order      = "3"
+    up_delay   = "60"
+    down_delay = "60"
+  }
+
+  disk {
+    datastore_id = "raid-10-node02"
+    file_id      = "local:iso/jammy-server-cloudimg-amd64.img"
+    interface    = "virtio0"
+    iothread     = true
+    discard      = "on"
+    size         = 60
+    file_format  = "raw"
+  }
+
+
+  initialization {
+    dns {
+      servers = ["10.100.1.7", "10.100.1.6"]
+      domain = "my-domain.net"
+    }
+    ip_config {
+      ipv4 {
+        address = "10.170.0.1${count.index + 5}/24"
+        gateway = "10.170.0.1"
+      }
+    }
+    datastore_id = "raid-10-node02"
+
+    user_data_file_id = proxmox_virtual_environment_file.rke2-worker-vms-cl01[count.index].id
+  }
+
+  network_device {
+    bridge = "vmbr0"
+    vlan_id = "217"
+  }
+
+  operating_system {
+    type = "l26"
+  }
+
+  keyboard_layout = "no"
+
+
+  lifecycle {
+    ignore_changes = [
+      network_device,
+    ]
+  }
+
+  depends_on = [proxmox_virtual_environment_file.rke2-worker-vms-cl01]
+
+}
+
+resource "null_resource" "rke2-cp-vms-cl01" {
+  count = 3
+
+  provisioner "remote-exec" {
+    inline = ["sudo hostnamectl set-hostname rke2-cp-vm-${count.index + 1}-cl-01.my-domain.net"]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"  # or another user
+      private_key = file("${var.private_key_path}")
+      host        = element([for ip in flatten(proxmox_virtual_environment_vm.rke2-cp-vms-cl01[count.index].ipv4_addresses) : ip if ip != "127.0.0.1"], 0)
+    }
+  }
+  depends_on = [proxmox_virtual_environment_vm.rke2-cp-vms-cl01]
+}
+
+resource "null_resource" "rke2-worker-vms-cl01" {
+  count = 3
+
+  provisioner "remote-exec" {
+    inline = ["sudo hostnamectl set-hostname rke2-node-vm-${count.index + 1}-cl-01.my-domain.net"]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file("${var.private_key_path}")
+      host = element([for ip in flatten(proxmox_virtual_environment_vm.rke2-worker-vms-cl01[count.index].ipv4_addresses) : ip if ip != "127.0.0.1"], 0)
+
+    }
+  }
+  depends_on = [proxmox_virtual_environment_vm.rke2-worker-vms-cl01]
+}
+
+output "usable_cp_vm_ipv4_addresses" {
+  value = [for ip in flatten(proxmox_virtual_environment_vm.rke2-cp-vms-cl01[*].ipv4_addresses) : ip if ip != "127.0.0.1"]
+}
+
+output "usable_worker_vm_ipv4_addresses" {
+  value = [for ip in flatten(proxmox_virtual_environment_vm.rke2-worker-vms-cl01[*].ipv4_addresses) : ip if ip != "127.0.0.1"]
+}
+```
+
+I have added a remote-exec resource to remotely log in to the provisioned VMs, execute the *hostname set-hostname* command. To get around cycle dependencies I had to add a "null_resource" before the remote-exec. I have also divided the vm resource config to separate the type of VMs from each other so I can configure them different from each other (control plane nodes and worker nodes). The two last entries was only added to verify if it could pick up the correct IP address from the VMs. 
+
+
+
+###  Proxmox virtual environment file
+
+```yaml
+# CP VMs
+resource "proxmox_virtual_environment_file" "rke2-cp-vms-cl01" {
+  count = 3 # adjust pr total amount of VMs
+  content_type = "snippets"
+  datastore_id = "local"
+  node_name    = "proxmox-02"
+
+  source_raw {
+    data = <<EOF
+#cloud-config
+chpasswd:
+  list: |
+    ubuntu:ubuntu
+  expire: false
+packages:
+  - qemu-guest-agent
+timezone: Europe/Oslo
+
+users:
+  - default
+  - name: ubuntu
+    groups: sudo
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - ${trimspace("ssh-rsa E8lMzi2QtaV6FbEGQG41sKUetP4IfQ9OKQb4n3pIleyuFySijxWS37krexsd9E2rkJFjz0rhh1idWb4vfzQH15lsBIaA1JpcYTqJWp6QwJ8oV2psQUi/knwVNfn3EckKrkNsGwUw6+d")}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+power_state:
+    delay: now
+    mode: reboot
+    message: Rebooting after cloud-init completion
+    condition: true
+
+EOF
+
+    file_name = "rke2-cp-vms-${count.index + 1}-cl01.yaml"
+  }
+}
+
+# Node VMs
+resource "proxmox_virtual_environment_file" "rke2-worker-vms-cl01" {
+  count = 3 # adjust pr total amount of VMs
+  content_type = "snippets"
+  datastore_id = "local"
+  node_name    = "proxmox-02"
+
+  source_raw {
+    data = <<EOF
+#cloud-config
+chpasswd:
+  list: |
+    ubuntu:ubuntu
+  expire: false
+packages:
+  - qemu-guest-agent
+timezone: Europe/Oslo
+
+users:
+  - default
+  - name: ubuntu
+    groups: sudo
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - ${trimspace("ssh-rsa AAAAB3NxTSy6hioyUwiRpVUKYDf9zsU4P87zIqasRHMPfoj2PI0YCPihDpQj/e0VtkQaBhyfLoFuLa+zTEDjR5nYt1P0MRWPRuOxY/ls04VCpVvA9mUSYF8ftAXf2SXRY7sqQE3dg4Bav7FdHe1labQH4logd1N5ra9PS+bVGcBDstSH/t7Zkf/Na1EMqN75M5PKiFzHpde7xFnvaRbcVdzr64xTXP2vVj+jTlcMBRAoJQHIO4703jy3Ma2fJbYxipSsl1TGDgUFxf3rDjW/gKOWQhbCVheDMGC94")}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+power_state:
+    delay: now
+    mode: reboot
+    message: Rebooting after cloud-init completion
+    condition: true
+
+EOF
+
+    file_name = "rke2-worker-vms-${count.index + 1}-cl01.yaml"
+  }
+}
+```
+
+In the cloud init environment resource I have also added to entries to separate the control plane nodes from the worker nodes so I can easier configure them differently. Every file_name created will accomodate the actual name of the node it belongs to. So the Proxmox snippets being created will now be 1 snippet pr VM created. They will be removed when the project is deleted by *tofu destroy*. 
+
 ## Summary
 
 There is so much more that can be adjusted, improved and explored in general. But this post is just how I have done it now to solve a task I have been waiting to finally get some time to do. I will maybe do a follow up post where I do some improvements after some time using it and gained more experience on it. This includes improving the OpenTofu configs and Kubespray. 

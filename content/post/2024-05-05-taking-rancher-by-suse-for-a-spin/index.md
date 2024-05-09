@@ -11,10 +11,12 @@ categories:
   - Kubernetes
   - Rancher
   - Kubernetes-Management
+  - RKE2
 tags:
   - suse
   - rancher
   - kubernetes-management
+  - rke2
 
 summary: In this post I wil go through Rancher and test out some of the possibilties and capabilties managing Kubernetes using Rancher. 
 comment: false # Disable comment if false.
@@ -22,9 +24,15 @@ comment: false # Disable comment if false.
 
 
 
+
+
 # Rancher by Suse - short introduction
 
+Rancher is .... from the official docs 
 
+Diagram over Rancher managing clusters, includng loadbalancer focus on HA.. 
+
+Just to get started using Rancher, the initial parts of this post will be focusing on getting some Rancher managed clusters up and running as easy as possible. If it is not too obvious when reading these cluster creation chapters, trust me, deploying and managing Kubernetes cluster with Rancher is both fun and easy. After the initial chapters I will dive into some more technical topics. 
 
 ## Installing Rancher on an existing Kubernetes Cluster using Helm
 
@@ -34,7 +42,7 @@ Here is my TKC cluster I will install rancher on:
 
 ![tkc-cluster-1](images/image-20240506080623908.png)
 
-The cluster is ready, I have the ingress class installed by Avi. I need to add the Helm repo then deploy Rancher:
+The cluster is ready with all the necessary backend service like the Avi loadbalancer providing loadbalancer services and Ingress rules. The first thing I need is to add the Helm repo for Rancher. 
 
 ```bash
 # latest - recommended for testing the newest features
@@ -359,7 +367,7 @@ Now its time to get started using Rancher...
 
 ## Create clusters
 
-As soon as I have logged in the first thing I would like to do is to create a Kubernetes cluster. Rancher supports many methods of creating a Kubernetes cluster. Rancher can create clusters in a hosted Kubernetes provider such as Amazon EKS, Azure AKS, Google GKE and more. Rancher can create clusters and provision the nodes on Amazon EC2, Azure, DigitalOcean, Harvester, Linode, VMware vSphere and more. If you dont use any of them, it can create clusters on exisiting nodes like VMs deployed with a Linux os waiting to be confgured to do something (I will go through that later) or using [Elemental](https://elemental.docs.rancher.com/) (more on that later also). 
+As soon as I have logged in the first thing I would like to do is to create a Kubernetes cluster. Rancher supports many methods of creating a Kubernetes cluster. Rancher can create clusters in a hosted Kubernetes provider such as Amazon EKS, Azure AKS, Google GKE and more. Rancher can create clusters and provision the nodes on Amazon EC2, Azure, DigitalOcean, Harvester, Linode, VMware vSphere and more. If you dont use any of them, it can create clusters on exisiting nodes like VMs deployed with a Linux (or even Windows..) OS waiting to be confgured to do something (I will go through that later) or using [Elemental](https://elemental.docs.rancher.com/) (more on that later also). 
 
 ![create-clusters](images/image-20240506215803466.png)
 
@@ -371,13 +379,161 @@ Under drivers, see the list of possible Cluster Drivers and Node Drivers:
 
 
 
-I happen to have vSphere as my virtualization platform which is natively supported by Rancher and will start by provisioning a Kubernetes cluster using the vSphere "provider".  
+I happen to have vSphere as my virtualization platform which is natively supported by Rancher and will start by provisioning a Kubernetes cluster using the vSphere "provider".  I also have another hypervisor platform running in my lab (Proxmox) which does not have a native driver for Rancher, but there is another methods to use Rancher ther. I will go through how I deploy RKE2 clusters on vSphere and on Proxmox using the *Custom* "cloud" on existing nodes. Starting with vSphere... 
 
-## Create cluster using vSphere
+## Create RKE2 clusters using vSphere
 
-### vSphere VM template creation
+Using vSphere as the "cloud" in Rancher do have some benefits. From the docs
 
-For Rancher to spin up and create RKE2 clusters on vSphere I need to create a VM template using the OS of choice in my vSphere cluster. So I went ahead deployed an Ubuntu 22.04 server, minimal configurations and converted it to a template. Tried to create a cluster, it cloned the amount of control plane nodes and worker nodes I had defined, but there it stopped. So I figured I must have missed something along the way. 
+For Rancher to spin up and create RKE2 clusters on vSphere I need to create a VM template using the OS of choice in my vSphere cluster. According to the official RKE2 [documentation](https://docs.rke2.io/install/requirements#operating-systems) *RKE2 should work on any Linux distribution that uses systemd and iptables*. There is also a RKE2 Support Matrix for all OS versions that have been validated with RKE2 [here](https://www.suse.com/suse-rke2/support-matrix/all-supported-versions/rke2-v1-28/) (linked to v1.28 as this post uses 1.28 but v1.29 is already out at the time of writing this post).
+
+I went with Ubuntu 22.04 as my Linux distribution
+
+There is a couple of ways Rancher can utilize vSphere to manage the template. Below is a screenshot of the possible options of the time of writing this post:
+
+![deployment-methods](images/image-20240508233641430.png)
+
+In this section I will go through the two methods **Deploy from template: Content Library** and **deploy from template: Data Center**  
+
+### Create Cloud Credentials
+
+The first thing I will do before getting to the actual cluster creation is to create credentials for the user and connection information to my vCenter server. I will go to the Cluster Management and Cloud Credentials section in Rancher:
+
+
+
+![cloud-credentials](images/image-20240509001856987.png)
+
+Click create in the top right corner and select VMware vSphere:
+
+![vsphere](images/image-20240509002004160.png)
+
+Fill in the relevant information about your vCenter server including the credentials with the right permissions (see permissions [here](https://ranchermanager.docs.rancher.com/how-to-guides/new-user-guides/launch-kubernetes-with-rancher/use-new-nodes-in-an-infra-provider/vsphere/create-credentials) using some very old screenshots from vCenter..):
+
+![vcenter-info](images/image-20240509002145078.png)
+
+![credentials-created](images/image-20240509002408912.png)
+
+### RKE2 clusters using vSphere Content Library template
+
+I decided to start with the method of deploying RKE2 clusters using the Content Library method as I found that one to be the easiest and fastest method (its just about uploading the image to the content library and thats it). The concept behind this is to create a Content Library in your vCenter hosting a Cloud Image template for the OS of choice. This should be as minimal as possible, with zero to none configs. All the needed configs are done by Rancher when adding the nodes to your cluster later.   
+
+As mentioned above, I went with Ubuntu Cloud image. Ubuntu Cloud images can be found [here](https://cloud-images.ubuntu.com/).
+
+![cloud-images](images/image-20240508220123400.png)
+
+I will go with this OVA image (22.04 LTS Jammy Jellyfish):
+
+![jammy-cloud-image-ova](images/image-20240508220225820.png)
+
+In my vCenter I create a Content Library:
+
+![content-lib-create](images/image-20240508235953618.png)
+
+Local content library:
+
+![local-content](images/image-20240509000026841.png)
+
+Select my datastore to host the content:
+
+![content-datastore](images/image-20240509000126128.png)
+
+Finish:
+
+![content-library-created](images/image-20240509000149484.png)
+
+![content-library](images/image-20240509000233597.png)
+
+Now I need to enter the content library by clicking on the name to add my desired Ubuntu Cloud Image version:
+
+![import-items](images/image-20240509000417561.png)
+
+I will select Source File URL and paste the below URL:
+
+https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.ova
+
+![import](images/image-20240509000545222.png)
+
+Click on Import and it will download the OVA from the URL
+
+It may complain about SSL certificate being untruste.. Click Actions and Continue:
+
+![continue](images/image-20240509000656514.png)
+
+The template should be download now:
+
+![downloading](images/image-20240509000742764.png)
+
+Thats it from the vCenter side. The cloud image is ready as a template for Rancher to use. Now I will head over to Rancher and create my RKE2 cluster on vSphere based on this template. 
+
+I will go to Cluster Management using the top left menu or directy from the homepage clicking on manage
+
+As I have done the preparations in vSphere I am now ready to create my RKE2 cluster on vSphere. Head to Clusters in the top left corner and click create in the top right corner then select VMware vSphere:
+
+![vSphere-cloud](images/image-20240509002529003.png)
+
+The cluster I want to create is one control-plane node and one worker node. 
+
+Give the cluster a name and description if you want. Then select the roles, at a minium one have to deploy one node with all roles *etcd*, *Control Plane* and *Worker*. Give the pool a name, I will go with default values here. Machine count I will go with default 1 here also. I can scale it later :smile:. Then make sure to select the correct datacenter in your vCenter, select the Resource Pool. If you have resource pools, if not just select the correct cluster (sfo-m01-cl01)/Resources which will be the cluster resource pool (root). Then select the correct Datastore. Then I will left the other fields default except the Creation method and Network. Under creation method I have selected **Deploy from template: Content Library** the correct Content Library and the **jammy-server-cloudimg** template I have uploaded/downloaded to the Content Library. Click Add Network and select the correct vCenter Network Portgroup you want the node to be placed in. 
+
+![node-pool1](images/image-20240509002845862.png)
+
+Thats it for pool-1. I will scroll a bit down, click on the + sign and add a second pool for the nodes to have only the role worker. 
+
+I will repeat the steps above for pool-2. They will be identical execpt for the pool name and only role **Worker** selected.
+
+![plus-to-add-pool](images/image-20240509003712557.png)
+
+![pool-2](images/image-20240509003856064.png)
+
+For the sake of keeping it simple, I will leave all the other fields default and just click create. I will now sit back and enjoy Rancher creating my RKE2 cluster on vSphere. 
+
+![create](images/image-20240509004028543.png)
+
+![cluster-creation-in-progress](images/image-20240509004328959.png)
+
+In vCenter:
+
+![content-library-being-used](images/image-20240509005651880.png)
+
+
+
+And cluster is ready:
+
+![ready](images/image-20240509010740012.png)
+
+
+
+There was of course a bunch of option I elegantly skipped during the creation of this cluster. But the point, again, was to show how quickly and easily I could bring up a RKE2 cluster on vSphere. And so it was. 
+
+**Supplemental information**
+
+
+
+To make further customization of the Ubuntu Cloud Image one can use the #cloud-config ([cloud-init](https://cloud-init.io/)), or the vSphere vApp function. 
+
+![cloud-config](images/image-20240509011206653.png)
+
+vApp:
+
+![image-20240509011229727](images/image-20240509011229727.png)
+
+ 
+
+When it comes to the Ubuntu Cloud Image it does not contain any default username and password. So how can I access SSH on them? Well, from the Rancher UI one can access SSH directly or download the SSH keys. One can even copy paste into the SSH shell from there. SSH through the UI is very neat feature. 
+
+ ![node-operations](images/image-20240509011635979.png)
+
+SSH Shell:
+
+![ssh-shell](images/image-20240509011829741.png)
+
+For IP allocation I have configured DHCP in my NSX-T environment for the segment my RKE2 nodes will be placed in and all nodes will use dynamically allocated IP addresses in that subnet. 
+
+### RKE2 clusters using vSphere VM template
+
+The other method of preparing a template for Rancher to use is to install the Ubuntu Server as a regular VM, doing the necessary configs, power it down and convert it to template. I thought this would mean a very minimal config to be done. But apparently not.
+
+My first attempt did not go so well. I installed Ubuntu, then powered it down and converted it to a templte. Tried to create a RKE2 cluster with it from Rancher, it cloned the amount of control plane nodes and worker nodes I had defined, but there it stopped. So I figured I must have missed something along the way. 
 
 Then I found this post [here](https://dev.to/balajivedagiri/provisioning-an-rke2-cluster-on-vsphere-13mh) which elegantly described the things I need in my template before "handing" it over to Rancher. So below is what I did in my Ubuntu Template by following the blog [post](https://dev.to/balajivedagiri/provisioning-an-rke2-cluster-on-vsphere-13mh) above.  
 
@@ -451,7 +607,7 @@ Powered off the VM, converted it to a template in vSphere.
 
 {{% notice warning "Info" %}}
 
-Still after doing the steps described in the post linked to above my deployment failed. It turned out to be insufficient disk capacity. So I had to update my template in vSphere to use bigger disk. I was too conservative when I created it, I extended it to 60gb to be on the safe side.
+Still after doing the steps described in the post linked to above my deployment failed. It turned out to be insufficient disk capacity. So I had to update my template in vSphere to use bigger disk. I was too conservative (or cheap) when I created it, I extended it to 60gb to be on the safe side.
 
 
 
@@ -476,7 +632,7 @@ Events:
 
 
 
-## Create cluster using vSphere - cont'd
+After doing the additional changes in my template I gave the RKE2 cluster creation another attempt.
 
 From the Cluster Management, click Create
 
@@ -486,11 +642,9 @@ Select VMware vSphere:
 
 ![vsphere](images/image-20240506220614627.png)
 
-Fill in relevant credential information for your vSphere cloud (name it a bit more intuitive than me):
 
-![vsphere-2](images/image-20240506220759071.png)
 
-Click continue in the bottom right corner. 
+
 
 I will start by defining "pool-1" as my 3 control plane nodes. Select vCenter Datacenter, Datastore and resource pool (if no resource pool is defined in vCenter, select just Resources which is "root"/cluster-level)
 
@@ -508,13 +662,13 @@ Then confgure the amount of Machine count, roles (worker only) and vSphere place
 
 ![pool-2-2](images/image-20240506223445557.png)
 
-Configure the pool-2 instance cpu, memory, network, vm template etc.. Here one can define the workers to be a bit more beefier than the control plane nodes. 
+Configure the pool-2 instance cpu, memory, network, vm template etc.. Here one can define the workers to be a bit more beefier (resource wise) than the control plane nodes. 
 
 ![pool-2-3](images/image-20240506231800970.png)
 
 
 
-Then it is the cluster config itself. There is a lot of details I will not cover now, will cover these a bit later. Now the sole purpose is to get a cluster up and running as easy and fast as possible. I will leave everything default, except pod CIDR and service CIDR. Will come back to the (container section at a later stage). 
+Then it is the cluster config itself. There is a lot of details I will not cover now, will cover these a bit later. Now the sole purpose is to get a cluster up and running as easy and fast as possible. I will leave everything default, except pod CIDR and service CIDR. Will get into some more details later in the post. 
 
 ![cluster-config-1](images/image-20240506223906595.png)
 
@@ -550,13 +704,13 @@ Rancher cluster creation status
 
 ![status-complete](images/image-20240507140941899.png)
 
+Thats it. Cluster is up and running. There was a couple of additional tasks that needed to be done, but it worked. If one does not have the option to use a Cloud Image, then this will also work. The experience using a Cloud Image was by far the easiest and most flexible approach. 
 
+## Creating a RKE2 cluster on existing nodes - not using vSphere cloud
 
-## Creating a RKE2 cluster on existing nodes
+If I dont have a vSphere environment, but another platform for my virtalization needs, one alternative is then to prepare some VMs with my preferred operating system I can tell Rancher to deploy RKE2 on. The provisioning and managing of these VMs will be handled by OpenTofu. Lets see how that works. 
 
-If I dont have a vSphere environment, but another platform for my virtalization needs, then I can tell Rancher to deploy Kubernetes on my existing nodes that I happen to provision and manage using OpenTofu. Lets see how that works. 
-
-I have already a [post](https://blog.andreasm.io/2024/01/15/proxmox-with-opentofu-kubespray-and-kubernetes/) covering how I am deploying VMs and Kubernetes using OpenTofu and Kubespray on my Proxmox cluster. For this section I will use the OpenTofu part just to quickly deploy the VMs on Proxmox I need to form my Kubernetes cluster.
+I have already a [post](https://blog.andreasm.io/2024/01/15/proxmox-with-opentofu-kubespray-and-kubernetes/) covering how I am deploying VMs and Kubernetes using OpenTofu and Kubespray on my Proxmox cluster. For this section I will use the OpenTofu part just to quickly deploy the VMs on Proxmox I need to build or bring up my Kubernetes (RKE2) cluster.
 
 My OpenTofu project is already configured, it should deploy 6 VMs, 3 control plane nodes and 3 workers. I will kick that task off like this:
 
@@ -580,7 +734,11 @@ And my vms should start popping up in my Proxmox ui:
 
 ![soon-to-be-rke-nodes-proxmox](images/image-20240507161104692.png)
 
- Now I have some freshly installed VMs running, it is time to hand them over to Rancher to do some magic on them. Lets head over to Rancher and create a Custom cluster. Click on Custom 
+Now I have some freshly installed VMs running, it is time to hand them over to Rancher to do some magic on them. Lets head over to Rancher and create a Custom cluster. 
+
+### Creating RKE2 cluster on existing nodes - "custom cloud"
+
+In Rancher, go to Cluster Management or from the homepage, **create** and select **Custom**
 
 ![custom-cluster](images/image-20240507161939708.png)
 
@@ -588,7 +746,7 @@ Give the cluster a name, and change what you want according to your needs. I wil
 
 
 
-![rke2-cluster-proxmox](images/image-20240507162506263.png)
+![rke2-cluster-proxmox](images/image-20240507184317985.png)
 
 ![rke2-cluster-proxmox-2](images/image-20240507162547885.png)
 
@@ -600,7 +758,7 @@ Now it will tell you to paste a registration command on the node you want to be 
 
 ![registration-command](images/image-20240507162749161.png)
 
-Click on the cli command to get it into the clipboard. I will start by preparing the first node as the control-plane, etcd and worker node. Then I will continue with the next two. After my controlplane is ready and consist of three nodes I will change the parameter to only include worker node and do the last three nodes. 
+Click on the cli command to get it into the clipboard. I will start by preparing the first node with all three roles *control-plane*, *etcd* and *worker*. Then I will continue with the next two. After my controlplane is ready and consist of three nodes I will change the parameter to only include worker node and do the last three nodes. 
 
 Then go ahead and ssh into my intented control plane node and paste the command:
 
@@ -616,9 +774,9 @@ ubuntu@ubuntu:~$ curl -fL https://rancher-dev.my-domain.net/system-agent-install
 [INFO]  Using default agent configuration directory /etc/rancher/agent
 [INFO]  Using default agent var directory /var/lib/rancher/agent
 [INFO]  Successfully tested Rancher connection
-[INFO]  Downloading rancher-system-agent binary from https://rancher-dev.int.guzware.net/assets/rancher-system-agent-amd64
+[INFO]  Downloading rancher-system-agent binary from https://rancher-dev.my-domain.net/assets/rancher-system-agent-amd64
 [INFO]  Successfully downloaded the rancher-system-agent binary.
-[INFO]  Downloading rancher-system-agent-uninstall.sh script from https://rancher-dev.int.guzware.net/assets/system-agent-uninstall.sh
+[INFO]  Downloading rancher-system-agent-uninstall.sh script from https://rancher-dev.my-doamin.net/assets/system-agent-uninstall.sh
 [INFO]  Successfully downloaded the rancher-system-agent-uninstall.sh script.
 [INFO]  Generating Cattle ID
 [INFO]  Successfully downloaded Rancher connection information
@@ -656,9 +814,9 @@ ubuntu@ubuntu:~$ curl -fL https://rancher-dev.my-domain.net/system-agent-install
 [INFO]  Using default agent configuration directory /etc/rancher/agent
 [INFO]  Using default agent var directory /var/lib/rancher/agent
 [INFO]  Successfully tested Rancher connection
-[INFO]  Downloading rancher-system-agent binary from https://rancher-dev.int.guzware.net/assets/rancher-system-agent-amd64
+[INFO]  Downloading rancher-system-agent binary from https://rancher-dev.my-domain.net/assets/rancher-system-agent-amd64
 [INFO]  Successfully downloaded the rancher-system-agent binary.
-[INFO]  Downloading rancher-system-agent-uninstall.sh script from https://rancher-dev.int.guzware.net/assets/system-agent-uninstall.sh
+[INFO]  Downloading rancher-system-agent-uninstall.sh script from https://rancher-dev.my-doamin.net/assets/system-agent-uninstall.sh
 [INFO]  Successfully downloaded the rancher-system-agent-uninstall.sh script.
 [INFO]  Generating Cattle ID
 [INFO]  Successfully downloaded Rancher connection information
@@ -673,13 +831,19 @@ Repeat for all the worker nodes needed.
 
 After some minutes, the cluster should be complete with all control plane nodes and worker nodes:
 
-Deploying Kubernetes clusters couldn't be more fun actually. 
+![cluster-ready](images/image-20240508164728679.png)
+
+
+
+The whole process, two tasks really, from deploying my six VMs to a fully working Kubernetes cluster running was just shy of 10 minutes. All I had to do was to provison the VMs, go into Rancher create a RKE2 cluster, execute the registration command on each node. 
+
+Deploying Kubernetes clusters couldn't be more fun actually.
 
 
 
 ## Navigating the Rancher UI
 
-Now that my cluster is up and running. What is the information Rancher can give me on my new RKE2 cluster. Lets click around.
+Now that my cluster(s) is up and running. What is the information Rancher can give me on my new RKE2 cluster. Lets click around.
 
 Click on *Explore*
 
@@ -830,6 +994,24 @@ kube-system           rke2-snapshot-validation-webhook-54c5989b65-8fzx7         
 
 ## Managing my RKE2 cluster from Rancher
 
+Deploying a Kubernetes cluster is something that can be done fairly easy, regardless of using Rancher or other K8s management platform.
+
+### Scaling nodes horizontally - up and down
+
+### Scaling nodes vertically - add cpu, ram and disk
+
+
+
+
+
+DIAGRAM Rancher API endpoint, including the loadbalancer component (avi, Traefik, HAProxy), accessing RKE2 clusters, vsphere cloud and proxmox custom nodes. Explaining traffic pattern
+
+This should be part of the intro...
+
+Update vSphere teomplate to be Ubuntu cloud image. And add an explanation to what Linux os is supported, and requirements.
+
+
+
 Managing a Kubernetes cluster involves several tasks like scaling, upgrading etc. 
 
 Now what, cluster is ready, how to access it, what can I do for cool stuff
@@ -840,9 +1022,13 @@ Deploy Avi/Ako using Helm
 
 NeuVector
 
+Scale up nodes vSphere
 
 
 
+Upgrading Rancher
+
+Also try to illustrate that I have Rancher in one site and vCenter in another site.. 
 
 
 
