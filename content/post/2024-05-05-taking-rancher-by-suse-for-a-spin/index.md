@@ -1341,6 +1341,470 @@ In my Avi controller I should now have a new Virtual Service using the fqdn name
 
 
 
+## Installing Custom CNI - bootstrapping new clusters using Antrea CNI
+
+What if I want to use a CNI that is not in the list of CNIs in Rancher?
+
+Rancher provide a list of tested CNIs to choose from when deploying a new RKE2 cluster, but one is not limited to only choose one of these CNIs. It is possible to create a cluster using your own preferred CNI. So in this chapter I will go through how I can deploy a new RKE2 cluster using Antrea as my CNI.
+
+Before I can bootstrap a cluster with Antrea (or any custom CNI) I need to tell Rancher to not deploy any CNI from the list of provided CNIs. This involves editing the cluster deployment using the YAML editor in Rancher. There is two ways I can install Antrea as the CNI during cluster creation/bootsrap, one is using the Antrea deployment manifest the other is using Helm Charts. The Helm Chart approach is the recommended way if you ask me, but one may not always have the option use Helm Chart that is way I have included both approaches. Below I will go through both of them, starting with the Antrea manifest. I need to complete one of these steps before clicking on the *create* cluster button.
+
+### Add-on Config using manifest
+
+After I have gone through the typical cluster creation steps, node pool config, cluster config etc I will need to add my Antrea manifest in the Add-On Config section.
+
+So I will be going into the Cluster Configuration section and *Add-On Config*
+
+![add-on-config](images/image-20240513161022543.png)
+
+Here I can add the deployment manifest for Antrea by just copy paste the content directly from the Antrea repo [here](https://github.com/antrea-io/antrea/blob/main/build/yamls/antrea.yml). This will always take you to the latest version of Antrea. Do the necessary configs in the deployment yaml like enabling or disabling the Antrea feature gates, if needed. They can be changed post cluster provision too. 
+
+Disregard the already populated Calico Configuration section:
+
+![calico-add-on-config](images/image-20240513161936973.png)
+
+This will be removed at a later stage completely. I need to paste my Antrea deployment manifest under *Additional Manifest*
+
+When done proceed to the step which involves disabling the default CNI that Rancher wants to deploy. It is not possible set CNI to *none* from the UI so I need to configure the yaml directly to tell it to not install any CNI. That is done by following the steps below.
+
+ 
+
+Click *edit as yaml*
+
+<img src=images/image-20240513144701914.png style="width:400px" />
+
+Within my cluster yaml, there is certain blocks I need to edit and remove. Below is a "default" yaml using Calico as CNI, then I will paste the yaml which I have edited to allow me to install my custom CNI. See comments in the yamls by extending the code-field. I have only pasted parts of the yaml that is involved to make it "shorter".
+
+The "untouched" yaml:
+
+```yaml
+# Before edited - expand field for all content to display
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: rke2-cluster-4-antrea
+  annotations:
+    field.cattle.io/description: RKE Cluster with Antrea
+    #  key: string
+  labels:
+    {}
+    #  key: string
+  namespace: fleet-default
+spec:
+  cloudCredentialSecretName: cattle-global-data:cc-qsq7b
+  clusterAgentDeploymentCustomization:
+  kubernetesVersion: v1.28.8+rke2r1
+  localClusterAuthEndpoint:
+    caCerts: ''
+    enabled: false
+    fqdn: ''
+  rkeConfig:
+    chartValues: ## Need to add {} due to remove the below line
+      rke2-calico: {} ### This needs to be removed
+    etcd:
+      disableSnapshots: false
+      s3:
+#        bucket: string
+#        cloudCredentialName: string
+#        endpoint: string
+#        endpointCA: string
+#        folder: string
+#        region: string
+#        skipSSLVerify: boolean
+      snapshotRetention: 5
+      snapshotScheduleCron: 0 */5 * * *
+    machineGlobalConfig:
+      cluster-cidr: 10.10.0.0/16
+      cni: calico ### Need to set this to none
+      disable-kube-proxy: false
+      etcd-expose-metrics: false
+      service-cidr: 10.20.0.0/16
+      profile: null
+
+```
+
+ The edited yaml:
+
+```yaml
+# Before edited - expand field for all content to display
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: rke2-cluster-4-antrea
+  annotations:
+    field.cattle.io/description: RKE Cluster with Antrea
+    #  key: string
+  labels:
+    {}
+    #  key: string
+  namespace: fleet-default
+spec:
+  cloudCredentialSecretName: cattle-global-data:cc-qsq7b
+  clusterAgentDeploymentCustomization:
+  kubernetesVersion: v1.28.8+rke2r1
+  localClusterAuthEndpoint:
+    caCerts: ''
+    enabled: false
+    fqdn: ''
+  rkeConfig:
+    chartValues: {}
+    etcd:
+      disableSnapshots: false
+      s3:
+#        bucket: string
+#        cloudCredentialName: string
+#        endpoint: string
+#        endpointCA: string
+#        folder: string
+#        region: string
+#        skipSSLVerify: boolean
+      snapshotRetention: 5
+      snapshotScheduleCron: 0 */5 * * *
+    machineGlobalConfig:
+      cluster-cidr: 10.10.0.0/16
+      cni: none
+      disable-kube-proxy: false ## See comment below
+      etcd-expose-metrics: false
+      service-cidr: 10.20.0.0/16
+      profile: null
+```
+
+ 
+
+After editing the yaml as indicated above it is time to click Create.
+
+![create-no-cni](images/image-20240513151518462.png)
+
+After a couple of minutes the cluster should be getting green and ready to consume with Antrea as the CNI. 
+
+Next up is the Helm Chart approach.
+
+### Add-on Config using Helm Charts
+
+I will follow almost the same approach as above, but instead of providing the Antrea manifest, I will be providing the Antrea Helm Chart repo. 
+
+So to save some digital ink, head over to Add-On Config and populate the Additional Manifest with the following content:
+
+![antrea-helm-chart](images/image-20240514203207791.png)
+
+Below is the yaml:
+
+```yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: antrea
+  namespace: kube-system
+spec:
+  bootstrap: true # this is important
+  chart: antrea
+  targetNamespace: kube-system
+  repo: https://charts.antrea.io
+  version: v1.15.1 # if I want a specific version to be installed
+```
+
+Below is a template to see which key/values that can be used:
+
+```yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: #string
+  namespace: default
+#  annotations:  key: string
+#  labels:  key: string
+spec:
+#  authPassCredentials: boolean
+#  authSecret:
+#    name: string
+#  backOffLimit: int
+#  bootstrap: boolean
+#  chart: string
+#  chartContent: string
+#  createNamespace: boolean
+#  dockerRegistrySecret:
+#    name: string
+#  failurePolicy: string
+#  helmVersion: string
+#  jobImage: string
+#  podSecurityContext:
+#    fsGroup: int
+#    fsGroupChangePolicy: string
+#    runAsGroup: int
+#    runAsNonRoot: boolean
+#    runAsUser: int
+#    seLinuxOptions:
+#      type: string
+#      level: string
+#      role: string
+#      user: string
+#    seccompProfile:
+#      type: string
+#      localhostProfile: string
+#    supplementalGroups:
+#      - int
+#    sysctls:
+#      - name: string
+#        value: string
+#    windowsOptions:
+#      gmsaCredentialSpec: string
+#      gmsaCredentialSpecName: string
+#      hostProcess: boolean
+#      runAsUserName: string
+#  repo: string
+#  repoCA: string
+#  repoCAConfigMap:
+#    name: string
+#  securityContext:
+#    allowPrivilegeEscalation: boolean
+#    capabilities:
+#      add:
+#        - string
+#      drop:
+#        - string
+#    privileged: boolean
+#    procMount: string
+#    readOnlyRootFilesystem: boolean
+#    runAsGroup: int
+#    runAsNonRoot: boolean
+#    runAsUser: int
+#    seLinuxOptions:
+#      type: string
+#      level: string
+#      role: string
+#      user: string
+#    seccompProfile:
+#      type: string
+#      localhostProfile: string
+#    windowsOptions:
+#      gmsaCredentialSpec: string
+#      gmsaCredentialSpecName: string
+#      hostProcess: boolean
+#      runAsUserName: string
+#  set: map[]
+#  targetNamespace: string
+#  timeout: string
+#  valuesContent: string
+#  version: string
+```
+
+Then edit the cluster yaml to disable the Rancher provided CNI, as described above. 
+
+Click *create*
+
+Below is a complete yaml of the cluster being provisioned with Antrea as the CNI using Helm Chart option.
+
+```yaml
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: rke2-cluster-4-antrea
+  annotations:
+    field.cattle.io/description: RKE2 using Antrea
+  labels:
+    {}
+  namespace: fleet-default
+spec:
+  cloudCredentialSecretName: cattle-global-data:cc-qsq7b
+  clusterAgentDeploymentCustomization:
+    appendTolerations:
+    overrideResourceRequirements:
+  defaultPodSecurityAdmissionConfigurationTemplateName: ''
+  defaultPodSecurityPolicyTemplateName: ''
+  fleetAgentDeploymentCustomization:
+    appendTolerations:
+    overrideAffinity:
+    overrideResourceRequirements:
+  kubernetesVersion: v1.28.9+rke2r1
+  localClusterAuthEndpoint:
+    caCerts: ''
+    enabled: false
+    fqdn: ''
+  rkeConfig:
+    additionalManifest: |-
+      apiVersion: helm.cattle.io/v1
+      kind: HelmChart
+      metadata:
+        name: antrea
+        namespace: kube-system
+      spec:
+        bootstrap: true # This is important
+        chart: antrea
+        targetNamespace: kube-system
+        repo: https://charts.antrea.io
+    chartValues: {}
+    etcd:
+      disableSnapshots: false
+      s3:
+      snapshotRetention: 5
+      snapshotScheduleCron: 0 */5 * * *
+    machineGlobalConfig:
+      cluster-cidr: 10.10.0.0/16
+      cni: none
+      disable-kube-proxy: false
+      etcd-expose-metrics: false
+      service-cidr: 10.20.0.0/16
+      profile: null
+    machinePools:
+      - name: pool1
+        etcdRole: true
+        controlPlaneRole: true
+        workerRole: true
+        hostnamePrefix: ''
+        quantity: 1
+        unhealthyNodeTimeout: 0m
+        machineConfigRef:
+          kind: VmwarevsphereConfig
+          name: nc-rke2-cluster-4-antrea-pool1-gh2nj
+        drainBeforeDelete: true
+        machineOS: linux
+        labels: {}
+      - name: pool2
+        etcdRole: false
+        controlPlaneRole: false
+        workerRole: true
+        hostnamePrefix: ''
+        quantity: 1
+        unhealthyNodeTimeout: 0m
+        machineConfigRef:
+          kind: VmwarevsphereConfig
+          name: nc-rke2-cluster-4-antrea-pool2-s5sv4
+        drainBeforeDelete: true
+        machineOS: linux
+        labels: {}
+    machineSelectorConfig:
+      - config:
+          protect-kernel-defaults: false
+    registries:
+      configs:
+        {}
+      mirrors:
+        {}
+    upgradeStrategy:
+      controlPlaneConcurrency: '1'
+      controlPlaneDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+      workerConcurrency: '1'
+      workerDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+  machineSelectorConfig:
+    - config: {}
+__clone: true
+```
+
+
+
+By doing the steps above, I should shortly have a freshly installed Kubernetes cluster deployed using Antrea as my CNI. 
+
+![antrea-app](images/image-20240514203832012.png)
+
+
+
+![antrea-1](images/image-20240514193830195.png)
+
+![antrea-tiers](images/image-20240514193904279.png)
+
+```bash
+# Run kubectl commands inside here
+# e.g. kubectl get all
+> k get pods -A
+NAMESPACE             NAME                                                                  READY   STATUS      RESTARTS      AGE
+cattle-fleet-system   fleet-agent-7cf5c7b6cb-cbr4c                                          1/1     Running     0             35m
+cattle-system         cattle-cluster-agent-686798b687-jq9kp                                 1/1     Running     0             36m
+cattle-system         cattle-cluster-agent-686798b687-q97mx                                 1/1     Running     0             34m
+cattle-system         dashboard-shell-6tldq                                                 2/2     Running     0             7s
+cattle-system         helm-operation-95wr6                                                  0/2     Completed   0             35m
+cattle-system         helm-operation-jtgzs                                                  0/2     Completed   0             29m
+cattle-system         helm-operation-qz9bc                                                  0/2     Completed   0             34m
+cattle-system         rancher-webhook-7d57cd6cb8-4thw7                                      1/1     Running     0             29m
+cattle-system         system-upgrade-controller-6f86d6d4df-x46gp                            1/1     Running     0             35m
+kube-system           antrea-agent-9qm2d                                                    2/2     Running     0             37m
+kube-system           antrea-agent-dr2hz                                                    2/2     Running     1 (33m ago)   34m
+kube-system           antrea-controller-768b4dbcb5-7srnw                                    1/1     Running     0             37m
+kube-system           cloud-controller-manager-rke2-cluster-5-antrea-pool1-fea898fd-t7fhv   1/1     Running     0             38m
+kube-system           etcd-rke2-cluster-5-antrea-pool1-fea898fd-t7fhv                       1/1     Running     0             38m
+kube-system           helm-install-antrea-vtskp                                             0/1     Completed   0             34m
+kube-system           helm-install-rke2-coredns-8lrrq                                       0/1     Completed   0             37m
+kube-system           helm-install-rke2-ingress-nginx-4bbr4                                 0/1     Completed   0             37m
+kube-system           helm-install-rke2-metrics-server-8xrbh                                0/1     Completed   0             37m
+kube-system           helm-install-rke2-snapshot-controller-crd-rt5hb                       0/1     Completed   0             37m
+kube-system           helm-install-rke2-snapshot-controller-pncxt                           0/1     Completed   0             37m
+kube-system           helm-install-rke2-snapshot-validation-webhook-zv9kl                   0/1     Completed   0             37m
+kube-system           kube-apiserver-rke2-cluster-5-antrea-pool1-fea898fd-t7fhv             1/1     Running     0             38m
+kube-system           kube-controller-manager-rke2-cluster-5-antrea-pool1-fea898fd-t7fhv    1/1     Running     0             38m
+kube-system           kube-proxy-rke2-cluster-5-antrea-pool1-fea898fd-t7fhv                 1/1     Running     0             38m
+kube-system           kube-proxy-rke2-cluster-5-antrea-pool2-209a1e89-9sjt7                 1/1     Running     0             34m
+kube-system           kube-scheduler-rke2-cluster-5-antrea-pool1-fea898fd-t7fhv             1/1     Running     0             38m
+kube-system           rke2-coredns-rke2-coredns-84b9cb946c-6hrfv                            1/1     Running     0             37m
+kube-system           rke2-coredns-rke2-coredns-84b9cb946c-z2bb5                            1/1     Running     0             34m
+kube-system           rke2-coredns-rke2-coredns-autoscaler-b49765765-spj7d                  1/1     Running     0             37m
+kube-system           rke2-ingress-nginx-controller-8p7rz                                   1/1     Running     0             34m
+kube-system           rke2-ingress-nginx-controller-zdbvm                                   0/1     Pending     0             37m
+kube-system           rke2-metrics-server-655477f655-5n7sp                                  1/1     Running     0             37m
+kube-system           rke2-snapshot-controller-59cc9cd8f4-6mtbs                             1/1     Running     0             37m
+kube-system           rke2-snapshot-validation-webhook-54c5989b65-jprqr                     1/1     Running     0             37m
+```
+
+Now with Antrea installed as the CNI I can go ahead and use the rich set of feature gates Antrea brings to table. 
+
+To enable and disable the Antrea FeatureGates either edit the configMap using *kubectl edit configmap -n kube-system antrea-config* or use the Rancher UI:
+
+![ConfigMaps](images/image-20240514194348844.png)
+
+![edit-config](images/image-20240514194425307.png)
+
+![edit-yaml](images/image-20240514194506279.png)
+
+### Upgrading or changing version of the Antrea CNI using Rancher
+
+When I deploy Antrea using the Helm Chart Add-On Config, upgrading or changing the version of Antrea is a walk in the park. 
+
+In the cluster I want to upgrade/downgrade Antrea I first need to add the Antrea Helm Repo under App -> Repositories:
+
+![add-antrea-repo](images/image-20240514204700410.png)
+
+Then head back to Installed Apps under **Apps** and click on *antrea*
+
+![antrea-app](images/image-20240514204819652.png)
+
+
+
+Click top right corner:
+
+![upgrade](images/image-20240514204934418.png)
+
+Follow the wizard and select the version you want, then click next.
+
+![antrea-version](images/image-20240514205037494.png)
+
+Change values or dont, and click Upgrade:
+
+![upgrade](images/image-20240514205229183.png)
+
+Sit back and enjoy:
+
+![upgraded](images/image-20240514205343991.png)
+
+ Now I just downgraded from version 2.0.0 to 1.15.1, the same approach is true for upgrading to a newer version ofcourse. But why upgrade when one can downgrade, one need to have some fun in life...
+
+In the list of **Installed Apps** view Rancher will notify me if there is a new release available. This is a nice indicator whenever there is a new release:
+
+![new-version-available](images/image-20240514211110983.png)
+
 
 
 ## NeuVector
@@ -1461,6 +1925,12 @@ Now I suddenly can access it all from the Monitoring section within my cluster:
 ![monitoring](images/image-20240511104058931.png)
 
 Notice the Active Alerts.
+
+From the Cluster Dashboard:
+
+![dashboard](images/image-20240513143749611.png)
+
+
 
 Lets see whats going on in and with my cluster:
 
