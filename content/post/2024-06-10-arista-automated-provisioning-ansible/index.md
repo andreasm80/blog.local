@@ -291,11 +291,673 @@ Before I did any automation with ZTP and Ansible I deployed my vEOS manually, co
 
 ![spine-leaf](images/image-20240610155111246.png)
 
+And here was the config I used on all switches respectively:
+
+**Spine1**
+
+```bash
+no aaa root
+!
+username admin role network-admin secret sha512 $hash/
+!
+switchport default mode routed
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname spine-1
+!
+spanning-tree mode mstp
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+interface Ethernet1
+   description spine-leaf-1-downlink-1
+   mtu 9214
+   no switchport
+   ip address 192.168.0.0/31
+!
+interface Ethernet2
+   description spine-leaf-1-downlink-2
+   mtu 9214
+   no switchport
+   ip address 192.168.0.2/31
+!
+interface Ethernet3
+   description spine-leaf-2-downlink-3
+   mtu 9214
+   no switchport
+   ip address 192.168.0.4/31
+!
+interface Ethernet4
+   description spine-leaf-2-downlink-4
+   mtu 9214
+   no switchport
+   ip address 192.168.0.6/31
+!
+interface Ethernet5
+   description spine-leaf-3-downlink-5
+   mtu 9214
+   no switchport
+   ip address 192.168.0.8/31
+!
+interface Ethernet6
+   description spine-leaf-3-downlink-6
+   mtu 9214
+   no switchport
+   ip address 192.168.0.10/31
+!
+interface Loopback0
+   description spine-1-evpn-lo
+   ip address 10.0.0.1/32
+!
+interface Management1
+   ip address 172.18.5.71/24
+!
+ip routing
+!
+ip prefix-list PL-LOOPBACKS
+   seq 10 permit 10.0.0.0/24 eq 32
+!
+ip route 0.0.0.0/0 172.18.5.2
+!
+route-map RM-LOOPBACKS permit 10
+   match ip address prefix-list PL-LOOPBACKS
+!
+router bgp 65000
+   router-id 10.0.0.1
+   maximum-paths 4 ecmp 4
+   neighbor UNDERLAY peer group
+   neighbor UNDERLAY allowas-in 1
+   neighbor UNDERLAY ebgp-multihop 4
+   neighbor UNDERLAY send-community extended
+   neighbor UNDERLAY maximum-routes 12000
+   neighbor 192.168.0.1 peer group UNDERLAY
+   neighbor 192.168.0.1 remote-as 65001
+   neighbor 192.168.0.1 description leaf-1-u1
+   neighbor 192.168.0.3 peer group UNDERLAY
+   neighbor 192.168.0.3 remote-as 65001
+   neighbor 192.168.0.3 description leaf-1-u2
+   neighbor 192.168.0.5 peer group UNDERLAY
+   neighbor 192.168.0.5 remote-as 65002
+   neighbor 192.168.0.5 description leaf-2-u1
+   neighbor 192.168.0.7 peer group UNDERLAY
+   neighbor 192.168.0.7 remote-as 65002
+   neighbor 192.168.0.7 description leaf-2-u2
+   neighbor 192.168.0.9 peer group UNDERLAY
+   neighbor 192.168.0.9 remote-as 65003
+   neighbor 192.168.0.9 description borderleaf-1-u1
+   neighbor 192.168.0.11 peer group UNDERLAY
+   neighbor 192.168.0.11 remote-as 65003
+   neighbor 192.168.0.11 description borderleaf-1-u2
+   !
+   address-family ipv4
+      neighbor UNDERLAY activate
+!
+end
+```
+
+**Spine2**
+
+```bash
+no aaa root
+!
+username admin role network-admin secret sha512 $hash/
+!
+switchport default mode routed
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname spine-2
+!
+spanning-tree mode mstp
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+interface Ethernet1
+   description spine-leaf-1-downlink-1
+   mtu 9214
+   no switchport
+   ip address 192.168.1.0/31
+!
+interface Ethernet2
+   description spine-leaf-1-downlink-2
+   mtu 9214
+   no switchport
+   ip address 192.168.1.2/31
+!
+interface Ethernet3
+   description spine-leaf-2-downlink-3
+   mtu 9214
+   no switchport
+   ip address 192.168.1.4/31
+!
+interface Ethernet4
+   description spine-leaf-2-downlink-4
+   mtu 9214
+   no switchport
+   ip address 192.168.1.6/31
+!
+interface Ethernet5
+   description spine-leaf-3-downlink-5
+   mtu 9214
+   no switchport
+   ip address 192.168.1.8/31
+!
+interface Ethernet6
+   description spine-leaf-3-downlink-6
+   mtu 9214
+   no switchport
+   ip address 192.168.1.10/31
+!
+interface Loopback0
+   ip address 10.0.0.2/32
+!
+interface Management1
+   ip address 172.18.5.72/24
+   description spine-leaf-2-downlink-4
+   mtu 9214
+   no switchport
+   ip address 192.168.1.6/31
+!
+interface Ethernet5
+   description spine-leaf-3-downlink-5
+   mtu 9214
+   no switchport
+   ip address 192.168.1.8/31
+!
+interface Ethernet6
+   description spine-leaf-3-downlink-6
+   mtu 9214
+   no switchport
+   ip address 192.168.1.10/31
+!
+interface Loopback0
+   ip address 10.0.0.2/32
+!
+interface Management1
+   ip address 172.18.5.72/24
+!
+ip routing
+!
+ip prefix-list PL-LOOPBACKS
+   seq 10 permit 10.0.0.0/24 eq 32
+!
+ip route 0.0.0.0/0 172.18.5.2
+!
+route-map RM-LOOPBACKS permit 10
+   match ip address prefix-list PL-LOOPBACKS
+!
+router bgp 65000
+   router-id 10.0.0.2
+   maximum-paths 4 ecmp 4
+   neighbor UNDERLAY peer group
+   neighbor UNDERLAY allowas-in 1
+   neighbor UNDERLAY ebgp-multihop 4
+   neighbor UNDERLAY send-community extended
+   neighbor UNDERLAY maximum-routes 12000
+   neighbor 192.168.1.1 peer group UNDERLAY
+   neighbor 192.168.1.1 remote-as 65001
+   neighbor 192.168.1.1 description leaf-1-u3
+   neighbor 192.168.1.3 peer group UNDERLAY
+   neighbor 192.168.1.3 remote-as 65001
+   neighbor 192.168.1.3 description leaf-1-u4
+   neighbor 192.168.1.5 peer group UNDERLAY
+   neighbor 192.168.1.5 remote-as 65002
+   neighbor 192.168.1.5 description leaf-2-u3
+   neighbor 192.168.1.7 peer group UNDERLAY
+   neighbor 192.168.1.7 remote-as 65002
+   neighbor 192.168.1.7 description leaf-2-u4
+   neighbor 192.168.1.9 peer group UNDERLAY
+   neighbor 192.168.1.9 remote-as 65003
+   neighbor 192.168.1.9 description borderleaf-1-u3
+   neighbor 192.168.1.11 peer group UNDERLAY
+   neighbor 192.168.1.11 remote-as 65003
+   neighbor 192.168.1.11 description borderleaf-1-u4
+   redistribute connected route-map RM-LOOPBACKS
+   !
+   address-family ipv4
+      neighbor UNDERLAY activate
+!
+end
+```
+
+**Leaf-1**
+
+```bash
+no aaa root
+!
+username admin role network-admin secret sha512 $hash
+!
+switchport default mode routed
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname leaf-1
+!
+spanning-tree mode mstp
+no spanning-tree vlan-id 4094
+!
+spanning-tree mst configuration
+   instance 1 vlan  1-4094
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+vlan 1070
+   name subnet-70
+!
+vlan 1071
+   name subnet-71
+!
+aaa authorization exec default local
+!
+interface Ethernet1
+   description leaf-spine-1-uplink-1
+   mtu 9000
+   no switchport
+   ip address 192.168.0.1/31
+!
+interface Ethernet2
+   description leaf-spine-1-uplink-2
+   mtu 9000
+   no switchport
+   ip address 192.168.0.3/31
+!
+interface Ethernet3
+   description leaf-spine-2-uplink-3
+   mtu 9000
+   no switchport
+   ip address 192.168.1.1/31
+!
+interface Ethernet4
+   description leaf-spine-2-uplink-4
+   mtu 9000
+   no switchport
+   ip address 192.168.1.3/31
+!
+interface Ethernet5
+   mtu 1500
+   switchport access vlan 1071
+   switchport
+   spanning-tree portfast
+!
+interface Ethernet6
+   no switchport
+!
+interface Loopback0
+   description leaf-1-lo
+   ip address 10.0.0.3/32
+!
+interface Management1
+   ip address 172.18.5.73/24
+!
+interface Vlan1070
+   description subnet-70
+   ip address virtual 10.70.0.1/24
+!
+interface Vlan1071
+   description subnet-71
+   ip address virtual 10.71.0.1/24
+!
+interface Vxlan1
+   vxlan source-interface Loopback0
+   vxlan udp-port 4789
+   vxlan vlan 1070-1071 vni 10070-10071
+!
+ip virtual-router mac-address 00:1c:73:ab:cd:ef
+!
+ip routing
+!
+ip prefix-list PL-LOOPBACKS
+   seq 10 permit 10.0.0.0/24 eq 32
+!
+ip route 0.0.0.0/0 172.18.5.2
+!
+route-map RM-LOOPBACKS permit 10
+   match ip address prefix-list PL-LOOPBACKS
+!
+router bgp 65001
+   router-id 10.0.0.3
+   maximum-paths 4 ecmp 4
+   neighbor OVERLAY peer group
+   neighbor OVERLAY ebgp-multihop 5
+   neighbor OVERLAY send-community extended
+   neighbor UNDERLAY peer group
+   neighbor UNDERLAY allowas-in 1
+   neighbor UNDERLAY ebgp-multihop 4
+   neighbor UNDERLAY send-community extended
+   neighbor UNDERLAY maximum-routes 12000
+   neighbor 10.0.0.4 peer group OVERLAY
+   neighbor 10.0.0.4 remote-as 65002
+   neighbor 10.0.0.4 update-source Loopback0
+   neighbor 10.0.0.5 peer group OVERLAY
+   neighbor 10.0.0.5 remote-as 65003
+   neighbor 192.168.0.0 peer group UNDERLAY
+   neighbor 192.168.0.0 remote-as 65000
+   neighbor 192.168.0.0 description spine-1-int-1
+   neighbor 192.168.0.2 peer group UNDERLAY
+   neighbor 192.168.0.2 remote-as 65000
+   neighbor 192.168.0.2 description spine-1-int-2
+   neighbor 192.168.1.0 peer group UNDERLAY
+   neighbor 192.168.1.0 remote-as 65000
+   neighbor 192.168.1.0 description spine-2-int-1
+   neighbor 192.168.1.2 peer group UNDERLAY
+   neighbor 192.168.1.2 remote-as 65000
+   neighbor 192.168.1.2 description spine-2-int-2
+   !
+   vlan-aware-bundle V1070-1079
+      rd 10.0.0.3:1070
+      route-target both 10010:1
+      redistribute learned
+      vlan 1070-1079
+   !
+   address-family evpn
+      neighbor OVERLAY activate
+   !
+   address-family ipv4
+      neighbor UNDERLAY activate
+      redistribute connected route-map RM-LOOPBACKS
+!
+end
+```
+
+**Leaf-2**
+
+```bash
+no aaa root
+!
+username admin role network-admin secret sha512 $hash
+!
+switchport default mode routed
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname leaf-2
+!
+spanning-tree mode mstp
+no spanning-tree vlan-id 4094
+!
+spanning-tree mst configuration
+   instance 1 vlan  1-4094
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+vlan 1070
+   name subnet-70
+!
+vlan 1071
+   name subnet-71
+!
+vlan 1072
+!
+aaa authorization exec default local
+!
+interface Ethernet1
+   description leaf-spine-1-uplink-1
+   mtu 9000
+   no switchport
+   ip address 192.168.0.5/31
+!
+interface Ethernet2
+   description leaf-spine-1-uplink-2
+   mtu 9000
+   no switchport
+   ip address 192.168.0.7/31
+!
+interface Ethernet3
+   description leaf-spine-2-uplink-3
+   mtu 9000
+   no switchport
+   ip address 192.168.1.5/31
+!
+interface Ethernet4
+   description leaf-spine-2-uplink-4
+   mtu 9000
+   no switchport
+   ip address 192.168.1.7/31
+!
+interface Ethernet5
+   mtu 1500
+   switchport access vlan 1070
+   switchport
+   spanning-tree portfast
+!
+interface Ethernet6
+   no switchport
+!
+interface Loopback0
+   ip address 10.0.0.4/32
+!
+interface Management1
+   ip address 172.18.5.74/24
+!
+interface Vlan1070
+   description subnet-70
+   ip address virtual 10.70.0.1/24
+!
+interface Vlan1071
+   description subnet-71
+   ip address virtual 10.71.0.1/24
+!
+interface Vxlan1
+   vxlan source-interface Loopback0
+   vxlan udp-port 4789
+   vxlan vlan 1070-1071 vni 10070-10071
+!
+ip virtual-router mac-address 00:1c:73:ab:cd:ef
+!
+ip routing
+!
+ip prefix-list PL-LOOPBACKS
+   seq 10 permit 10.0.0.0/24 eq 32
+!
+ip route 0.0.0.0/0 172.18.5.2
+!
+route-map RM-LOOPBACKS permit 10
+   match ip address prefix-list PL-LOOPBACKS
+!
+router bgp 65002
+   router-id 10.0.0.4
+   maximum-paths 4 ecmp 4
+   neighbor OVERLAY peer group
+   neighbor OVERLAY ebgp-multihop 5
+   neighbor OVERLAY send-community extended
+   neighbor UNDERLAY peer group
+   neighbor UNDERLAY allowas-in 1
+   neighbor UNDERLAY ebgp-multihop 4
+   neighbor UNDERLAY send-community extended
+   neighbor UNDERLAY maximum-routes 12000
+   neighbor 10.0.0.3 peer group OVERLAY
+   neighbor 10.0.0.3 remote-as 65001
+   neighbor 10.0.0.3 update-source Loopback0
+   neighbor 10.0.0.5 peer group OVERLAY
+   neighbor 10.0.0.5 remote-as 65003
+   neighbor 10.0.0.5 update-source Loopback0
+   neighbor 192.168.0.4 peer group UNDERLAY
+   neighbor 192.168.0.4 remote-as 65000
+   neighbor 192.168.0.4 description spine-1-int-3
+   neighbor 192.168.0.6 peer group UNDERLAY
+   neighbor 192.168.0.6 remote-as 65000
+   neighbor 192.168.0.6 description spine-1-int-4
+   neighbor 192.168.1.4 peer group UNDERLAY
+   neighbor 192.168.1.4 remote-as 65000
+   neighbor 192.168.1.4 description spine-2-int-3
+   neighbor 192.168.1.6 peer group UNDERLAY
+   neighbor 192.168.1.6 remote-as 65000
+   neighbor 192.168.1.6 description spine-2-int-4
+   !
+   vlan-aware-bundle V1070-1079
+      rd 10.0.0.4:1070
+      route-target both 10010:1
+      redistribute learned
+      vlan 1070-1079
+   !
+   address-family evpn
+      neighbor OVERLAY activate
+   !
+   address-family ipv4
+      neighbor UNDERLAY activate
+      redistribute connected route-map RM-LOOPBACKS
+!
+end
+```
+
+**Borderleaf-1**
+
+```bash
+no aaa root
+!
+username admin role network-admin secret sha512 $hash
+!
+switchport default mode routed
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname borderleaf-1
+!
+spanning-tree mode mstp
+no spanning-tree vlan-id 4094
+!
+spanning-tree mst configuration
+   instance 1 vlan  1-4094
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+vlan 1079
+   name subnet-wan
+!
+aaa authorization exec default local
+!
+interface Ethernet1
+   description leaf-spine-1-uplink-1
+   mtu 9214
+   no switchport
+   ip address 192.168.0.9/31
+!
+interface Ethernet2
+   description leaf-spine-1-uplink-2
+   mtu 9214
+   no switchport
+   ip address 192.168.0.11/31
+!
+interface Ethernet3
+   description leaf-spine-2-uplink-3
+   mtu 9214
+   no switchport
+   ip address 192.168.1.9/31
+!
+interface Ethernet4
+   description leaf-spine-2-uplink-4
+   mtu 9214
+   no switchport
+   ip address 192.168.1.11/31
+!
+interface Ethernet5
+   switchport trunk allowed vlan 1070-1079
+   switchport mode trunk
+   switchport
+!
+interface Ethernet6
+   no switchport
+!
+interface Loopback0
+   ip address 10.0.0.5/32
+!
+interface Management1
+   ip address 172.18.5.75/24
+!
+interface Vlan1079
+   ip address virtual 10.79.0.1/24
+!
+interface Vxlan1
+   vxlan source-interface Loopback0
+   vxlan udp-port 4689
+   vxlan vlan 1079 vni 10079
+!
+ip routing
+!
+ip prefix-list PL-LOOPBACKS
+   seq 10 permit 10.0.0.0/24 eq 32
+!
+ip route 0.0.0.0/0 172.18.5.2
+!
+route-map RM-LOOPBACKS permit 10
+   match ip address prefix-list PL-LOOPBACKS
+!
+router bgp 65003
+   router-id 10.0.0.4
+   maximum-paths 2 ecmp 2
+   neighbor OVERLAY peer group
+   neighbor OVERLAY ebgp-multihop 5
+   neighbor OVERLAY send-community extended
+   neighbor UNDERLAY peer group
+   neighbor UNDERLAY allowas-in 1
+   neighbor UNDERLAY ebgp-multihop 4
+   neighbor UNDERLAY send-community extended
+   neighbor UNDERLAY maximum-routes 12000
+   neighbor 10.0.0.3 peer group OVERLAY
+   neighbor 10.0.0.3 remote-as 65001
+   neighbor 10.0.0.3 update-source Loopback0
+   neighbor 10.0.0.4 peer group OVERLAY
+   neighbor 10.0.0.4 remote-as 65002
+   neighbor 10.0.0.4 update-source Loopback0
+   neighbor 192.168.0.8 peer group UNDERLAY
+   neighbor 192.168.0.8 remote-as 65000
+   neighbor 192.168.0.8 description spine-1-int-5
+   neighbor 192.168.0.10 peer group UNDERLAY
+   neighbor 192.168.0.10 remote-as 65000
+   neighbor 192.168.0.10 description spine-1-int-6
+   neighbor 192.168.1.8 peer group UNDERLAY
+   neighbor 192.168.1.8 remote-as 65000
+   neighbor 192.168.1.8 description spine-2-int-5
+   neighbor 192.168.1.10 peer group UNDERLAY
+   neighbor 192.168.1.10 remote-as 65000
+   neighbor 192.168.1.10 description spine-2-int-6
+   !
+   vlan-aware-bundle V1079
+      rd 10.0.0.5:1079
+      route-target both 10070:1
+      redistribute learned
+      vlan 1079
+   !
+   address-family evpn
+      neighbor OVERLAY activate
+   !
+   address-family ipv4
+      neighbor UNDERLAY activate
+      redistribute connected route-map RM-LOOPBACKS
+!
+end
+```
+
+
+
 ### My physical lab topology
 
-## 
+![image-20240610160936721](images/image-20240610160936721.png)
 
-## Ansible
+![image-20240610160718618](images/image-20240610160718618.png)
+
+## Ansible - Arista Validated Designs
 
 
 
