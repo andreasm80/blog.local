@@ -91,6 +91,10 @@ I have already covered Antrea Egress in another post [here](https://blog.andreas
 
 Before configuring Antrea Egress, the default behaviour for a pod when "egressing" or communicating externally outside its Kubernetes cluster is that its source address (POD CIDR) is translated using SNAT to the Kubernetes node the pod is currently running on. See below diagram:
 
+
+
+
+
 ![pod-ext-snat](images/image-20240417103049244.png)
 
 Each time a pod needs to communicate outside its k8s node it will get the IP address from the node it is currently residing on.
@@ -121,6 +125,8 @@ A very simple illustration on how my network is configured, for better context.
 ![network](images/image-20240417160828960.png)
 
 All my nodes are configured on a virtual port group using VLAN 216, using subnet 10.160.1.0/24 and my Egress pool is configured using VLAN 181. My switch is both L2 and L3, its configured with gateway interfaces for some of my networks and routes between the networks configured on the switch. All networks outside the switch is routed to my firewall using BGP.
+
+
 
 ### How to configure Antrea Egress using VLAN
 

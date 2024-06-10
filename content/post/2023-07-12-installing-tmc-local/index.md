@@ -53,7 +53,7 @@ And, according to the official documentation:
 
 {{% notice warning "Note" %}}
 
-Deploying TMC Self-Managed 1.0 on a Tanzu Kubernetes Grid (TKG) 2.0 workload cluster running in vSphere with Tanzu on vSphere version 8.x is for tech preview only. Initiate deployments only in pre-production environments or production environments where support for the integration is not required. [vSphere 8u1](https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vmware-vsphere-with-tanzu-80-release-notes/index.html#What's%20New-What's%2[%E2%80%A6]%20April%2018,%202023) or later is required in order to test the tech preview integration.
+Deploying TMC Self-Managed 1.0 on a Tanzu Kubernetes Grid (TKG) 2.0 workload cluster running in vSphere with Tanzu on vSphere version 8.x is for tech preview only. Initiate deployments only in pre-production environments or production environments where support for the integration is not required. [vSphere 8u1](https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vmware-vsphere-with-tanzu-80-release-notes/index.html) or later is required in order to test the tech preview integration.
 
 {{% /notice %}}
 
@@ -1701,7 +1701,7 @@ Except the Alertmanager pod which can be fixed, it is kind a success. Remember a
 
 {{% notice warning "Note" %}}
 
-Deploying TMC Self-Managed 1.0 on a Tanzu Kubernetes Grid (TKG) 2.0 workload cluster running in vSphere with Tanzu on vSphere version 8.x is for tech preview only. Initiate deployments only in pre-production environments or production environments where support for the integration is not required. [vSphere 8u1](https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vmware-vsphere-with-tanzu-80-release-notes/index.html#What's%20New-What's%2[%E2%80%A6]%20April%2018,%202023) or later is required in order to test the tech preview integration.
+Deploying TMC Self-Managed 1.0 on a Tanzu Kubernetes Grid (TKG) 2.0 workload cluster running in vSphere with Tanzu on vSphere version 8.x is for tech preview only. Initiate deployments only in pre-production environments or production environments where support for the integration is not required. [vSphere 8u1](https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vmware-vsphere-with-tanzu-80-release-notes/index.html) or later is required in order to test the tech preview integration.
 
 {{% /notice %}}
 
