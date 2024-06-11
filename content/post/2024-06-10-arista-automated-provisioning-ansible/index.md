@@ -1,6 +1,6 @@
 ---
 author: "Andreas M"
-title: "Arista Automated Provisioning using Ansible"
+title: "Arista Automated Configuration using Ansible"
 date: 2024-06-10T07:51:41+02:00 
 description: "Deploying Arista vEOS from zero to full spine-leaf"
 draft: false 
@@ -21,33 +21,41 @@ comment: false # Disable comment if false.
 
 
 
-# Arista Networks
-
-From Arista's [homepage](https://www.arista.com/en/company/company-overview): 
+# Arista Networks 
 
 > Arista Networks is an industry leader in data-driven, client to cloud networking for large data center/AI, campus and routing environments. Arista’s award-winning platforms deliver availability, agility, automation, analytics and security through an advanced network operating stack
+
+Source: Arista's [homepage](https://www.arista.com/en/company/company-overview).
 
 Arista has some really great products, and what I would like to have a deeper look at is the automation part, which also may involve the agility part.
 
 I have been working with network for many years, starting out with basic network configurations like VLAN, iSCSI setups and routing to support my vSphere implementations as a consultant many many years back. Then I started working with VMware NSX back in 2014/15 first as a consultant doing presale, design and implementation before joining VMware as a NSX specialist. Working with NSX, both as consultant and later as a VMware NSX solutions engineer, very much involved the physical network NSX was supposed to run "on top" of as the actual NSX design. One of NSX benefits was how easy it was to automate. 
 
-What I have never been working with is automating the physical network. Automation is not only for easier deployment, handling dynamics in the datacenter more efficient, but also reducing/eliminate configuration issues. In this post I will go through how I make use of Arista vEOS and Ansible to deploy a full spine-leaf topology from zero to hero.
+What I have never been working with is automating the physical network. Automation is not only for easier deployment, handling dynamics in the datacenter more efficient, but also reducing/eliminate configuration issues. In this post I will go through how I make use of Arista vEOS and Arista Ansible playbooks to deploy a full spine-leaf topology from zero to hero.
+
+## Arista Extensible Operating System - EOS 
+
+> Arista Extensible Operating System (EOS®) is the core of Arista cloud networking solutions for next-generation data centers and cloud networks. Cloud architectures built with Arista EOS scale to hundreds of thousands of compute and storage nodes with management and provisioning capabilities that work at scale. Through its programmability, EOS enables a set of software applications that deliver workflow automation, high availability, unprecedented network visibility and analytics and rapid integration with a wide range of third-party applications for virtualization, management, automation and orchestration services.
+
+Source: [Arista](https://www.arista.com/en/products/eos)
+
+
 
 ## vEOS
 
 vEOS is a virtual appliance making it possible to run EOS as a virtual machine in vSphere, KVM, Proxmox, VMware Workstation, Fusion, and VirtualBox just to name a few. For more information head over [here](https://arista.my.site.com/AristaCommunity/s/article/veos-running-eos-in-a-vm). 
 
-With this it is absolutely possible to deploy/test Arista EOS with all kinds of functionality in the comfort of my lab. So without further ado, lets jump in to it.  
+With this it is absolutely possible to deploy/test Arista EOS with all kinds of functionality in the comfort of my own lab. So without further ado, lets jump in to it.  
 
 ### vEOS on Proxmox
 
-The vEOS appliance consists of two files, the *aboot-veos-x.iso* and the *veos-lab-4-x.disk*. The *aboot-veos-x.iso* is mounted as a CD/DVD ISO and the disk file is the harddisk of your VM. I am running Proxmox in my lab that supports both VMDK vm disk files and qcow2 I will be using qcow2 as vEOS also includes this file. So what I did to create a working vEOS VM in Proxmox was this:
+The vEOS appliance consists of two files, the *aboot-veos-x.iso* and the *veos-lab-4-x.disk*. The *aboot-veos-x.iso* is mounted as a CD/DVD ISO and the disk file is the harddisk of your VM. I am running Proxmox in my lab that supports importing both VMDK and qcow2 disk files, but I will be using qcow2 as vEOS also includes this file. So here what I did to create a working vEOS VM in Proxmox:
 
-- Upload the files aboot-veos.iso to a datastore on my Proxmox host I can store ISO files. 
+- Upload the file aboot-veos.iso to a datastore on my Proxmox hosts I can store ISO files. 
 
 ![aboot-iso](images/image-20240610143633008.png)
 
-- Upload the qcow2 image/disk file to a temp folder on my Proxmox host. (/tmp)
+- Upload the qcow2 image/disk file to a temp folder on my Proxmox host. (e.g /tmp)
 
 ```bash
 root@proxmox-02:/tmp# ls
@@ -283,11 +291,15 @@ andreasm@arista-dhcp:~/arista/tftpboot$ systemctl status tftpd-hpa.service
 
 Thats it. If I have already powered on my vEOS appliance they will very soon get their new config and reboot with the desired config. If not, just reset or power them on and off again. Every time I deploy a new vEOS appliance I just have to update my DHCP server config to add the additional hosts mac addresses and corresponding config files. 
 
-Now next chapter is about configuring the vEOS switches to form a spine/leaf topology automatically provisioned by using Ansible. To get started I used Arista's very well documented Arista Validated Design [here](https://avd.arista.com/4.8/index.html). More on this in the coming chapters
+Now next chapters is about automating the configuring of the vEOS switches to form a spine/leaf topology using Ansible. To get started I used Arista's very well documented Arista Validated Design [here](https://avd.arista.com/4.8/index.html). More on this in the coming chapters
 
-## Desired Topology
+## Spine-Leaf - Desired Topology
 
-Before I did any automation with ZTP and Ansible I deployed my vEOS manually, configured them manually so I was sure I had a working configuration, and no issues in my lab. I just made sure I could deploy a spine-leaf topology, created some vlans and attached some VMs to them and checked connectivity. Below was my desired topology:
+> A spine-leaf topology is a two-layer network architecture commonly used in data centers. It is designed to provide high-speed, low-latency, and highly available network connectivity. This topology is favored for its scalability and performance, especially in environments requiring large amounts of east-west traffic (server-to-server).
+
+In virtual environments, including Kubernetes environments, which is quite common today will have a large amount of east-west traffic. In this post will be using the Spine Leaf architecture. 
+
+Before I did any automation with ZTP and Ansible I deployed my vEOS appliances manually, configured them manually using CLI so I was sure I had a working configuration, and no issues in my lab. I just made sure I could deploy a spine-leaf topology, created some vlans and attached some VMs to them and checked connectivity. Below was my desired topology:
 
 ![spine-leaf](images/image-20240610155111246.png)
 
@@ -953,13 +965,131 @@ end
 
 ### My physical lab topology
 
-![image-20240610160936721](images/image-20240610160936721.png)
+I think it also make sense to quickly go over how my lab is configured. The diagram below illustrates my two Proxmox hosts 1 and 2 both connected to my physical switch on port 49, 51 and 50, 52 respectively. The reason I bring this up is because in certain scenarios I dont want certain vlans to be available on the trunk for both hosts. Like the downlinks from the the vEOS appliances to the attached test VMs, this will not be the case in real world either. This just confuses things. 
 
-![image-20240610160718618](images/image-20240610160718618.png)
+![physical-topology](images/image-20240610160936721.png)
 
-## Ansible - Arista Validated Designs
+Below is how I interconnect all my vEOS appliances, separating all peer to peer connections on their own dedicated vlan. This is ofcourse not necessary in "real world", but again this is all virtual environment (including the vEOS switches). All the VLANs are configured on the above illustrated physical switch and made available on the trunks to respective Proxmox hosts using VLAN trunks. 
+
+![vlan-separation](images/image-20240610160718618.png)
+
+I have also separated the spines on each host and both leafs, as I have only two hosts the borderleaf-1 is placed on same host as leaf-2. 
+
+![vm-placement](images/image-20240610222846728.png)
+
+Below is the VLAN tag for each vEOS appliance:
+
+**Spine-1**
+
+![spine-1-vlan](images/image-20240610223208433.png)
+
+**Spine-2**
+
+![spine-2-vlans](images/image-20240610223248009.png)
+
+**Leaf-1**
+
+![leaf-1-vlans](images/image-20240610223315258.png)
+
+For the leafs the last two network cards *net5* and *net6* are used as host downlinks and not involved in forming the spine/leaf.
+
+**Leaf-2**
+
+![leaf-2-vlans](images/image-20240610223733088.png)
+
+**Borderleaf-1**
+
+![borderleaf-1-vlans](images/image-20240610223758562.png)
 
 
+
+## Arista Validated Designs (AVD)
+
+> Arista Validated Designs (AVD) is an extensible data model that defines Arista’s Unified Cloud Network architecture as “code”.
+>
+> [Arista.avd](https://galaxy.ansible.com/arista/avd) is an Ansible collection for Arista Validated Designs. It’s maintained by Arista and accepts third-party contributions on GitHub at [aristanetworks/avd](https://github.com/aristanetworks/avd).
+>
+> While Ansible is the core automation engine, AVD is an Ansible Collection described above. It provides roles, modules, and plugins that allow the user to generate and deploy best-practice configurations to Arista based networks of various design types: Data Center, Campus and Wide Area Networks.
+
+Source: Arista [https://avd.arista.com/](https://avd.arista.com/)
+
+Arista Validated Design is a very well maintained project, and by having a quick look at their GitHub [repo](https://github.com/aristanetworks/avd) updates are done very frequently and latest release was 3 weeks ago.
+
+*avd.arista.com* is a brilliant web page for their Validated Designs using Ansible where they document very well how to get started including some example designs like [Single DC L3LS](https://avd.arista.com/4.8/examples/single-dc-l3ls/index.html), [Dual DC L3LS](https://avd.arista.com/4.8/examples/dual-dc-l3ls/index.html), [L2LS Fabric](https://avd.arista.com/4.8/examples/l2ls-fabric/index.html), [Campus Fabric](https://avd.arista.com/4.8/examples/campus-fabric/index.html) and [ISIS-LDP IPVPN](https://avd.arista.com/4.8/examples/isis-ldp-ipvpn/index.html).
+
+I will base my deployment on the *Single DC L3LS* example, with some modifications to achieve a similiar design as illustrated earlier. The major modifications I am doing is removing some of the leafs and no MLAG, keeping it as close to my initial design as possible.  
+
+### Requirements and preparing my environment for AVD
+
+To get started using Ansible I find it best to create a dedicated Python Environment to keep all the different requirements isolated from other projects. This means I can run different versions and packages within their own dedicated virtual environments without them interfering with other environments. 
+
+
+
+So before I install any of AVDs requirements I will start by creating a folder for my AVD project:
+
+```bash
+andreasm@linuxmgmt01:~$ mkdir arista_validated_design
+andreasm@linuxmgmt01:~$ cd arista_validated_design/
+andreasm@linuxmgmt01:~/arista_validated_design$
+```
+
+Then I will create my Python Virtual Environment.
+
+```bash
+andreasm@linuxmgmt01:~/arista_validated_design$ python3 -m venv avd-environment
+andreasm@linuxmgmt01:~/arista_validated_design$ ls
+avd-environment
+andreasm@linuxmgmt01:~/arista_validated_design$ cd avd-environment/
+andreasm@linuxmgmt01:~/arista_validated_design/avd-environment$ ls
+bin  include  lib  lib64  pyvenv.cfg
+```
+
+This will create a subfolder with the name of the environment. Now all I need to to is to activate the environment so I can deploy the necessary requirements for AVD. 
+
+```bash
+andreasm@linuxmgmt01:~/arista_validated_design$ source avd-environment/bin/activate
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$
+```
+
+Notice the (avd-environment) indicating I am now in my virtual environment called avd-environment. 
+
+AVD Collection Requirements:
+
+- Python 3.9 or later
+- ansible-core from 2.15.0 to 2.17.x
+- arista.avd collection
+- additional Python requirements: 
+
+```bash
+# PyAVD must follow the exact same version as the Ansible collection.
+# For development this should be installed as an editable install as specified in requirement-dev.txt
+pyavd==4.9.0-dev0
+netaddr>=0.7.19
+Jinja2>=3.0.0
+treelib>=1.5.5
+cvprac>=1.3.1
+jsonschema>=4.10.3
+referencing>=0.35.0
+requests>=2.27.0
+PyYAML>=6.0.0
+deepmerge>=1.1.0
+cryptography>=38.0.4
+# No anta requirement until the eos_validate_state integration is out of preview.
+# anta>=1.0.0
+aristaproto>=0.1.1
+```
+
+-  Modify ansible.cfg to support jinja2 extensions.
+
+### Install AVD Collection and requirement
+
+
+
+### Deploying my custom topology using AVD and Ansible
+
+### Automated Documentation
+
+### Doing changes
 
 
 
