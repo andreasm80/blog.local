@@ -27,11 +27,11 @@ comment: false # Disable comment if false.
 
 Source: Arista's [homepage](https://www.arista.com/en/company/company-overview).
 
-Arista has some really great products, and what I would like to have a deeper look at is the automation part, which also may involve the agility part.
+Arista has some really great products and solutions, and in this post I will have a deeper look at using [Ansible Validated Design](https://avd.arista.com) automating the whole bringup process of a Spine-Leaf topology. I will also see how this can be used to make the network underlay more agile by adding changes "on-demand".
 
 I have been working with network for many years, starting out with basic network configurations like VLAN, iSCSI setups and routing to support my vSphere implementations as a consultant many many years back. Then I started working with VMware NSX back in 2014/15 first as a consultant doing presale, design and implementation before joining VMware as a NSX specialist. Working with NSX, both as consultant and later as a VMware NSX solutions engineer, very much involved the physical network NSX was supposed to run "on top" of as the actual NSX design. One of NSX benefits was how easy it was to automate. 
 
-What I have never been working with is automating the physical network. Automation is not only for easier deployment, handling dynamics in the datacenter more efficient, but also reducing/eliminate configuration issues. In this post I will go through how I make use of Arista vEOS and Arista Ansible playbooks to deploy a full spine-leaf topology from zero to hero.
+What I have never been working with is automating the physical network. Automation is not only for easier deployment, handling dynamics in the datacenter more efficient, but also reducing/eliminate configuration issues. In this post I will go through how I make use of Arista vEOS and Arista's Ansible playbooks to deploy a full spine-leaf topology from zero to hero.
 
 ## Arista Extensible Operating System - EOS 
 
@@ -291,15 +291,13 @@ andreasm@arista-dhcp:~/arista/tftpboot$ systemctl status tftpd-hpa.service
 
 Thats it. If I have already powered on my vEOS appliance they will very soon get their new config and reboot with the desired config. If not, just reset or power them on and off again. Every time I deploy a new vEOS appliance I just have to update my DHCP server config to add the additional hosts mac addresses and corresponding config files. 
 
-Now next chapters is about automating the configuring of the vEOS switches to form a spine/leaf topology using Ansible. To get started I used Arista's very well documented Arista Validated Design [here](https://avd.arista.com/4.8/index.html). More on this in the coming chapters
-
 ## Spine-Leaf - Desired Topology
 
 > A spine-leaf topology is a two-layer network architecture commonly used in data centers. It is designed to provide high-speed, low-latency, and highly available network connectivity. This topology is favored for its scalability and performance, especially in environments requiring large amounts of east-west traffic (server-to-server).
 
 In virtual environments, including Kubernetes environments, which is quite common today will have a large amount of east-west traffic. In this post will be using the Spine Leaf architecture. 
 
-Before I did any automation with ZTP and Ansible I deployed my vEOS appliances manually, configured them manually using CLI so I was sure I had a working configuration, and no issues in my lab. I just made sure I could deploy a spine-leaf topology, created some vlans and attached some VMs to them and checked connectivity. Below was my desired topology:
+Before I did any automated provisioning using Arista Validated Design and Ansible I deployed my vEOS appliances configured them with the amount of network interfaces needed to support my intended use (below), then configured them all manually using CLI so I was sure I had a working configuration, and no issues in my lab. I wanted to make sure I could deploy a spine-leaf topology, create some vlans and attached some VMs to them and checked connectivity. Below was my desired topology:
 
 ![spine-leaf](images/image-20240610155111246.png)
 
@@ -961,7 +959,7 @@ router bgp 65003
 end
 ```
 
-
+With the configurations above manually created, I had a working Spine-Leaf topology in my lab. These configs will also be very interesting to compare later on.
 
 ### My physical lab topology
 
@@ -1001,6 +999,10 @@ For the leafs the last two network cards *net5* and *net6* are used as host down
 
 ![borderleaf-1-vlans](images/image-20240610223758562.png)
 
+After verififying the above configs worked after manually configuring it, I reset all the switches back to factory settings. They will get the initial config set by Zero-Touch-Provisioning and ready to be configured again.
+
+Now the next chapters is about automating the configuring of the vEOS switches to form a spine/leaf topology using Ansible. To get started I used Arista's very well documented Arista Validated Design [here](https://avd.arista.com/4.8/index.html). More on this in the coming chapters
+
 
 
 ## Arista Validated Designs (AVD)
@@ -1019,7 +1021,7 @@ Arista Validated Design is a very well maintained project, and by having a quick
 
 I will base my deployment on the *Single DC L3LS* example, with some modifications to achieve a similiar design as illustrated earlier. The major modifications I am doing is removing some of the leafs and no MLAG, keeping it as close to my initial design as possible.  
 
-### Requirements and preparing my environment for AVD
+### Preparing my environment for AVD and AVD collection requirements
 
 To get started using Ansible I find it best to create a dedicated Python Environment to keep all the different requirements isolated from other projects. This means I can run different versions and packages within their own dedicated virtual environments without them interfering with other environments. 
 
@@ -1051,9 +1053,7 @@ andreasm@linuxmgmt01:~/arista_validated_design$ source avd-environment/bin/activ
 (avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$
 ```
 
-Notice the (avd-environment) indicating I am now in my virtual environment called avd-environment. 
-
-AVD Collection Requirements:
+Notice the (avd-environment) indicating I am now in my virtual environment called avd-environment. Now that I have a dedicated Python environment for this I am ready to install all the dependencies for the AVD Collection without running the risk of any conflict with other environments. Below is the AVD Collection Requirements:
 
 - Python 3.9 or later
 - ansible-core from 2.15.0 to 2.17.x
@@ -1081,15 +1081,220 @@ aristaproto>=0.1.1
 
 -  Modify ansible.cfg to support jinja2 extensions.
 
-### Install AVD Collection and requirement
+### Install AVD Collection and requirements
 
+From my newly created Python Environment I will install the necessary components to get started with AVD. 
 
+The first requirement the Python version:
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ python --version
+Python 3.12.1
+```
+
+Next requirement is installing ansible-core:
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ python3 -m pip install ansible
+Collecting ansible
+  Obtaining dependency information for ansible from https://files.pythonhosted.org/packages/28/7c/a5f708b7b033f068a8ef40db5c993bee4cfafadd985d48dfe44db8566fc6/ansible-10.0.1-py3-none-any.whl.metadata
+  Using cached ansible-10.0.1-py3-none-any.whl.metadata (8.2 kB)
+Collecting ansible-core~=2.17.0 (from ansible)
+  Obtaining dependency information for ansible-core~=2.17.0 from https://files.pythonhosted.org/packages/2f/77/97fb1880abb485f1df31b36822c537330db86bea4105fdea6e1946084c16/ansible_core-2.17.0-py3-none-any.whl.metadata
+  Using cached ansible_core-2.17.0-py3-none-any.whl.metadata (6.9 kB)
+...
+Installing collected packages: resolvelib, PyYAML, pycparser, packaging, MarkupSafe, jinja2, cffi, cryptography, ansible-core, ansible
+Successfully installed MarkupSafe-2.1.5 PyYAML-6.0.1 ansible-10.0.1 ansible-core-2.17.0 cffi-1.16.0 cryptography-42.0.8 jinja2-3.1.4 packaging-24.1 pycparser-2.22 resolvelib-1.0.1
+```
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ ansible --version
+ansible [core 2.17.0]
+```
+
+The third requirement is to install the arista.avd collection:
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ ansible-galaxy collection install arista.avd
+Starting galaxy collection install process
+[WARNING]: Collection arista.cvp does not support Ansible version 2.17.0
+Process install dependency map
+Starting collection install process
+Downloading https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/arista-avd-4.8.0.tar.gz to /home/andreasm/.ansible/tmp/ansible-local-66927_qwu6ou1/tmp33cqptq7/arista-avd-4.8.0-p_88prjp
+Installing 'arista.avd:4.8.0' to '/home/andreasm/.ansible/collections/ansible_collections/arista/avd'
+arista.avd:4.8.0 was installed successfully
+```
+
+Then I need the fourth requirement installing the additional Python requirments:
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ export ARISTA_AVD_DIR=$(ansible-galaxy collection list arista.avd --format yaml | head -1 | cut -d: -f1)
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ pip3 install -r ${ARISTA_AVD_DIR}/arista/avd/requirements.txt
+Collecting netaddr>=0.7.19 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 1))
+```
+
+By pointing to the requirements.txt it will grab all necessary requirements.
+
+And the last requirement, modifying the ansible.cfg to support jinja2 extensions. I will get back to this in a second.
+I will copy the AVD examples to my current folder first, the reason for this is that they already contain a ansible.cfg file in every example.
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ ansible-playbook arista.avd.install_examples
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that the implicit localhost does not match 'all'
+
+PLAY [Install Examples] *****************************************************************************************************************************************************************************************
+
+TASK [Copy all examples to /home/andreasm/arista_validated_design] **********************************************************************************************************************************************
+changed: [localhost]
+
+PLAY RECAP ******************************************************************************************************************************************************************************************************
+localhost                  : ok=1    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+ Now lets have a look at the contents in my folder:
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design$ ll
+total 32
+drwxrwxr-x  8 andreasm andreasm 4096 Jun 12 06:08 ./
+drwxr-xr-x 43 andreasm andreasm 4096 Jun 11 05:24 ../
+drwxrwxr-x  5 andreasm andreasm 4096 Jun 11 06:02 avd-environment/
+drwxrwxr-x  7 andreasm andreasm 4096 Jun 12 06:07 campus-fabric/
+drwxrwxr-x  7 andreasm andreasm 4096 Jun 12 06:08 dual-dc-l3ls/
+drwxrwxr-x  7 andreasm andreasm 4096 Jun 12 06:07 isis-ldp-ipvpn/
+drwxrwxr-x  7 andreasm andreasm 4096 Jun 12 06:08 l2ls-fabric/
+drwxrwxr-x  8 andreasm andreasm 4096 Jun 12 06:09 single-dc-l3ls/
+```
+
+And by taking a look inside the *single-dc-l3ls* folder (which I am basing my configuration on) I will see that there is already a ansible.cfg file:
+
+```bash
+(avd-environment) andreasm@linuxmgmt01:~/arista_validated_design/single-dc-l3ls$ ll
+total 92
+drwxrwxr-x 8 andreasm andreasm  4096 Jun 12 06:09 ./
+drwxrwxr-x 8 andreasm andreasm  4096 Jun 12 06:08 ../
+-rw-rw-r-- 1 andreasm andreasm   109 Jun 12 06:08 ansible.cfg # here
+-rw-rw-r-- 1 andreasm andreasm   422 Jun 12 06:08 build.yml
+drwxrwxr-x 2 andreasm andreasm  4096 Jun 12 06:09 config_backup/
+-rw-rw-r-- 1 andreasm andreasm   368 Jun 12 06:08 deploy-cvp.yml
+-rw-rw-r-- 1 andreasm andreasm   260 Jun 12 06:08 deploy.yml
+drwxrwxr-x 4 andreasm andreasm  4096 Jun 12 06:09 documentation/
+drwxrwxr-x 2 andreasm andreasm  4096 Jun 12 06:09 group_vars/
+drwxrwxr-x 2 andreasm andreasm  4096 Jun 12 06:08 images/
+drwxrwxr-x 4 andreasm andreasm  4096 Jun 12 06:09 intended/
+-rw-rw-r-- 1 andreasm andreasm  1403 Jun 12 06:08 inventory.yml
+-rw-rw-r-- 1 andreasm andreasm 36936 Jun 12 06:08 README.md
+drwxrwxr-x 2 andreasm andreasm  4096 Jun 12 06:09 switch-basic-configurations/
+```
+
+Now to the last requirement, when I open the ansible.cfg file using *vim* I will notice this content:
+
+```yaml
+[defaults]
+inventory=inventory.yml
+jinja2_extensions = jinja2.ext.loopcontrols,jinja2.ext.do,jinja2.ext.i18n
+```
+
+It already contains the requirements. What I can add is the following, as recommended by AVD:
+
+```yaml
+[defaults]
+inventory=inventory.yml
+jinja2_extensions = jinja2.ext.loopcontrols,jinja2.ext.do,jinja2.ext.i18n
+duplicate_dict_key=error # added this
+
+```
+
+Thats it for the preparations. Now it is time to do some networking automation.
+
+For more details and instructions, head over to the [avd.arista.com](https://avd.arista.com) webpage as it is very well documented there.
 
 ### Deploying my custom topology using AVD and Ansible
 
-### Automated Documentation
+To get started with Arista AVD is quite easy as the necessary files are very well structured and easy to understand with already example information configured making it very easy to follow. In my *single-dc-l3ls" folder there is a couple of files inside the group_cvars folder I need to edit to my match my environment. When these have been edited its time to apply the task. But before getting there, I will go through the files, how I have edited them. 
 
-### Doing changes
+As I mentioned above, I will base my deployment on the example *single-dc-l3ls" with some minor modifications by removing some leaf-switches. So by entering the folder *single-dc-l3ls* folder, which was created when I copied the collection over to my environment earlier, I will find the content related such an deployment. 
+
+Below is the files I need to do some edits in, numbered in the order they are configured:
+
+```bash
+├── ansible.cfg # added the optional duplicate_dict_key  
+├── group_vars/
+│ ├── CONNECTED_ENDPOINTS.yml #### 7 ####
+│ ├── DC1_L2_LEAVES.yml ### N/A ####
+│ ├── DC1_L3_LEAVES.yml #### 3 ####
+│ ├── DC1_SPINES.yml #### 2 ####
+│ ├── DC1.yml #### 5 ####
+│ ├── FABRIC.yml #### 4 ####
+│ └── NETWORK_SERVICES.yml #### 6 ####
+├── inventory.yml #### 1 ####
+```
+
+
+
+First out is the *inventory.yml*
+
+This file contains a list over which hosts/switches that should be included in the configuration, in my environment it looks like this:
+
+```yaml
+---
+all:
+  children:
+    FABRIC:
+      children:
+        DC1:
+          children:
+            DC1_SPINES:
+              hosts:
+                dc1-spine1:
+                  ansible_host: 172.18.100.101
+                dc1-spine2:
+                  ansible_host: 172.18.100.102
+            DC1_L3_LEAVES:
+              hosts:
+                dc1-leaf1:
+                  ansible_host: 172.18.100.103
+                dc1-leaf2:
+                  ansible_host: 172.18.100.104
+                dc1-borderleaf1:
+                  ansible_host: 172.18.100.105
+
+    NETWORK_SERVICES:
+      children:
+        DC1_L3_LEAVES:
+    CONNECTED_ENDPOINTS:
+      children:
+        DC1_L3_LEAVES:
+```
+
+I have remove the L2 Leaves. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+In the next chapters I will go over what other benefits Arista Validated Design comes with.
+
+### Automatically generated config files
+
+### Automated documentation
+
+### Day 2 changes using AVD
 
 
 
