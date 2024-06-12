@@ -1210,11 +1210,11 @@ Thats it for the preparations. Now it is time to do some networking automation.
 
 For more details and instructions, head over to the [avd.arista.com](https://avd.arista.com) webpage as it is very well documented there.
 
-### Deploying my custom topology using AVD and Ansible
+### Preparing AVD example files
 
-To get started with Arista AVD is quite easy as the necessary files are very well structured and easy to understand with already example information configured making it very easy to follow. In my *single-dc-l3ls" folder there is a couple of files inside the group_cvars folder I need to edit to my match my environment. When these have been edited its time to apply the task. But before getting there, I will go through the files, how I have edited them. 
+To get started with Arista Validated Design is quite easy as the necessary files are very well structured and easy to understand with already example information populated making it very easy to follow. In my *single-dc-l3ls* folder there is a couple of files inside the *group_cvars* folder I need to edit to my match my environment. When these have been edited its time to apply the task. But before getting there, I will go through the files, how I have edited them. 
 
-As I mentioned above, I will base my deployment on the example *single-dc-l3ls" with some minor modifications by removing some leaf-switches. So by entering the folder *single-dc-l3ls* folder, which was created when I copied the collection over to my environment earlier, I will find the content related such an deployment. 
+As I mentioned above, I will base my deployment on the example *single-dc-l3ls" with some minor modifications by removing some leaf-switches, addings some uplinks etc. So by entering the folder *single-dc-l3ls* folder, which was created when I copied the collection over to my environment earlier, I will find the content related such an deployment. 
 
 Below is the files I need to do some edits in, numbered in the order they are configured:
 
@@ -1268,35 +1268,338 @@ all:
         DC1_L3_LEAVES:
 ```
 
-I have remove the L2 Leaves. 
+I have removed the L2 Leaves, as my plan is to deploy this design:
+
+![2-spine-3-leafs](images/image-20240610160718618.png)
+
+When done editing the inventory.yml I will *cd* into the *group_cvars* folder for the next files to be edited.
+
+The first two files in this folder is the device type files *DC1_SPINES* and *DC1_L3_LEAVES.yml* which defines which "role" each device will have in the above topology (spine, l2 or l3 leaf). I will leave these with the default content. 
+
+Next up is the FABRIC.yml which configures "global" settings on all devices:
+
+```yaml
+---
+# Ansible connectivity definitions
+# eAPI connectivity via HTTPS is specified (as opposed to CLI via SSH)
+ansible_connection: ansible.netcommon.httpapi
+# Specifies that we are indeed using Arista EOS
+ansible_network_os: arista.eos.eos
+# This user/password must exist on the switches to enable Ansible access
+ansible_user: ansible
+ansible_password: 774psurt
+# User escalation (to enter enable mode)
+ansible_become: true
+ansible_become_method: enable
+# Use SSL (HTTPS)
+ansible_httpapi_use_ssl: true
+# Do not try to validate certs
+ansible_httpapi_validate_certs: false
+
+# Common AVD group variables
+fabric_name: FABRIC
+
+# Define underlay and overlay routing protocol to be used
+underlay_routing_protocol: ebgp
+overlay_routing_protocol: ebgp
+
+# Local users
+local_users:
+  # Define a new user, which is called "ansible"
+  - name: ansible
+    privilege: 15
+    role: network-admin
+    # Password set to "ansible". Same string as the device generates when configuring a username.
+    sha512_password: $hash/
+  - name: admin
+    privilege: 15
+    role: network-admin
+    no_password: true
+
+# BGP peer groups passwords
+bgp_peer_groups:
+  # all passwords set to "arista"
+  evpn_overlay_peers:
+    password: Q4fqtbqcZ7oQuKfuWtNGRQ==
+  ipv4_underlay_peers:
+    password: 7x4B4rnJhZB438m9+BrBfQ==
+
+# P2P interfaces MTU, includes VLANs 4093 and 4094 that are over peer-link
+# If you're running vEOS-lab or cEOS, you should use MTU of 1500 instead as shown in the following line
+# p2p_uplinks_mtu: 9214
+p2p_uplinks_mtu: 1500
+
+# Set default uplink, downlink, and MLAG interfaces based on node type
+default_interfaces:
+  - types: [ spine ]
+    platforms: [ default ]
+    #uplink_interfaces: [ Ethernet1-2 ]
+    downlink_interfaces: [ Ethernet1-6 ]
+  - types: [ l3leaf ]
+    platforms: [ default ]
+    uplink_interfaces: [ Ethernet1-4 ]
+    downlink_interfaces: [ Ethernet5-6 ]
+
+# internal vlan reservation
+internal_vlan_order:
+  allocation: ascending
+  range:
+    beginning: 1100
+    ending: 1300
 
 
+# DNS Server
+name_servers:
+  - 10.100.1.7
+
+# NTP Servers IP or DNS name, first NTP server will be preferred, and sourced from Management VRF
+ntp_settings:
+  server_vrf: use_mgmt_interface_vrf
+  servers:
+    - name: dns-bind-01.int.guzware.net
+```
+
+In the FABRIC.yml I have added this section:
+
+```yaml
+# internal vlan reservation
+internal_vlan_order:
+  allocation: ascending
+  range:
+    beginning: 1100
+    ending: 1300
+```
+
+After editing the FABRIC.yml its time to edit the DC1.yml. This file will configure the unique BGP settings and map the specific uplinks/downlinks in the spine-leaf. As I have decided to use two distinct uplinks pr Leaf to the Spines I need to edit the DC1.yml accordingly:
+
+```yaml
+---
+# Default gateway used for the management interface
+mgmt_gateway: 172.18.100.2
 
 
+# Spine switch group
+spine:
+  # Definition of default values that will be configured to all nodes defined in this group
+  defaults:
+    # Set the relevant platform as each platform has different default values in Ansible AVD
+    platform: vEOS-lab
+    # Pool of IPv4 addresses to configure interface Loopback0 used for BGP EVPN sessions
+    loopback_ipv4_pool: 10.0.0.0/27
+    # ASN to be used by BGP
+    bgp_as: 65000
 
+  # Definition of nodes contained in this group.
+  # Specific configuration of device must take place under the node definition. Each node inherits all values defined under 'defaults'
+  nodes:
+    # Name of the node to be defined (must be consistent with definition in inventory)
+    - name: dc1-spine1
+      # Device ID definition. An integer number used for internal calculations (ie. IPv4 address of the loopback_ipv4_pool among others)
+      id: 1
+      # Management IP to be assigned to the management interface
+      mgmt_ip: 172.18.100.101/24
 
+    - name: dc1-spine2
+      id: 2
+      mgmt_ip: 172.18.100.102/24
 
+# L3 Leaf switch group
+l3leaf:
+  defaults:
+    # Set the relevant platform as each platform has different default values in Ansible AVD
+    platform: vEOS-lab
+    # Pool of IPv4 addresses to configure interface Loopback0 used for BGP EVPN sessions
+    loopback_ipv4_pool: 10.0.0.0/27
+    # Offset all assigned loopback IP addresses.
+    # Required when the < loopback_ipv4_pool > is same for 2 different node_types (like spine and l3leaf) to avoid over-lapping IPs.
+    # For example, set the minimum offset l3leaf.defaults.loopback_ipv4_offset: < total # spine switches > or vice versa.
+    loopback_ipv4_offset: 2
+    # Definition of pool of IPs to be used as Virtual Tunnel EndPoint (VXLAN origin and destination IPs)
+    vtep_loopback_ipv4_pool: 10.255.1.0/27
+    # Ansible hostname of the devices used to establish neighborship (IP assignments and BGP peering)
+    uplink_interfaces: ['Ethernet1', 'Ethernet2', 'Ethernet3', 'Ethernet4', 'Ethernet5', 'Ethernet6', 'Ethernet1', 'Ethernet2', 'Ethernet3', 'Ethernet4', 'Ethernet5', 'Ethernet6']
+    uplink_switches: ['dc1-spine1', 'dc1-spine1', 'dc1-spine2', 'dc1-spine2']
+    # Definition of pool of IPs to be used in P2P links
+    uplink_ipv4_pool: 192.168.0.0/26
+    # Definition of pool of IPs to be used for MLAG peer-link connectivity
+    #mlag_peer_ipv4_pool: 10.255.1.64/27
+    # iBGP Peering between MLAG peers
+    #mlag_peer_l3_ipv4_pool: 10.255.1.96/27
+    # Virtual router mac for VNIs assigned to Leaf switches in format xx:xx:xx:xx:xx:xx
+    virtual_router_mac_address: 00:1c:73:00:00:99
+    spanning_tree_priority: 4096
+    spanning_tree_mode: mstp
 
+  # If two nodes (and only two) are in the same node_group, they will automatically form an MLAG pair
+  node_groups:
+    # Definition of a node group that will include two devices in MLAG.
+    # Definitions under the group will be inherited by both nodes in the group
+    - group: DC1_L3_LEAF1
+      # ASN to be used by BGP for the group. Both devices in the MLAG pair will use the same BGP ASN
+      bgp_as: 65001
+      nodes:
+        # Definition of hostnames under the node_group
+        - name: dc1-leaf1
+          id: 1
+          mgmt_ip: 172.18.100.103/24
+          # Definition of the port to be used in the uplink device facing this device.
+          # Note that the number of elements in this list must match the length of 'uplink_switches' as well as 'uplink_interfaces'
+          uplink_switch_interfaces:
+            - Ethernet1
+            - Ethernet2
+            - Ethernet1
+            - Ethernet2
 
+    - group: DC1_L3_LEAF2
+      bgp_as: 65002
+      nodes:
+        - name: dc1-leaf2
+          id: 2
+          mgmt_ip: 172.18.100.104/24
+          uplink_switch_interfaces:
+            - Ethernet3
+            - Ethernet4
+            - Ethernet3
+            - Ethernet4
 
+    - group: DC1_L3_BORDERLEAF1
+      bgp_as: 65003
+      nodes:
+        - name: dc1-borderleaf1
+          id: 3
+          mgmt_ip: 172.18.100.105/24
+          uplink_switch_interfaces:
+            - Ethernet5
+            - Ethernet6
+            - Ethernet5
+            - Ethernet6
+```
 
+When I am satisfied with the DC1.yml I will continue with the NETWORK_SERVICES.yml. This will configure the respective VRF VNI/VXLAN mappings and L2 VLANS.
 
+```yaml
+---
+tenants:
+  # Definition of tenants. Additional level of abstraction to VRFs
+  - name: TENANT1
+    # Number used to generate the VNI of each VLAN by adding the VLAN number in this tenant.
+    mac_vrf_vni_base: 10000
+    vrfs:
+      # VRF definitions inside the tenant.
+      - name: VRF10
+        # VRF VNI definition.
+        vrf_vni: 10
+        # Enable VTEP Network diagnostics
+        # This will create a loopback with virtual source-nat enable to perform diagnostics from the switch.
+        vtep_diagnostic:
+          # Loopback interface number
+          loopback: 10
+          # Loopback ip range, a unique ip is derived from this ranged and assigned
+          # to each l3 leaf based on it's unique id.
+          loopback_ip_range: 10.255.10.0/27
+        svis:
+          # SVI definitions.
+          - id: 1072
+            # SVI Description
+            name: VRF10_VLAN1072
+            enabled: true
+            # IP anycast gateway to be used in the SVI in every leaf.
+            ip_address_virtual: 10.72.10.1/24
+          - id: 1073
+            name: VRF10_VLAN1073
+            enabled: true
+            ip_address_virtual: 10.73.10.1/24
+      - name: VRF11
+        vrf_vni: 11
+        vtep_diagnostic:
+          loopback: 11
+          loopback_ip_range: 10.255.11.0/27
+        svis:
+          - id: 1074
+            name: VRF11_VLAN1074
+            enabled: true
+            ip_address_virtual: 10.74.11.1/24
+          - id: 1075
+            name: VRF11_VLAN1075
+            enabled: true
+            ip_address_virtual: 10.75.11.1/24
 
+    l2vlans:
+      # These are pure L2 vlans. They do not have a SVI defined in the l3leafs and they will be bridged inside the VXLAN fabric
+      - id: 1070
+        name: L2_VLAN1070
+      - id: 1071
+        name: L2_VLAN1071
+```
 
+And finally the CONNECTED_ENDPOINTS.yml. This will configure the actual physical access/trunk ports for host connections/endpoints.
 
+```yaml
+---
+# Definition of connected endpoints in the fabric.
+servers:
+  # Name of the defined server.
+  - name: dc1-leaf1-vm-server1
+    # Definition of adapters on the server.
+    adapters:
+        # Name of the server interfaces that will be used in the description of each interface
+      - endpoint_ports: [ VM1 ]
+        # Device ports where the server ports are connected.
+        switch_ports: [ Ethernet5 ]
+        # Device names where the server ports are connected.
+        switches: [ dc1-leaf1 ]
+        # VLANs that will be configured on these ports.
+        vlans: 1071
+        # Native VLAN to be used on these ports.
+        #native_vlan: 4092
+        # L2 mode of the port.
+        mode: access
+        # Spanning tree portfast configuration on this port.
+        spanning_tree_portfast: edge
+        # Definition of the pair of ports as port channel.
+        #port_channel:
+          # Description of the port channel interface.
+          #description: PortChannel dc1-leaf1-server1
+          # Port channel mode for LACP.
+          #mode: active
 
+      - endpoint_ports: [ VM2 ]
+        switch_ports: [ Ethernet6 ]
+        switches: [ dc1-leaf1 ]
+        vlans: 1072
+        mode: access
+        spanning_tree_portfast: edge
 
+  - name: dc1-leaf2-server1
+    adapters:
+      - endpoint_ports: [ VM3 ]
+        switch_ports: [ Ethernet5 ]
+        switches: [ dc1-leaf ]
+        vlans: 1070
+        native_vlan: 4092
+        mode: access
+        spanning_tree_portfast: edge
+        #port_channel:
+        #  description: PortChannel dc1-leaf2-server1
+        #  mode: active
 
+      - endpoint_ports: [ VM4 ]
+        switch_ports: [ Ethernet6 ]
+        switches: [ dc1-leaf2 ]
+        vlans: 1073
+        mode: access
+        spanning_tree_portfast: edge
+```
 
-In the next chapters I will go over what other benefits Arista Validated Design comes with.
+Now that all the yml's have beed edited accordingly, its the time everyone has been waiting for... Applying the config above and see some magic happen.  
 
-### Automatically generated config files
+### Ansible build and deploy
 
-### Automated documentation
+Going one folder back up, I will find two files of interest (root of my chosen example folder *single-dc-l3ls*) called build.yml and deploy.yml.
 
-### Day 2 changes using AVD
+Before sending the actual configuration to the devices, I will start by running the build.yml as a dry-run for error checking etc, but also building out the configuration for me to inspect before configuring the devices themselves. It will also create some dedicated files under the documentation folder (more on that later). 
 
-
+Lets run the the build.yaml:
 
 ```bash
 (arista_avd) andreasm@linuxmgmt01:~/arista/andreas-spine-leaf$ ansible-playbook build.yml
@@ -1317,55 +1620,302 @@ TASK [arista.avd.eos_designs : Set eos_designs facts] **************************
 ok: [dc1-spine1]
 
 TASK [arista.avd.eos_designs : Generate device configuration in structured format] ******************************************************************************************************************************
-An exception occurred during task execution. To see the full traceback, use -vvv. The error was: ansible_collections.arista.avd.plugins.plugin_utils.errors.errors.AristaAvdDuplicateDataError: Found duplicate objects with conflicting data while generating configuration for Ethernet Interfaces defined for underlay. {'name': 'Ethernet1', 'peer': 'dc1-leaf1', 'peer_interface': 'Ethernet1', 'description': 'P2P_LINK_TO_DC1-LEAF1_Ethernet1', 'ip_address': '192.168.0.0/31'} conflicts with {'name': 'Ethernet1', 'peer': 'dc1-borderleaf1', 'peer_interface': 'Ethernet1', 'description': 'P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet1', 'ip_address': '192.168.0.8/31'}.
-fatal: [dc1-spine1 -> localhost]: FAILED! => {"changed": false, "msg": "Found duplicate objects with conflicting data while generating configuration for Ethernet Interfaces defined for underlay. {'name': 'Ethernet1', 'peer': 'dc1-leaf1', 'peer_interface': 'Ethernet1', 'description': 'P2P_LINK_TO_DC1-LEAF1_Ethernet1', 'ip_address': '192.168.0.0/31'} conflicts with {'name': 'Ethernet1', 'peer': 'dc1-borderleaf1', 'peer_interface': 'Ethernet1', 'description': 'P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet1', 'ip_address': '192.168.0.8/31'}."}
-An exception occurred during task execution. To see the full traceback, use -vvv. The error was: ansible_collections.arista.avd.plugins.plugin_utils.errors.errors.AristaAvdDuplicateDataError: Found duplicate objects with conflicting data while generating configuration for Ethernet Interfaces defined for underlay. {'name': 'Ethernet2', 'peer': 'dc1-leaf1', 'peer_interface': 'Ethernet2', 'description': 'P2P_LINK_TO_DC1-LEAF1_Ethernet2', 'ip_address': '192.168.0.2/31'} conflicts with {'name': 'Ethernet2', 'peer': 'dc1-borderleaf1', 'peer_interface': 'Ethernet2', 'description': 'P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet2', 'ip_address': '192.168.0.10/31'}.
-fatal: [dc1-spine2 -> localhost]: FAILED! => {"changed": false, "msg": "Found duplicate objects with conflicting data while generating configuration for Ethernet Interfaces defined for underlay. {'name': 'Ethernet2', 'peer': 'dc1-leaf1', 'peer_interface': 'Ethernet2', 'description': 'P2P_LINK_TO_DC1-LEAF1_Ethernet2', 'ip_address': '192.168.0.2/31'} conflicts with {'name': 'Ethernet2', 'peer': 'dc1-borderleaf1', 'peer_interface': 'Ethernet2', 'description': 'P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet2', 'ip_address': '192.168.0.10/31'}."}
-changed: [dc1-leaf2 -> localhost]
-changed: [dc1-borderleaf1 -> localhost]
-changed: [dc1-leaf1 -> localhost]
+ok: [dc1-borderleaf1 -> localhost]
+ok: [dc1-spine1 -> localhost]
+ok: [dc1-spine2 -> localhost]
+ok: [dc1-leaf1 -> localhost]
+ok: [dc1-leaf2 -> localhost]
 
 TASK [arista.avd.eos_designs : Generate fabric documentation] ***************************************************************************************************************************************************
-changed: [dc1-leaf1 -> localhost]
+ok: [dc1-spine1 -> localhost]
 
 TASK [arista.avd.eos_designs : Generate fabric point-to-point links summary in csv format.] *********************************************************************************************************************
-changed: [dc1-leaf1 -> localhost]
+ok: [dc1-spine1 -> localhost]
 
 TASK [arista.avd.eos_designs : Generate fabric topology in csv format.] *****************************************************************************************************************************************
-changed: [dc1-leaf1 -> localhost]
+ok: [dc1-spine1 -> localhost]
 
 TASK [arista.avd.eos_designs : Remove avd_switch_facts] *********************************************************************************************************************************************************
-ok: [dc1-leaf1]
+ok: [dc1-spine1]
 
 TASK [arista.avd.eos_cli_config_gen : Verify Requirements] ******************************************************************************************************************************************************
-skipping: [dc1-leaf1]
+skipping: [dc1-spine1]
 
 TASK [arista.avd.eos_cli_config_gen : Create required output directories if not present] ************************************************************************************************************************
-ok: [dc1-leaf1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/intended/structured_configs)
-ok: [dc1-leaf1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/documentation)
-ok: [dc1-leaf1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/intended/configs)
-ok: [dc1-leaf1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/documentation/devices)
+ok: [dc1-spine1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/intended/structured_configs)
+ok: [dc1-spine1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/documentation)
+ok: [dc1-spine1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/intended/configs)
+ok: [dc1-spine1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/documentation/devices)
 
 TASK [arista.avd.eos_cli_config_gen : Include device intended structure configuration variables] ****************************************************************************************************************
+skipping: [dc1-spine1]
+skipping: [dc1-spine2]
 skipping: [dc1-leaf1]
 skipping: [dc1-leaf2]
 skipping: [dc1-borderleaf1]
 
 TASK [arista.avd.eos_cli_config_gen : Generate eos intended configuration] **************************************************************************************************************************************
-changed: [dc1-borderleaf1 -> localhost]
-changed: [dc1-leaf2 -> localhost]
-changed: [dc1-leaf1 -> localhost]
+ok: [dc1-spine1 -> localhost]
+ok: [dc1-spine2 -> localhost]
+ok: [dc1-leaf2 -> localhost]
+ok: [dc1-leaf1 -> localhost]
+ok: [dc1-borderleaf1 -> localhost]
 
 TASK [arista.avd.eos_cli_config_gen : Generate device documentation] ********************************************************************************************************************************************
-changed: [dc1-leaf2 -> localhost]
-changed: [dc1-leaf1 -> localhost]
-changed: [dc1-borderleaf1 -> localhost]
+ok: [dc1-spine2 -> localhost]
+ok: [dc1-spine1 -> localhost]
+ok: [dc1-borderleaf1 -> localhost]
+ok: [dc1-leaf1 -> localhost]
+ok: [dc1-leaf2 -> localhost]
 
 PLAY RECAP ******************************************************************************************************************************************************************************************************
-dc1-borderleaf1            : ok=3    changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
-dc1-leaf1                  : ok=8    changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
-dc1-leaf2                  : ok=3    changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
-dc1-spine1                 : ok=3    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
-dc1-spine2                 : ok=0    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
+dc1-borderleaf1            : ok=3    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+dc1-leaf1                  : ok=3    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+dc1-leaf2                  : ok=3    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+dc1-spine1                 : ok=11   changed=0    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
+dc1-spine2                 : ok=3    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
 ```
+
+No errors, looking good. 
+(PS! I have already run the build.yaml once, and as there was no changes, there is nothing for it to update/change hence the 0 in *changed*)
+
+It has now created the individual config files under the folder *intented/configs* for my inspection and record. 
+
+```bash
+(arista_avd) andreasm@linuxmgmt01:~/arista/andreas-spine-leaf/intended/configs$ ll
+total 48
+drwxrwxr-x 2 andreasm andreasm 4096 Jun 10 11:49 ./
+drwxrwxr-x 4 andreasm andreasm 4096 Jun 10 07:14 ../
+-rw-rw-r-- 1 andreasm andreasm 6244 Jun 10 11:49 dc1-borderleaf1.cfg
+-rw-rw-r-- 1 andreasm andreasm 6564 Jun 10 11:49 dc1-leaf1.cfg
+-rw-rw-r-- 1 andreasm andreasm 6399 Jun 10 11:49 dc1-leaf2.cfg
+-rw-rw-r-- 1 andreasm andreasm 4386 Jun 10 11:49 dc1-spine1.cfg
+-rw-rw-r-- 1 andreasm andreasm 4390 Jun 10 11:49 dc1-spine2.cfg
+```
+
+Lets continue with the *deploy.yml* and send the configuration to the devices themselves:
+
+```bash
+(arista_avd) andreasm@linuxmgmt01:~/arista/andreas-spine-leaf$ ansible-playbook deploy.yml
+
+PLAY [Deploy Configurations to Devices using eAPI] **************************************************************************************************************************************************************
+
+TASK [arista.avd.eos_config_deploy_eapi : Verify Requirements] **************************************************************************************************************************************************
+AVD version 4.8.0
+Use -v for details.
+[WARNING]: Collection arista.cvp does not support Ansible version 2.17.0
+ok: [dc1-spine1 -> localhost]
+
+TASK [arista.avd.eos_config_deploy_eapi : Create required output directories if not present] ********************************************************************************************************************
+ok: [dc1-spine1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/config_backup)
+ok: [dc1-spine1 -> localhost] => (item=/home/andreasm/arista/andreas-spine-leaf/config_backup)
+
+TASK [arista.avd.eos_config_deploy_eapi : Replace configuration with intended configuration] ********************************************************************************************************************
+[DEPRECATION WARNING]: The `ansible.module_utils.compat.importlib.import_module` function is deprecated. This feature will be removed in version 2.19. Deprecation warnings can be disabled by setting
+deprecation_warnings=False in ansible.cfg.
+ok: [dc1-leaf1]
+ok: [dc1-spine2]
+ok: [dc1-spine1]
+ok: [dc1-leaf2]
+ok: [dc1-borderleaf1]
+
+PLAY RECAP ******************************************************************************************************************************************************************************************************
+dc1-borderleaf1            : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+dc1-leaf1                  : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+dc1-leaf2                  : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+dc1-spine1                 : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+dc1-spine2                 : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+Same here as with the build.yml action, I have already sent the config to the switches once, so no changes has been done to the exisitng devices (I will do a change further down). The configuration is written to the devices instantly and now configured as requested. 
+
+
+
+In the next chapters I will go over what other benefits Arista Validated Design comes with.
+
+### Automatically generated config files
+
+As mentioned above, by just running the build.yml action it will automatically create all the devices configuration files. These files are placed under the folder intended/configs and includes the full configs for every devices defined in the *inventory.yml*. 
+
+Having a look inside the *dc1-spine1.cfg* file shows me the exact config that will be deployed on the device when I run the deploy.yml:
+
+```bash
+!RANCID-CONTENT-TYPE: arista
+!
+vlan internal order ascending range 1100 1300
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname dc1-spine1
+ip name-server vrf MGMT 10.100.1.7
+!
+ntp local-interface vrf MGMT Management1
+ntp server vrf MGMT dns-bind-01.int.guzware.net prefer
+!
+spanning-tree mode none
+!
+no enable password
+no aaa root
+!
+username admin privilege 15 role network-admin nopassword
+username ansible privilege 15 role network-admin secret sha512 $hash/
+!
+vrf instance MGMT
+!
+interface Ethernet1
+   description P2P_LINK_TO_DC1-LEAF1_Ethernet1
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.0/31
+!
+interface Ethernet2
+   description P2P_LINK_TO_DC1-LEAF1_Ethernet2
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.2/31
+!
+interface Ethernet3
+   description P2P_LINK_TO_DC1-LEAF2_Ethernet1
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.8/31
+!
+interface Ethernet4
+   description P2P_LINK_TO_DC1-LEAF2_Ethernet2
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.10/31
+!
+interface Ethernet5
+   description P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet1
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.16/31
+!
+interface Ethernet6
+   description P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet2
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.18/31
+!
+interface Loopback0
+   description EVPN_Overlay_Peering
+   no shutdown
+   ip address 10.0.0.1/32
+!
+interface Management1
+   description oob_management
+   no shutdown
+   vrf MGMT
+   ip address 172.18.100.101/24
+!
+ip routing
+no ip routing vrf MGMT
+!
+ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
+   seq 10 permit 10.0.0.0/27 eq 32
+!
+ip route vrf MGMT 0.0.0.0/0 172.18.100.2
+!
+route-map RM-CONN-2-BGP permit 10
+   match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY
+!
+router bfd
+   multihop interval 300 min-rx 300 multiplier 3
+!
+router bgp 65000
+   router-id 10.0.0.1
+   maximum-paths 4 ecmp 4
+   no bgp default ipv4-unicast
+   neighbor EVPN-OVERLAY-PEERS peer group
+   neighbor EVPN-OVERLAY-PEERS next-hop-unchanged
+   neighbor EVPN-OVERLAY-PEERS update-source Loopback0
+   neighbor EVPN-OVERLAY-PEERS bfd
+   neighbor EVPN-OVERLAY-PEERS ebgp-multihop 3
+   neighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==
+   neighbor EVPN-OVERLAY-PEERS send-community
+   neighbor EVPN-OVERLAY-PEERS maximum-routes 0
+   neighbor IPv4-UNDERLAY-PEERS peer group
+   neighbor IPv4-UNDERLAY-PEERS password 7 7x4B4rnJhZB438m9+BrBfQ==
+   neighbor IPv4-UNDERLAY-PEERS send-community
+   neighbor IPv4-UNDERLAY-PEERS maximum-routes 12000
+   neighbor 10.0.0.3 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.0.0.3 remote-as 65001
+   neighbor 10.0.0.3 description dc1-leaf1
+   neighbor 10.0.0.4 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.0.0.4 remote-as 65002
+   neighbor 10.0.0.4 description dc1-leaf2
+   neighbor 10.0.0.5 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.0.0.5 remote-as 65003
+   neighbor 10.0.0.5 description dc1-borderleaf1
+   neighbor 192.168.0.1 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.1 remote-as 65001
+   neighbor 192.168.0.1 description dc1-leaf1_Ethernet1
+   neighbor 192.168.0.3 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.3 remote-as 65001
+   neighbor 192.168.0.3 description dc1-leaf1_Ethernet2
+   neighbor 192.168.0.9 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.9 remote-as 65002
+   neighbor 192.168.0.9 description dc1-leaf2_Ethernet1
+   neighbor 192.168.0.11 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.11 remote-as 65002
+   neighbor 192.168.0.11 description dc1-leaf2_Ethernet2
+   neighbor 192.168.0.17 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.17 remote-as 65003
+   neighbor 192.168.0.17 description dc1-borderleaf1_Ethernet1
+   neighbor 192.168.0.19 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.19 remote-as 65003
+   neighbor 192.168.0.19 description dc1-borderleaf1_Ethernet2
+   redistribute connected route-map RM-CONN-2-BGP
+   !
+   address-family evpn
+      neighbor EVPN-OVERLAY-PEERS activate
+   !
+   address-family ipv4
+      no neighbor EVPN-OVERLAY-PEERS activate
+      neighbor IPv4-UNDERLAY-PEERS activate
+!
+management api http-commands
+   protocol https
+   no shutdown
+   !
+   vrf MGMT
+      no shutdown
+!
+end
+```
+
+It is the full config it is intending to send to my spine1 device. So goes for all the other cfg files. If I dont have access to the devices, I just want to generate the config this is just perfect I can stop there and AVD has already provided the configuration files for me.
+
+
+
+### Automated documentation
+
+Everyone loves documentation, but not everyone loves documenting. Creating a full documentation and keeping it up to date after changes has been done is an important but time consuming thing. Regardless of loving to document or not, it is a very important component to have in place. 
+
+When using Ansible Validated design, every time running the *build.yml* it will automatically create the documentation for every single device that has been configured. The documentation will be 
+
+
+
+Guess what... It updates the documentation AUTOMATICALLY every time a new change has been added :smiley: :thumbsup:
+
+Lets test that in the next chapter.. 
+
+### Day 2 changes using AVD
+
+Configuring VLANS and interfaces on the borderleaf-1
+
+
+
+## Changing the yml files using UI...
+
+And execute the playbooks from the ui
 
