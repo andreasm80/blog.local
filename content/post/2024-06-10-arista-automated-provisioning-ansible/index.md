@@ -29,7 +29,7 @@ Source: Arista's [homepage](https://www.arista.com/en/company/company-overview).
 
 Arista has some really great products and solutions, and in this post I will have a deeper look at using [Ansible Validated Design](https://avd.arista.com) automating the whole bringup process of a Spine-Leaf topology. I will also see how this can be used to make the network underlay more agile by adding changes "on-demand".
 
-I have been working with network for many years, starting out with basic network configurations like VLAN, iSCSI setups and routing to support my vSphere implementations as a consultant many many years back. Then I started working with VMware NSX back in 2014/15 first as a consultant doing presale, design and implementation before joining VMware as a NSX specialist. Working with NSX, both as consultant and later as a VMware NSX solutions engineer, very much involved the physical network NSX was supposed to run "on top" of as the actual NSX design. One of NSX benefits was how easy it was to automate. 
+I have been working with VMware NSX for many years and one of NSX benefits is how easy it is to automate. I am very keen on testing out how I can achieve the same level of automation with the physical underlay network too.
 
 What I have never been working with is automating the physical network. Automation is not only for easier deployment, handling dynamics in the datacenter more efficient, but also reducing/eliminate configuration issues. In this post I will go through how I make use of Arista vEOS and Arista's Ansible playbooks to deploy a full spine-leaf topology from zero to hero.
 
@@ -68,7 +68,7 @@ vEOS64-lab-4.32.1F.qcow2
 
 Add a Serial Port, a USB device and mount the *aboot-iso* on the CD/DVD drive, and select no hardisk in the wizard (delete the proposed harddisk). Operating system type is Linux 6.x. I chose to use x86-64-v2-AES CPU emulation. 
 
-- Add the vEOS disk by utilizing the qm import command like this, where 7011 is the ID of my VM, raid-10-node02 is the disk where I want the qcow2 image to be imported/placed. 
+- Add the vEOS disk by utilizing the qm import command like this, where 7011 is the ID of my VM, raid-10-node02 is the datastore on my host where I want the qcow2 image to be imported/placed. 
 
 ```bash
 root@proxmox-02:/tmp# qm importdisk 7011 vEOS64-lab-4.32.1F.qcow2 raid-10-node02 -format raw
@@ -84,7 +84,7 @@ When this is done it will turn up as an unused disk in my VM.
 
 ![unused-disk](images/image-20240610144925682.png)
 
-To add the unused disk I selected it, clicked edit and choose SATA and bus 0. This was the only way for the vEOS to successfully boot. This is not what is mentioned in the official documentation [here](https://arista.my.site.com/AristaCommunity/s/article/veos-running-eos-in-a-vm) *The Aboot-veos iso must be set as a CD-ROM image on the IDE bus, and the EOS vmdk must be a hard drive image on the same IDE bus. The simulated hardware cannot contain a SATA controller or vEOS will fail to fully boot.* 
+To add the unused disk I select it, click edit and choose SATA and bus 0. This was the only way for the vEOS to successfully boot. This is contrary to what is stated in the official documentation [here](https://arista.my.site.com/AristaCommunity/s/article/veos-running-eos-in-a-vm) *The Aboot-veos iso must be set as a CD-ROM image on the IDE bus, and the EOS vmdk must be a hard drive image on the same IDE bus. The simulated hardware cannot contain a SATA controller or vEOS will fail to fully boot.* 
 
 ![sata](images/image-20240610145327095.png)
 
@@ -177,7 +177,7 @@ host s_lan_4 {
      }
 ```
 
-The 5 host entries corresponds with my 5 vEOS appliances mac addresses respectively and the *option bootfile-name* referes to a unique file for every vEOS appliance. 
+The 5 host entries corresponds with my 5 vEOS appliances mac addresses respectively and the *option bootfile-name* refers to a unique file for every vEOS appliance. 
 
 The TFTP server has this configuration:
 
@@ -295,7 +295,7 @@ Thats it. If I have already powered on my vEOS appliance they will very soon get
 
 > A spine-leaf topology is a two-layer network architecture commonly used in data centers. It is designed to provide high-speed, low-latency, and highly available network connectivity. This topology is favored for its scalability and performance, especially in environments requiring large amounts of east-west traffic (server-to-server).
 
-In virtual environments, including Kubernetes environments, which is quite common today will have a large amount of east-west traffic. In this post will be using the Spine Leaf architecture. 
+In virtual environments, from regular virtual machines to containers running in Kubernetes, its common with a large amount of east-west traffic. In this post I will be using a Spine Leaf architecture. 
 
 Before I did any automated provisioning using Arista Validated Design and Ansible I deployed my vEOS appliances configured them with the amount of network interfaces needed to support my intended use (below), then configured them all manually using CLI so I was sure I had a working configuration, and no issues in my lab. I wanted to make sure I could deploy a spine-leaf topology, create some vlans and attached some VMs to them and checked connectivity. Below was my desired topology:
 
@@ -959,7 +959,7 @@ router bgp 65003
 end
 ```
 
-With the configurations above manually created, I had a working Spine-Leaf topology in my lab. These configs will also be very interesting to compare later on.
+With the configurations above manually created, I had a working Spine-Leaf topology in my lab. These configs will also be very interesting to compare later on. A quick note on my config is that I am using two distinct point to point from every leaf to each spine.
 
 ### My physical lab topology
 
@@ -967,11 +967,11 @@ I think it also make sense to quickly go over how my lab is configured. The diag
 
 ![physical-topology](images/image-20240610160936721.png)
 
-Below is how I interconnect all my vEOS appliances, separating all peer to peer connections on their own dedicated vlan. This is ofcourse not necessary in "real world", but again this is all virtual environment (including the vEOS switches). All the VLANs are configured on the above illustrated physical switch and made available on the trunks to respective Proxmox hosts using VLAN trunks. 
+Below is how I interconnect all my vEOS appliances, separating all point to point connections on their own dedicated vlan. This is ofcourse not necessary in "real world" scnearios, but again this is all virtual environment (including the vEOS switches). All the VLANs are configured on the above illustrated physical switch and made available on the trunks to the respective Proxmox hosts. 
 
 ![vlan-separation](images/image-20240610160718618.png)
 
-I have also separated the spines on each host and both leafs, as I have only two hosts the borderleaf-1 is placed on same host as leaf-2. 
+I have also divided the spines and leaf1 and leaf2 to run on each host, as I have only two hosts the borderleaf-1 is placed on same host as leaf-2. 
 
 ![vm-placement](images/image-20240610222846728.png)
 
@@ -1015,9 +1015,9 @@ Now the next chapters is about automating the configuring of the vEOS switches t
 
 Source: Arista [https://avd.arista.com/](https://avd.arista.com/)
 
-Arista Validated Design is a very well maintained project, and by having a quick look at their GitHub [repo](https://github.com/aristanetworks/avd) updates are done very frequently and latest release was 3 weeks ago.
+Arista Validated Design is a very well maintained project, and by having a quick look at their GitHub [repo](https://github.com/aristanetworks/avd) updates are done very frequently and latest release was 3 weeks ago (at the time of writing this post).
 
-*avd.arista.com* is a brilliant web page for their Validated Designs using Ansible where they document very well how to get started including some example designs like [Single DC L3LS](https://avd.arista.com/4.8/examples/single-dc-l3ls/index.html), [Dual DC L3LS](https://avd.arista.com/4.8/examples/dual-dc-l3ls/index.html), [L2LS Fabric](https://avd.arista.com/4.8/examples/l2ls-fabric/index.html), [Campus Fabric](https://avd.arista.com/4.8/examples/campus-fabric/index.html) and [ISIS-LDP IPVPN](https://avd.arista.com/4.8/examples/isis-ldp-ipvpn/index.html).
+The Arista Validated Designs webpage [avd.arista.com](https://avd.arista.com) is very well structured and the documentation to get started using Arista Validated design is brilliant. It also includes some example designs like [Single DC L3LS](https://avd.arista.com/4.8/examples/single-dc-l3ls/index.html), [Dual DC L3LS](https://avd.arista.com/4.8/examples/dual-dc-l3ls/index.html), [L2LS Fabric](https://avd.arista.com/4.8/examples/l2ls-fabric/index.html), [Campus Fabric](https://avd.arista.com/4.8/examples/campus-fabric/index.html) and [ISIS-LDP IPVPN](https://avd.arista.com/4.8/examples/isis-ldp-ipvpn/index.html) to further simplify getting started.
 
 I will base my deployment on the *Single DC L3LS* example, with some modifications to achieve a similiar design as illustrated earlier. The major modifications I am doing is removing some of the leafs and no MLAG, keeping it as close to my initial design as possible.  
 
@@ -1212,9 +1212,9 @@ For more details and instructions, head over to the [avd.arista.com](https://avd
 
 ### Preparing AVD example files
 
-To get started with Arista Validated Design is quite easy as the necessary files are very well structured and easy to understand with already example information populated making it very easy to follow. In my *single-dc-l3ls* folder there is a couple of files inside the *group_cvars* folder I need to edit to my match my environment. When these have been edited its time to apply the task. But before getting there, I will go through the files, how I have edited them. 
+To get started with Arista Validated Design is quite easy as the necessary files are very well structured and easy to understand with already example information populated making it very easy to follow. In my *single-dc-l3ls* folder there is a couple of files inside the *group_cvars* folder I need to edit to match my environment. When these have been edited its time to apply the task. But before getting there I will go through the files how I have edited them. 
 
-As I mentioned above, I will base my deployment on the example *single-dc-l3ls" with some minor modifications by removing some leaf-switches, addings some uplinks etc. So by entering the folder *single-dc-l3ls* folder, which was created when I copied the collection over to my environment earlier, I will find the content related such an deployment. 
+As I mentioned above, I will base my deployment on the example *single-dc-l3ls" with some minor modifications by removing some leaf-switches, addings some uplinks etc. So by entering the folder *single-dc-l3ls* folder, which was created when I copied the collection over to my environment earlier, I will find the content related such a deployment/topology. 
 
 Below is the files I need to do some edits in, numbered in the order they are configured:
 
@@ -1268,7 +1268,7 @@ all:
         DC1_L3_LEAVES:
 ```
 
-I have removed the L2 Leaves, as my plan is to deploy this design:
+I have removed the L2 Leaves and the corresponding group, as my plan is to deploy this design:
 
 ![2-spine-3-leafs](images/image-20240610160718618.png)
 
@@ -1287,7 +1287,7 @@ ansible_connection: ansible.netcommon.httpapi
 ansible_network_os: arista.eos.eos
 # This user/password must exist on the switches to enable Ansible access
 ansible_user: ansible
-ansible_password: 774psurt
+ansible_password: password
 # User escalation (to enter enable mode)
 ansible_become: true
 ansible_become_method: enable
@@ -1677,7 +1677,7 @@ dc1-spine2                 : ok=3    changed=0    unreachable=0    failed=0    s
 ```
 
 No errors, looking good. 
-(PS! I have already run the build.yaml once, and as there was no changes, there is nothing for it to update/change hence the 0 in *changed*)
+(PS! I have already run the build.yaml once, and as there was no changes, there is nothing for it to update/change hence the 0 in *changed*. If it was any changes it would have reflected that too)
 
 It has now created the individual config files under the folder *intented/configs* for my inspection and record. 
 
@@ -1727,7 +1727,7 @@ dc1-spine1                 : ok=3    changed=0    unreachable=0    failed=0    s
 dc1-spine2                 : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-Same here as with the build.yml action, I have already sent the config to the switches once, so no changes has been done to the exisitng devices (I will do a change further down). The configuration is written to the devices instantly and now configured as requested. 
+No changes here either as the switches has already been configured by me earlier uisng AVD. No changes has been done to the exisitng devices (I will do a change further down). If a new configuration or change the configuration is written to the devices instantly and now configured as requested. 
 
 
 
@@ -1737,7 +1737,7 @@ In the next chapters I will go over what other benefits Arista Validated Design 
 
 As mentioned above, by just running the build.yml action it will automatically create all the devices configuration files. These files are placed under the folder intended/configs and includes the full configs for every devices defined in the *inventory.yml*. 
 
-Having a look inside the *dc1-spine1.cfg* file shows me the exact config that will be deployed on the device when I run the deploy.yml:
+Having a look inside the *dc1-borderleaf1.cfg* file shows me the exact config that will be deployed on the device when I run the deploy.yml:
 
 ```bash
 !RANCID-CONTENT-TYPE: arista
@@ -1748,80 +1748,151 @@ transceiver qsfp default-mode 4x10G
 !
 service routing protocols model multi-agent
 !
-hostname dc1-spine1
+hostname dc1-borderleaf1
 ip name-server vrf MGMT 10.100.1.7
 !
 ntp local-interface vrf MGMT Management1
 ntp server vrf MGMT dns-bind-01.int.guzware.net prefer
 !
-spanning-tree mode none
+spanning-tree mode mstp
+spanning-tree mst 0 priority 4096
 !
 no enable password
 no aaa root
 !
 username admin privilege 15 role network-admin nopassword
-username ansible privilege 15 role network-admin secret sha512 $hash/
+username ansible privilege 15 role network-admin secret sha512 $6$sd3XM3jppUZgDhBs$Ouqb8DdTnQ3efciJMM71Z7iSnkHwGv.CoaWvOppegdUeQ5F1cIAAbJE/D40rMhYMkjiNkAuW7ixMEEoccCXHT/
+!
+vlan 1070
+   name L2_VLAN1070
+!
+vlan 1071
+   name L2_VLAN1071
+!
+vlan 1072
+   name VRF10_VLAN1072
+!
+vlan 1073
+   name VRF10_VLAN1073
+!
+vlan 1074
+   name VRF11_VLAN1074
+!
+vlan 1075
+   name VRF11_VLAN1075
 !
 vrf instance MGMT
 !
+vrf instance VRF10
+!
+vrf instance VRF11
+!
 interface Ethernet1
-   description P2P_LINK_TO_DC1-LEAF1_Ethernet1
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet5
    no shutdown
    mtu 1500
    no switchport
-   ip address 192.168.0.0/31
+   ip address 192.168.0.17/31
 !
 interface Ethernet2
-   description P2P_LINK_TO_DC1-LEAF1_Ethernet2
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet6
    no shutdown
    mtu 1500
    no switchport
-   ip address 192.168.0.2/31
+   ip address 192.168.0.19/31
 !
 interface Ethernet3
-   description P2P_LINK_TO_DC1-LEAF2_Ethernet1
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet5
    no shutdown
    mtu 1500
    no switchport
-   ip address 192.168.0.8/31
+   ip address 192.168.0.21/31
 !
 interface Ethernet4
-   description P2P_LINK_TO_DC1-LEAF2_Ethernet2
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet6
    no shutdown
    mtu 1500
    no switchport
-   ip address 192.168.0.10/31
-!
-interface Ethernet5
-   description P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet1
-   no shutdown
-   mtu 1500
-   no switchport
-   ip address 192.168.0.16/31
-!
-interface Ethernet6
-   description P2P_LINK_TO_DC1-BORDERLEAF1_Ethernet2
-   no shutdown
-   mtu 1500
-   no switchport
-   ip address 192.168.0.18/31
+   ip address 192.168.0.23/31
 !
 interface Loopback0
    description EVPN_Overlay_Peering
    no shutdown
-   ip address 10.0.0.1/32
+   ip address 10.0.0.5/32
+!
+interface Loopback1
+   description VTEP_VXLAN_Tunnel_Source
+   no shutdown
+   ip address 10.255.1.5/32
+!
+interface Loopback10
+   description VRF10_VTEP_DIAGNOSTICS
+   no shutdown
+   vrf VRF10
+   ip address 10.255.10.5/32
+!
+interface Loopback11
+   description VRF11_VTEP_DIAGNOSTICS
+   no shutdown
+   vrf VRF11
+   ip address 10.255.11.5/32
 !
 interface Management1
    description oob_management
    no shutdown
    vrf MGMT
-   ip address 172.18.100.101/24
+   ip address 172.18.100.105/24
+!
+interface Vlan1072
+   description VRF10_VLAN1072
+   no shutdown
+   vrf VRF10
+   ip address virtual 10.72.10.1/24
+!
+interface Vlan1073
+   description VRF10_VLAN1073
+   no shutdown
+   vrf VRF10
+   ip address virtual 10.73.10.1/24
+!
+interface Vlan1074
+   description VRF11_VLAN1074
+   no shutdown
+   vrf VRF11
+   ip address virtual 10.74.11.1/24
+!
+interface Vlan1075
+   description VRF11_VLAN1075
+   no shutdown
+   vrf VRF11
+   ip address virtual 10.75.11.1/24
+!
+interface Vxlan1
+   description dc1-borderleaf1_VTEP
+   vxlan source-interface Loopback1
+   vxlan udp-port 4789
+   vxlan vlan 1070 vni 11070
+   vxlan vlan 1071 vni 11071
+   vxlan vlan 1072 vni 11072
+   vxlan vlan 1073 vni 11073
+   vxlan vlan 1074 vni 11074
+   vxlan vlan 1075 vni 11075
+   vxlan vrf VRF10 vni 10
+   vxlan vrf VRF11 vni 11
+!
+ip virtual-router mac-address 00:1c:73:00:00:99
+!
+ip address virtual source-nat vrf VRF10 address 10.255.10.5
+ip address virtual source-nat vrf VRF11 address 10.255.11.5
 !
 ip routing
 no ip routing vrf MGMT
+ip routing vrf VRF10
+ip routing vrf VRF11
 !
 ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
    seq 10 permit 10.0.0.0/27 eq 32
+   seq 20 permit 10.255.1.0/27 eq 32
 !
 ip route vrf MGMT 0.0.0.0/0 172.18.100.2
 !
@@ -1831,12 +1902,11 @@ route-map RM-CONN-2-BGP permit 10
 router bfd
    multihop interval 300 min-rx 300 multiplier 3
 !
-router bgp 65000
-   router-id 10.0.0.1
+router bgp 65003
+   router-id 10.0.0.5
    maximum-paths 4 ecmp 4
    no bgp default ipv4-unicast
    neighbor EVPN-OVERLAY-PEERS peer group
-   neighbor EVPN-OVERLAY-PEERS next-hop-unchanged
    neighbor EVPN-OVERLAY-PEERS update-source Loopback0
    neighbor EVPN-OVERLAY-PEERS bfd
    neighbor EVPN-OVERLAY-PEERS ebgp-multihop 3
@@ -1847,34 +1917,55 @@ router bgp 65000
    neighbor IPv4-UNDERLAY-PEERS password 7 7x4B4rnJhZB438m9+BrBfQ==
    neighbor IPv4-UNDERLAY-PEERS send-community
    neighbor IPv4-UNDERLAY-PEERS maximum-routes 12000
-   neighbor 10.0.0.3 peer group EVPN-OVERLAY-PEERS
-   neighbor 10.0.0.3 remote-as 65001
-   neighbor 10.0.0.3 description dc1-leaf1
-   neighbor 10.0.0.4 peer group EVPN-OVERLAY-PEERS
-   neighbor 10.0.0.4 remote-as 65002
-   neighbor 10.0.0.4 description dc1-leaf2
-   neighbor 10.0.0.5 peer group EVPN-OVERLAY-PEERS
-   neighbor 10.0.0.5 remote-as 65003
-   neighbor 10.0.0.5 description dc1-borderleaf1
-   neighbor 192.168.0.1 peer group IPv4-UNDERLAY-PEERS
-   neighbor 192.168.0.1 remote-as 65001
-   neighbor 192.168.0.1 description dc1-leaf1_Ethernet1
-   neighbor 192.168.0.3 peer group IPv4-UNDERLAY-PEERS
-   neighbor 192.168.0.3 remote-as 65001
-   neighbor 192.168.0.3 description dc1-leaf1_Ethernet2
-   neighbor 192.168.0.9 peer group IPv4-UNDERLAY-PEERS
-   neighbor 192.168.0.9 remote-as 65002
-   neighbor 192.168.0.9 description dc1-leaf2_Ethernet1
-   neighbor 192.168.0.11 peer group IPv4-UNDERLAY-PEERS
-   neighbor 192.168.0.11 remote-as 65002
-   neighbor 192.168.0.11 description dc1-leaf2_Ethernet2
-   neighbor 192.168.0.17 peer group IPv4-UNDERLAY-PEERS
-   neighbor 192.168.0.17 remote-as 65003
-   neighbor 192.168.0.17 description dc1-borderleaf1_Ethernet1
-   neighbor 192.168.0.19 peer group IPv4-UNDERLAY-PEERS
-   neighbor 192.168.0.19 remote-as 65003
-   neighbor 192.168.0.19 description dc1-borderleaf1_Ethernet2
+   neighbor 10.0.0.1 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.0.0.1 remote-as 65000
+   neighbor 10.0.0.1 description dc1-spine1
+   neighbor 10.0.0.2 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.0.0.2 remote-as 65000
+   neighbor 10.0.0.2 description dc1-spine2
+   neighbor 192.168.0.16 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.16 remote-as 65000
+   neighbor 192.168.0.16 description dc1-spine1_Ethernet5
+   neighbor 192.168.0.18 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.18 remote-as 65000
+   neighbor 192.168.0.18 description dc1-spine1_Ethernet6
+   neighbor 192.168.0.20 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.20 remote-as 65000
+   neighbor 192.168.0.20 description dc1-spine2_Ethernet5
+   neighbor 192.168.0.22 peer group IPv4-UNDERLAY-PEERS
+   neighbor 192.168.0.22 remote-as 65000
+   neighbor 192.168.0.22 description dc1-spine2_Ethernet6
    redistribute connected route-map RM-CONN-2-BGP
+   !
+   vlan 1070
+      rd 10.0.0.5:11070
+      route-target both 11070:11070
+      redistribute learned
+   !
+   vlan 1071
+      rd 10.0.0.5:11071
+      route-target both 11071:11071
+      redistribute learned
+   !
+   vlan 1072
+      rd 10.0.0.5:11072
+      route-target both 11072:11072
+      redistribute learned
+   !
+   vlan 1073
+      rd 10.0.0.5:11073
+      route-target both 11073:11073
+      redistribute learned
+   !
+   vlan 1074
+      rd 10.0.0.5:11074
+      route-target both 11074:11074
+      redistribute learned
+   !
+   vlan 1075
+      rd 10.0.0.5:11075
+      route-target both 11075:11075
+      redistribute learned
    !
    address-family evpn
       neighbor EVPN-OVERLAY-PEERS activate
@@ -1882,6 +1973,20 @@ router bgp 65000
    address-family ipv4
       no neighbor EVPN-OVERLAY-PEERS activate
       neighbor IPv4-UNDERLAY-PEERS activate
+   !
+   vrf VRF10
+      rd 10.0.0.5:10
+      route-target import evpn 10:10
+      route-target export evpn 10:10
+      router-id 10.0.0.5
+      redistribute connected
+   !
+   vrf VRF11
+      rd 10.0.0.5:11
+      route-target import evpn 11:11
+      route-target export evpn 11:11
+      router-id 10.0.0.5
+      redistribute connected
 !
 management api http-commands
    protocol https
@@ -1893,7 +1998,7 @@ management api http-commands
 end
 ```
 
-It is the full config it is intending to send to my spine1 device. So goes for all the other cfg files. If I dont have access to the devices, I just want to generate the config this is just perfect I can stop there and AVD has already provided the configuration files for me.
+It is the full config it is intending to send to my *borderleaf1* device. So goes for all the other cfg files. If I dont have access to the devices, I just want to generate the config this is just perfect I can stop there and AVD has already provided the configuration files for me.
 
 
 
@@ -1901,23 +2006,288 @@ It is the full config it is intending to send to my spine1 device. So goes for a
 
 Everyone loves documentation, but not everyone loves documenting. Creating a full documentation and keeping it up to date after changes has been done is an important but time consuming thing. Regardless of loving to document or not, it is a very important component to have in place. 
 
-When using Ansible Validated design, every time running the *build.yml* it will automatically create the documentation for every single device that has been configured. The documentation will be 
+When using Ansible Validated design, every time running the *build.yml* it will automatically create the documentation for every single device that has been configured. Part of the process when running the build.yaml is creating the device configuration but lo the full documentation and Guess what... 
 
-
-
-Guess what... It updates the documentation AUTOMATICALLY every time a new change has been added :smiley: :thumbsup:
+It updates the documentation AUTOMATICALLY every time a new change has been added :smiley: :thumbsup:
 
 Lets test that in the next chapter.. 
 
 ### Day 2 changes using AVD
 
-Configuring VLANS and interfaces on the borderleaf-1
+Not every environment is static, changes needs to be done from time to time. In this example I need to change some downlinks on my borwderleaf-1 device. I have been asked to configure a downlink port on the leaf for a new firewall that is being connected. I will go ahead and change the yml file CONNECTED_ENDPOINTS.yml by adding this section:
+
+```yaml
+  - name: dc1-borderleaf1-wan1
+    adapters:
+      - endpoint_ports: [ WAN1 ]
+        switch_ports: [ Ethernet5 ]
+        switches: [ dc1-borderleaf1 ]
+        vlans: 1079
+        mode: access
+        spanning_tree_portfast: edge
+```
+
+
+
+The whole content of the CONNECTED_ENDPOINTS.yml looks like this now:
+
+```yaml
+---
+# Definition of connected endpoints in the fabric.
+servers:
+  - name: dc1-leaf1-vm-server1
+    adapters:
+      - endpoint_ports: [ VM1 ]
+        switch_ports: [ Ethernet5 ]
+        switches: [ dc1-leaf1 ]
+        vlans: 1071
+        mode: access
+        spanning_tree_portfast: edge
+
+
+      - endpoint_ports: [ VM2 ]
+        switch_ports: [ Ethernet6 ]
+        switches: [ dc1-leaf1 ]
+        vlans: 1072
+        mode: access
+        spanning_tree_portfast: edge
+
+  - name: dc1-leaf2-server1
+    adapters:
+      - endpoint_ports: [ VM3 ]
+        switch_ports: [ Ethernet5 ]
+        switches: [ dc1-leaf2 ]
+        vlans: 1070
+        native_vlan: 4092
+        mode: access
+        spanning_tree_portfast: edge
+
+
+      - endpoint_ports: [ VM4 ]
+        switch_ports: [ Ethernet6 ]
+        switches: [ dc1-leaf2 ]
+        vlans: 1073
+        mode: access
+        spanning_tree_portfast: edge
+
+  - name: dc1-borderleaf1-wan1  ## ADDED NOW ##
+    adapters:
+      - endpoint_ports: [ WAN1 ]
+        switch_ports: [ Ethernet5 ]
+        switches: [ dc1-borderleaf1 ]
+        vlans: 1079
+        mode: access
+        spanning_tree_portfast: edge
+```
+
+
+
+Now I just need to run the build and if I am satisified I can run the deploy.yml. Lets test. I have already sent one config to the switch as one can refer to above. Now I have done a change and want to reflect that both in the intented configs, documentation and on the device itself. First I will run build.yml:
+
+```bash
+(arista_avd) andreasm@linuxmgmt01:~/arista/andreas-spine-leaf$ ansible-playbook build.yml
+
+PLAY [Build Configurations and Documentation] *******************************************************************************************************************************************************************
+PLAY RECAP ******************************************************************************************************************************************************************************************************
+dc1-borderleaf1            : ok=3    changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+```
+
+I reports 3 changes. Lets check the documentation and device configuration for borderleaf1:
+
+The automatically updated documentation and device configuration for borderleaf1 (shortened for easier readability)
+
+~~~markdown
+## Interfaces
+
+### Ethernet Interfaces
+
+#### Ethernet Interfaces Summary
+
+##### L2
+
+| Interface | Description | Mode | VLANs | Native VLAN | Trunk Group | Channel-Group |
+| --------- | ----------- | ---- | ----- | ----------- | ----------- | ------------- |
+| Ethernet5 |  dc1-borderleaf1-wan1_WAN1 | access | 1079 | - | - | - |
+
+*Inherited from Port-Channel Interface
+
+##### IPv4
+
+| Interface | Description | Type | Channel Group | IP Address | VRF |  MTU | Shutdown | ACL In | ACL Out |
+| --------- | ----------- | -----| ------------- | ---------- | ----| ---- | -------- | ------ | ------- |
+| Ethernet1 | P2P_LINK_TO_DC1-SPINE1_Ethernet5 | routed | - | 192.168.0.17/31 | default | 1500 | False | - | - |
+| Ethernet2 | P2P_LINK_TO_DC1-SPINE1_Ethernet6 | routed | - | 192.168.0.19/31 | default | 1500 | False | - | - |
+| Ethernet3 | P2P_LINK_TO_DC1-SPINE2_Ethernet5 | routed | - | 192.168.0.21/31 | default | 1500 | False | - | - |
+| Ethernet4 | P2P_LINK_TO_DC1-SPINE2_Ethernet6 | routed | - | 192.168.0.23/31 | default | 1500 | False | - | - |
+
+#### Ethernet Interfaces Device Configuration
+
+```eos
+!
+interface Ethernet1
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet5
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.17/31
+!
+interface Ethernet2
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet6
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.19/31
+!
+interface Ethernet3
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet5
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.21/31
+!
+interface Ethernet4
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet6
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 192.168.0.23/31
+!
+interface Ethernet5 ## NEW ##
+   description dc1-borderleaf1-wan1_WAN1
+   no shutdown
+   switchport access vlan 1079
+   switchport mode access
+   switchport
+   spanning-tree portfast
+```
+~~~
+
+The actual installed config on my dc1-borderleaf1 switch:
+
+```bash
+andreasm@linuxmgmt01:~/arista/andreas-spine-leaf/intended/configs$ ssh ansible@172.18.100.105
+Password:
+Last login: Mon Jun 10 07:07:38 2024 from 10.100.5.10
+dc1-borderleaf1>enable
+dc1-borderleaf1#show running-config
+! Command: show running-config
+! device: dc1-borderleaf1 (vEOS-lab, EOS-4.32.1F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+management api http-commands
+   no shutdown
+   !
+   vrf MGMT
+      no shutdown
+!
+interface Ethernet1
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet5
+   mtu 1500
+   no switchport
+   ip address 192.168.0.17/31
+!
+interface Ethernet2
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet6
+   mtu 1500
+   no switchport
+   ip address 192.168.0.19/31
+!
+interface Ethernet3
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet5
+   mtu 1500
+   no switchport
+   ip address 192.168.0.21/31
+!
+interface Ethernet4
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet6
+   mtu 1500
+   no switchport
+   ip address 192.168.0.23/31
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Loopback0
+   description EVPN_Overlay_Peering
+   ip address 10.0.0.5/32
+```
+
+No Ethernet5 configured yet.
+
+Now all I need to do is run the deploy.yml to send the updated config to the switch itself. 
+
+```bash
+(arista_avd) andreasm@linuxmgmt01:~/arista/andreas-spine-leaf$ ansible-playbook deploy.yml
+
+PLAY [Deploy Configurations to Devices using eAPI] **************************************************************************************************************************************************************
+
+TASK [arista.avd.eos_config_deploy_eapi : Replace configuration with intended configuration] ********************************************************************************************************************
+
+changed: [dc1-borderleaf1]
+
+RUNNING HANDLER [arista.avd.eos_config_deploy_eapi : Backup running config] *************************************************************************************************************************************
+changed: [dc1-borderleaf1]
+
+PLAY RECAP ******************************************************************************************************************************************************************************************************
+dc1-borderleaf1            : ok=2    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+Done, now if I log into my actual borderleaf-1 switch to verify:
+
+```bash
+dc1-borderleaf1#show running-config
+! Command: show running-config
+! device: dc1-borderleaf1 (vEOS-lab, EOS-4.32.1F)
+!
+interface Ethernet1
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet5
+   mtu 1500
+   no switchport
+   ip address 192.168.0.17/31
+!
+interface Ethernet2
+   description P2P_LINK_TO_DC1-SPINE1_Ethernet6
+   mtu 1500
+   no switchport
+   ip address 192.168.0.19/31
+!
+interface Ethernet3
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet5
+   mtu 1500
+   no switchport
+   ip address 192.168.0.21/31
+!
+interface Ethernet4
+   description P2P_LINK_TO_DC1-SPINE2_Ethernet6
+   mtu 1500
+   no switchport
+   ip address 192.168.0.23/31
+!
+interface Ethernet5
+   description dc1-borderleaf1-wan1_WAN1
+   switchport access vlan 1079
+   spanning-tree portfast
+!
+interface Ethernet6
+!
+interface Loopback0
+   description EVPN_Overlay_Peering
+   ip address 10.0.0.5/32
+```
+
+The config has been added. 
+
+I can run the build and deploy as much as I want, if there is no changes it will not do anything. As soon as I want to a change, it will respect that and add my change declaratively.
 
 
 
 ## Automating the whole process and interact with AVD using a WEB UI
 
-Instead of doing this whole process of installing dependencies manually etc I asked my friend ChatGPT if it not could make a script that did the whole process for me.. Below is the script. It needs to be run in linux and in a folder where I am allowed to create new folders. Create new .sh file, copy the content, save and make it executable by running chmod +x filename.sh. 
+Instead of doing this whole process of installing dependencies manually etc I asked my friend ChatGPT if it not could make a script that did the whole process for me.. Below is the script. It needs to be run in linux and in a folder where I am allowed to create new folders. Create a new .sh file, copy the content, save and make it executable by running chmod +x filename.sh. 
 
 ```bash
 andreasm@linuxmgmt01:~/arista-automated-avd$ vim create-avd-project.sh
@@ -2291,220 +2661,19 @@ EOF
 
 ```
 
+### Run the script to automatically install dependencies 
 
-
-I will now execute the script in a folder where it will create a new subfolder based on the input I give it and then I will be presented with a menu asking me which example I want to use. And inside the newly created folder all the examples and python environment will be created, and also a Python generated web-page available on http://0.0.0.0:5000. For the Python generated web-page to start there will be a prompt asking for it to start or not. If selecting no, head into the selected example folder and start the web-server by issuing the following command: `python app.py`
+I will now execute the script in a folder where it will create a new subfolder based on the input I give it and then I will be presented with a menu asking me which example I want to use. Then the script will go ahead and install necessary components and requirements (including copying all the example collections from Arista). After a short while a new folder is created using the name I entered in the first prompt. In my example below I am using *new-site-3*. Inside the newly created folder all the examples and python environment will be created, and also a Python generated web-page (inside the selected example folder e.g *single-dc-l3ls*) that can be started and will be available on http://0.0.0.0:5000 (more on the webpage later). 
 
 ```bash
-andreasm@linuxmgmt01:~/arista-automated-avd$ ./create-avd-project.sh
-Enter the name: new-site1
+andreasm@linuxmgmt01:~/arista-automated-avd$ ./create-avd-project-v1.sh
+Enter the name: new-site-3
 Collecting ansible
-  Obtaining dependency information for ansible from https://files.pythonhosted.org/packages/28/7c/a5f708b7b033f068a8ef40db5c993bee4cfafadd985d48dfe44db8566fc6/ansible-10.0.1-py3-none-any.whl.metadata
-  Using cached ansible-10.0.1-py3-none-any.whl.metadata (8.2 kB)
-Collecting ansible-core~=2.17.0 (from ansible)
-  Obtaining dependency information for ansible-core~=2.17.0 from https://files.pythonhosted.org/packages/2f/77/97fb1880abb485f1df31b36822c537330db86bea4105fdea6e1946084c16/ansible_core-2.17.0-py3-none-any.whl.metadata
-  Using cached ansible_core-2.17.0-py3-none-any.whl.metadata (6.9 kB)
-Collecting jinja2>=3.0.0 (from ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for jinja2>=3.0.0 from https://files.pythonhosted.org/packages/31/80/3a54838c3fb461f6fec263ebf3a3a41771bd05190238de3486aae8540c36/jinja2-3.1.4-py3-none-any.whl.metadata
-  Using cached jinja2-3.1.4-py3-none-any.whl.metadata (2.6 kB)
-Collecting PyYAML>=5.1 (from ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for PyYAML>=5.1 from https://files.pythonhosted.org/packages/b4/33/720548182ffa8344418126017aa1d4ab4aeec9a2275f04ce3f3573d8ace8/PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (2.1 kB)
-Collecting cryptography (from ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for cryptography from https://files.pythonhosted.org/packages/fa/e2/b7e6e8c261536c489d9cf908769880d94bd5d9a187e166b0dc838d2e6a56/cryptography-42.0.8-cp39-abi3-manylinux_2_28_x86_64.whl.metadata
-  Using cached cryptography-42.0.8-cp39-abi3-manylinux_2_28_x86_64.whl.metadata (5.3 kB)
-Collecting packaging (from ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for packaging from https://files.pythonhosted.org/packages/08/aa/cc0199a5f0ad350994d660967a8efb233fe0416e4639146c089643407ce6/packaging-24.1-py3-none-any.whl.metadata
-  Using cached packaging-24.1-py3-none-any.whl.metadata (3.2 kB)
-Collecting resolvelib<1.1.0,>=0.5.3 (from ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for resolvelib<1.1.0,>=0.5.3 from https://files.pythonhosted.org/packages/d2/fc/e9ccf0521607bcd244aa0b3fbd574f71b65e9ce6a112c83af988bbbe2e23/resolvelib-1.0.1-py2.py3-none-any.whl.metadata
-  Using cached resolvelib-1.0.1-py2.py3-none-any.whl.metadata (4.0 kB)
-Collecting MarkupSafe>=2.0 (from jinja2>=3.0.0->ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for MarkupSafe>=2.0 from https://files.pythonhosted.org/packages/0a/0d/2454f072fae3b5a137c119abf15465d1771319dfe9e4acbb31722a0fff91/MarkupSafe-2.1.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached MarkupSafe-2.1.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (3.0 kB)
-Collecting cffi>=1.12 (from cryptography->ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for cffi>=1.12 from https://files.pythonhosted.org/packages/09/d4/8759cc3b2222c159add8ce3af0089912203a31610f4be4c36f98e320b4c6/cffi-1.16.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached cffi-1.16.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (1.5 kB)
-Collecting pycparser (from cffi>=1.12->cryptography->ansible-core~=2.17.0->ansible)
-  Obtaining dependency information for pycparser from https://files.pythonhosted.org/packages/13/a3/a812df4e2dd5696d1f351d58b8fe16a405b234ad2886a0dab9183fb78109/pycparser-2.22-py3-none-any.whl.metadata
-  Using cached pycparser-2.22-py3-none-any.whl.metadata (943 bytes)
-Using cached ansible-10.0.1-py3-none-any.whl (47.2 MB)
-Using cached ansible_core-2.17.0-py3-none-any.whl (2.2 MB)
-Using cached jinja2-3.1.4-py3-none-any.whl (133 kB)
-Using cached PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (724 kB)
-Using cached resolvelib-1.0.1-py2.py3-none-any.whl (17 kB)
-Using cached cryptography-42.0.8-cp39-abi3-manylinux_2_28_x86_64.whl (3.9 MB)
-Using cached packaging-24.1-py3-none-any.whl (53 kB)
-Using cached cffi-1.16.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (477 kB)
-Using cached MarkupSafe-2.1.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (28 kB)
-Using cached pycparser-2.22-py3-none-any.whl (117 kB)
-Installing collected packages: resolvelib, PyYAML, pycparser, packaging, MarkupSafe, jinja2, cffi, cryptography, ansible-core, ansible
-Successfully installed MarkupSafe-2.1.5 PyYAML-6.0.1 ansible-10.0.1 ansible-core-2.17.0 cffi-1.16.0 cryptography-42.0.8 jinja2-3.1.4 packaging-24.1 pycparser-2.22 resolvelib-1.0.1
-
-[notice] A new release of pip is available: 23.2.1 -> 24.0
-[notice] To update, run: pip install --upgrade pip
-Starting galaxy collection install process
-[WARNING]: Collection arista.cvp does not support Ansible version 2.17.0
-Nothing to do. All requested collections are already installed. If you want to reinstall them, consider using `--force`.
-Collecting netaddr>=0.7.19 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 1))
-  Obtaining dependency information for netaddr>=0.7.19 from https://files.pythonhosted.org/packages/12/cc/f4fe2c7ce68b92cbf5b2d379ca366e1edae38cccaad00f69f529b460c3ef/netaddr-1.3.0-py3-none-any.whl.metadata
-  Using cached netaddr-1.3.0-py3-none-any.whl.metadata (5.0 kB)
-Requirement already satisfied: Jinja2>=3.0.0 in ./new-site1/lib/python3.12/site-packages (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 2)) (3.1.4)
-Collecting treelib>=1.5.5 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 3))
-  Obtaining dependency information for treelib>=1.5.5 from https://files.pythonhosted.org/packages/74/93/0944bb5ade972a5ef2dd9211a20730081ed2833024239171807d7a9bd4b0/treelib-1.7.0-py3-none-any.whl.metadata
-  Using cached treelib-1.7.0-py3-none-any.whl.metadata (1.3 kB)
-Collecting cvprac>=1.3.1 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 4))
-  Using cached cvprac-1.4.0-py3-none-any.whl
-Collecting jsonschema>=4.10.3 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 5))
-  Obtaining dependency information for jsonschema>=4.10.3 from https://files.pythonhosted.org/packages/c8/2f/324fab4be6fe37fb7b521546e8a557e6cf08c1c1b3d0b4839a00f589d9ef/jsonschema-4.22.0-py3-none-any.whl.metadata
-  Using cached jsonschema-4.22.0-py3-none-any.whl.metadata (8.2 kB)
-Collecting referencing>=0.35.0 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 6))
-  Obtaining dependency information for referencing>=0.35.0 from https://files.pythonhosted.org/packages/b7/59/2056f61236782a2c86b33906c025d4f4a0b17be0161b63b70fd9e8775d36/referencing-0.35.1-py3-none-any.whl.metadata
-  Using cached referencing-0.35.1-py3-none-any.whl.metadata (2.8 kB)
-Collecting requests>=2.27.0 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 7))
-  Obtaining dependency information for requests>=2.27.0 from https://files.pythonhosted.org/packages/f9/9b/335f9764261e915ed497fcdeb11df5dfd6f7bf257d4a6a2a686d80da4d54/requests-2.32.3-py3-none-any.whl.metadata
-  Using cached requests-2.32.3-py3-none-any.whl.metadata (4.6 kB)
-Requirement already satisfied: PyYAML>=6.0.0 in ./new-site1/lib/python3.12/site-packages (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 8)) (6.0.1)
-Collecting deepmerge>=1.1.0 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 9))
-  Obtaining dependency information for deepmerge>=1.1.0 from https://files.pythonhosted.org/packages/65/a4/eeb5295637d5c85a50474d347cf6c610be43e45ce8a0211d4849fbc1701b/deepmerge-1.1.1-py3-none-any.whl.metadata
-  Using cached deepmerge-1.1.1-py3-none-any.whl.metadata (1.9 kB)
-Requirement already satisfied: cryptography>=38.0.4 in ./new-site1/lib/python3.12/site-packages (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 10)) (42.0.8)
-Collecting aristaproto>=0.1.1 (from -r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Obtaining dependency information for aristaproto>=0.1.1 from https://files.pythonhosted.org/packages/b0/5b/b6dfc880f3dcafb46003ad027f873bf4a2302bb0c85bc91583072124856c/aristaproto-0.1.2-py3-none-any.whl.metadata
-  Using cached aristaproto-0.1.2-py3-none-any.whl.metadata (14 kB)
-Requirement already satisfied: MarkupSafe>=2.0 in ./new-site1/lib/python3.12/site-packages (from Jinja2>=3.0.0->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 2)) (2.1.5)
-Collecting six (from treelib>=1.5.5->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 3))
-  Obtaining dependency information for six from https://files.pythonhosted.org/packages/d9/5a/e7c31adbe875f2abbb91bd84cf2dc52d792b5a01506781dbcf25c91daf11/six-1.16.0-py2.py3-none-any.whl.metadata
-  Using cached six-1.16.0-py2.py3-none-any.whl.metadata (1.8 kB)
-Requirement already satisfied: packaging>=23.2 in ./new-site1/lib/python3.12/site-packages (from cvprac>=1.3.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 4)) (24.1)
-Collecting attrs>=22.2.0 (from jsonschema>=4.10.3->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 5))
-  Obtaining dependency information for attrs>=22.2.0 from https://files.pythonhosted.org/packages/e0/44/827b2a91a5816512fcaf3cc4ebc465ccd5d598c45cefa6703fcf4a79018f/attrs-23.2.0-py3-none-any.whl.metadata
-  Using cached attrs-23.2.0-py3-none-any.whl.metadata (9.5 kB)
-Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=4.10.3->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 5))
-  Obtaining dependency information for jsonschema-specifications>=2023.03.6 from https://files.pythonhosted.org/packages/ee/07/44bd408781594c4d0a027666ef27fab1e441b109dc3b76b4f836f8fd04fe/jsonschema_specifications-2023.12.1-py3-none-any.whl.metadata
-  Using cached jsonschema_specifications-2023.12.1-py3-none-any.whl.metadata (3.0 kB)
-Collecting rpds-py>=0.7.1 (from jsonschema>=4.10.3->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 5))
-  Obtaining dependency information for rpds-py>=0.7.1 from https://files.pythonhosted.org/packages/28/1c/2e208636275eab9636981fee10cb5cdaf3d5a202c3c16bf31fdd52ee08d0/rpds_py-0.18.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached rpds_py-0.18.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
-Collecting charset-normalizer<4,>=2 (from requests>=2.27.0->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 7))
-  Obtaining dependency information for charset-normalizer<4,>=2 from https://files.pythonhosted.org/packages/ee/fb/14d30eb4956408ee3ae09ad34299131fb383c47df355ddb428a7331cfa1e/charset_normalizer-3.3.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached charset_normalizer-3.3.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (33 kB)
-Collecting idna<4,>=2.5 (from requests>=2.27.0->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 7))
-  Obtaining dependency information for idna<4,>=2.5 from https://files.pythonhosted.org/packages/e5/3e/741d8c82801c347547f8a2a06aa57dbb1992be9e948df2ea0eda2c8b79e8/idna-3.7-py3-none-any.whl.metadata
-  Using cached idna-3.7-py3-none-any.whl.metadata (9.9 kB)
-Collecting urllib3<3,>=1.21.1 (from requests>=2.27.0->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 7))
-  Obtaining dependency information for urllib3<3,>=1.21.1 from https://files.pythonhosted.org/packages/a2/73/a68704750a7679d0b6d3ad7aa8d4da8e14e151ae82e6fee774e6e0d05ec8/urllib3-2.2.1-py3-none-any.whl.metadata
-  Using cached urllib3-2.2.1-py3-none-any.whl.metadata (6.4 kB)
-Collecting certifi>=2017.4.17 (from requests>=2.27.0->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 7))
-  Obtaining dependency information for certifi>=2017.4.17 from https://files.pythonhosted.org/packages/5b/11/1e78951465b4a225519b8c3ad29769c49e0d8d157a070f681d5b6d64737f/certifi-2024.6.2-py3-none-any.whl.metadata
-  Using cached certifi-2024.6.2-py3-none-any.whl.metadata (2.2 kB)
-Requirement already satisfied: cffi>=1.12 in ./new-site1/lib/python3.12/site-packages (from cryptography>=38.0.4->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 10)) (1.16.0)
-Collecting grpclib<0.5.0,>=0.4.1 (from aristaproto>=0.1.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Using cached grpclib-0.4.7-py3-none-any.whl
-Collecting python-dateutil<3.0,>=2.8 (from aristaproto>=0.1.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Obtaining dependency information for python-dateutil<3.0,>=2.8 from https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata
-  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
-Collecting typing-extensions<5.0.0,>=4.7.1 (from aristaproto>=0.1.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Obtaining dependency information for typing-extensions<5.0.0,>=4.7.1 from https://files.pythonhosted.org/packages/26/9f/ad63fc0248c5379346306f8668cda6e2e2e9c95e01216d2b8ffd9ff037d0/typing_extensions-4.12.2-py3-none-any.whl.metadata
-  Using cached typing_extensions-4.12.2-py3-none-any.whl.metadata (3.0 kB)
-Requirement already satisfied: pycparser in ./new-site1/lib/python3.12/site-packages (from cffi>=1.12->cryptography>=38.0.4->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 10)) (2.22)
-Collecting h2<5,>=3.1.0 (from grpclib<0.5.0,>=0.4.1->aristaproto>=0.1.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Obtaining dependency information for h2<5,>=3.1.0 from https://files.pythonhosted.org/packages/2a/e5/db6d438da759efbb488c4f3fbdab7764492ff3c3f953132efa6b9f0e9e53/h2-4.1.0-py3-none-any.whl.metadata
-  Using cached h2-4.1.0-py3-none-any.whl.metadata (3.6 kB)
-Collecting multidict (from grpclib<0.5.0,>=0.4.1->aristaproto>=0.1.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Obtaining dependency information for multidict from https://files.pythonhosted.org/packages/24/1f/af976383b0b772dd351210af5b60ff9927e3abb2f4a103e93da19a957da0/multidict-6.0.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached multidict-6.0.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.2 kB)
-Collecting PySocks!=1.5.7,>=1.5.6 (from requests>=2.27.0->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 7))
-  Obtaining dependency information for PySocks!=1.5.7,>=1.5.6 from https://files.pythonhosted.org/packages/8d/59/b4572118e098ac8e46e399a1dd0f2d85403ce8bbaad9ec79373ed6badaf9/PySocks-1.7.1-py3-none-any.whl.metadata
-  Using cached PySocks-1.7.1-py3-none-any.whl.metadata (13 kB)
-Collecting hyperframe<7,>=6.0 (from h2<5,>=3.1.0->grpclib<0.5.0,>=0.4.1->aristaproto>=0.1.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Obtaining dependency information for hyperframe<7,>=6.0 from https://files.pythonhosted.org/packages/d7/de/85a784bcc4a3779d1753a7ec2dee5de90e18c7bcf402e71b51fcf150b129/hyperframe-6.0.1-py3-none-any.whl.metadata
-  Using cached hyperframe-6.0.1-py3-none-any.whl.metadata (2.7 kB)
-Collecting hpack<5,>=4.0 (from h2<5,>=3.1.0->grpclib<0.5.0,>=0.4.1->aristaproto>=0.1.1->-r /home/andreasm/.ansible/collections/ansible_collections/arista/avd/requirements.txt (line 13))
-  Obtaining dependency information for hpack<5,>=4.0 from https://files.pythonhosted.org/packages/d5/34/e8b383f35b77c402d28563d2b8f83159319b509bc5f760b15d60b0abf165/hpack-4.0.0-py3-none-any.whl.metadata
-  Using cached hpack-4.0.0-py3-none-any.whl.metadata (2.5 kB)
-Using cached netaddr-1.3.0-py3-none-any.whl (2.3 MB)
-Using cached treelib-1.7.0-py3-none-any.whl (18 kB)
-Using cached jsonschema-4.22.0-py3-none-any.whl (88 kB)
-Using cached referencing-0.35.1-py3-none-any.whl (26 kB)
-Using cached requests-2.32.3-py3-none-any.whl (64 kB)
-Using cached deepmerge-1.1.1-py3-none-any.whl (8.6 kB)
-Using cached aristaproto-0.1.2-py3-none-any.whl (100 kB)
-Using cached attrs-23.2.0-py3-none-any.whl (60 kB)
-Using cached certifi-2024.6.2-py3-none-any.whl (164 kB)
-Using cached charset_normalizer-3.3.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (141 kB)
-Using cached idna-3.7-py3-none-any.whl (66 kB)
-Using cached jsonschema_specifications-2023.12.1-py3-none-any.whl (18 kB)
-Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
-Using cached rpds_py-0.18.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.1 MB)
-Using cached six-1.16.0-py2.py3-none-any.whl (11 kB)
-Using cached typing_extensions-4.12.2-py3-none-any.whl (37 kB)
-Using cached urllib3-2.2.1-py3-none-any.whl (121 kB)
-Using cached h2-4.1.0-py3-none-any.whl (57 kB)
-Using cached PySocks-1.7.1-py3-none-any.whl (16 kB)
-Using cached multidict-6.0.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (130 kB)
-Using cached hpack-4.0.0-py3-none-any.whl (32 kB)
-Using cached hyperframe-6.0.1-py3-none-any.whl (12 kB)
-Installing collected packages: deepmerge, urllib3, typing-extensions, six, rpds-py, PySocks, netaddr, multidict, idna, hyperframe, hpack, charset-normalizer, certifi, attrs, treelib, requests, referencing, python-dateutil, h2, jsonschema-specifications, grpclib, jsonschema, cvprac, aristaproto
-Successfully installed PySocks-1.7.1 aristaproto-0.1.2 attrs-23.2.0 certifi-2024.6.2 charset-normalizer-3.3.2 cvprac-1.4.0 deepmerge-1.1.1 grpclib-0.4.7 h2-4.1.0 hpack-4.0.0 hyperframe-6.0.1 idna-3.7 jsonschema-4.22.0 jsonschema-specifications-2023.12.1 multidict-6.0.5 netaddr-1.3.0 python-dateutil-2.9.0.post0 referencing-0.35.1 requests-2.32.3 rpds-py-0.18.1 six-1.16.0 treelib-1.7.0 typing-extensions-4.12.2 urllib3-2.2.1
-
-[notice] A new release of pip is available: 23.2.1 -> 24.0
-[notice] To update, run: pip install --upgrade pip
-Collecting flask
-  Obtaining dependency information for flask from https://files.pythonhosted.org/packages/61/80/ffe1da13ad9300f87c93af113edd0638c75138c42a0994becfacac078c06/flask-3.0.3-py3-none-any.whl.metadata
-  Using cached flask-3.0.3-py3-none-any.whl.metadata (3.2 kB)
-Collecting markdown2
-  Obtaining dependency information for markdown2 from https://files.pythonhosted.org/packages/5a/09/a9ef8d5fe4b08bfd0dd133084deefcffc4b2a37a9ca35a22b48622d59262/markdown2-2.4.13-py2.py3-none-any.whl.metadata
-  Using cached markdown2-2.4.13-py2.py3-none-any.whl.metadata (2.0 kB)
-Collecting pandas
-  Obtaining dependency information for pandas from https://files.pythonhosted.org/packages/40/10/79e52ef01dfeb1c1ca47a109a01a248754ebe990e159a844ece12914de83/pandas-2.2.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached pandas-2.2.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (19 kB)
-Collecting Werkzeug>=3.0.0 (from flask)
-  Obtaining dependency information for Werkzeug>=3.0.0 from https://files.pythonhosted.org/packages/9d/6e/e792999e816d19d7fcbfa94c730936750036d65656a76a5a688b57a656c4/werkzeug-3.0.3-py3-none-any.whl.metadata
-  Using cached werkzeug-3.0.3-py3-none-any.whl.metadata (3.7 kB)
-Requirement already satisfied: Jinja2>=3.1.2 in ./new-site1/lib/python3.12/site-packages (from flask) (3.1.4)
-Collecting itsdangerous>=2.1.2 (from flask)
-  Obtaining dependency information for itsdangerous>=2.1.2 from https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl.metadata
-  Using cached itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
-Collecting click>=8.1.3 (from flask)
-  Obtaining dependency information for click>=8.1.3 from https://files.pythonhosted.org/packages/00/2e/d53fa4befbf2cfa713304affc7ca780ce4fc1fd8710527771b58311a3229/click-8.1.7-py3-none-any.whl.metadata
-  Using cached click-8.1.7-py3-none-any.whl.metadata (3.0 kB)
-Collecting blinker>=1.6.2 (from flask)
-  Obtaining dependency information for blinker>=1.6.2 from https://files.pythonhosted.org/packages/bb/2a/10164ed1f31196a2f7f3799368a821765c62851ead0e630ab52b8e14b4d0/blinker-1.8.2-py3-none-any.whl.metadata
-  Using cached blinker-1.8.2-py3-none-any.whl.metadata (1.6 kB)
-Collecting numpy>=1.26.0 (from pandas)
-  Obtaining dependency information for numpy>=1.26.0 from https://files.pythonhosted.org/packages/0f/50/de23fde84e45f5c4fda2488c759b69990fd4512387a8632860f3ac9cd225/numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata
-  Using cached numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (61 kB)
-Requirement already satisfied: python-dateutil>=2.8.2 in ./new-site1/lib/python3.12/site-packages (from pandas) (2.9.0.post0)
-Collecting pytz>=2020.1 (from pandas)
-  Obtaining dependency information for pytz>=2020.1 from https://files.pythonhosted.org/packages/9c/3d/a121f284241f08268b21359bd425f7d4825cffc5ac5cd0e1b3d82ffd2b10/pytz-2024.1-py2.py3-none-any.whl.metadata
-  Using cached pytz-2024.1-py2.py3-none-any.whl.metadata (22 kB)
-Collecting tzdata>=2022.7 (from pandas)
-  Obtaining dependency information for tzdata>=2022.7 from https://files.pythonhosted.org/packages/65/58/f9c9e6be752e9fcb8b6a0ee9fb87e6e7a1f6bcab2cdc73f02bb7ba91ada0/tzdata-2024.1-py2.py3-none-any.whl.metadata
-  Using cached tzdata-2024.1-py2.py3-none-any.whl.metadata (1.4 kB)
-Requirement already satisfied: MarkupSafe>=2.0 in ./new-site1/lib/python3.12/site-packages (from Jinja2>=3.1.2->flask) (2.1.5)
-Requirement already satisfied: six>=1.5 in ./new-site1/lib/python3.12/site-packages (from python-dateutil>=2.8.2->pandas) (1.16.0)
-Using cached flask-3.0.3-py3-none-any.whl (101 kB)
-Using cached markdown2-2.4.13-py2.py3-none-any.whl (41 kB)
-Using cached pandas-2.2.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (12.7 MB)
-Using cached blinker-1.8.2-py3-none-any.whl (9.5 kB)
-Using cached click-8.1.7-py3-none-any.whl (97 kB)
-Using cached itsdangerous-2.2.0-py3-none-any.whl (16 kB)
-Using cached numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (18.0 MB)
-Using cached pytz-2024.1-py2.py3-none-any.whl (505 kB)
-Using cached tzdata-2024.1-py2.py3-none-any.whl (345 kB)
-Using cached werkzeug-3.0.3-py3-none-any.whl (227 kB)
-Installing collected packages: pytz, Werkzeug, tzdata, numpy, markdown2, itsdangerous, click, blinker, pandas, flask
-Successfully installed Werkzeug-3.0.3 blinker-1.8.2 click-8.1.7 flask-3.0.3 itsdangerous-2.2.0 markdown2-2.4.13 numpy-1.26.4 pandas-2.2.2 pytz-2024.1 tzdata-2024.1
-
-[notice] A new release of pip is available: 23.2.1 -> 24.0
-[notice] To update, run: pip install --upgrade pip
-[WARNING]: No inventory was parsed, only implicit localhost is available
-[WARNING]: provided hosts list is empty, only localhost is available. Note that the implicit localhost does not match 'all'
+Installing collected packages: resolvelib, PyYAML, pycparser, packaging, MarkupSafe, jinja2, cffi, Starting galaxy collection install process
 
 PLAY [Install Examples] *****************************************************************************************************************************************************************************************
 
-TASK [Copy all examples to /home/andreasm/arista-automated-avd/new-site1] ***************************************************************************************************************************************
+TASK [Copy all examples to /home/andreasm/arista-automated-avd/new-site-3] **************************************************************************************************************************************
 changed: [localhost]
 
 PLAY RECAP ******************************************************************************************************************************************************************************************************
@@ -2519,398 +2688,69 @@ Which example do you want to select?
 Enter your choice (1-5): 1
 ```
 
-More or less the same script but added a prompt asking whether or not to start the webserver:
+Now after the script above has run, all I need to do is to *cd* into the new folder that was created based on my input name (new-site-3).
 
 ```bash
-#!/bin/bash
-
-# Prompt for input name
-read -p "Enter the name: " input_name
-
-# Create a folder from the input
-mkdir "$input_name"
-
-# CD into the newly created folder
-cd "$input_name"
-
-# Create a Python virtual environment with the same name as the input
-python3 -m venv "$input_name"
-
-# Activate the virtual environment
-source "$input_name/bin/activate"
-
-# Install Ansible
-python3 -m pip install ansible
-
-# Install Arista AVD collection
-ansible-galaxy collection install arista.avd
-
-# Export ARISTA_AVD_DIR environment variable
-export ARISTA_AVD_DIR=$(ansible-galaxy collection list arista.avd --format yaml | head -1 | cut -d: -f1)
-
-# Install requirements from ARISTA_AVD_DIR
-pip3 install -r ${ARISTA_AVD_DIR}/arista/avd/requirements.txt
-
-# Install additional packages
-pip install flask markdown2 pandas
-
-# Run ansible-playbook arista.avd.install_examples
-ansible-playbook arista.avd.install_examples
-
-# Create menu
-echo "Which example do you want to select?
-1. Single DC L3LS
-2. Dual DC L3LS
-3. Campus Fabric
-4. ISIS-LDP-IPVPN
-5. L2LS Fabric"
-read -p "Enter your choice (1-5): " choice
-
-# Set the folder based on choice
-case $choice in
-  1) folder="single-dc-l3ls" ;;
-  2) folder="dual-dc-l3ls" ;;
-  3) folder="campus-fabric" ;;
-  4) folder="isis-ldp-ipvpn" ;;
-  5) folder="l2ls-fabric" ;;
-  *) echo "Invalid choice"; exit 1 ;;
-esac
-
-# CD into the respective folder
-cd "$folder"
-
-# Create app.py with the given content
-cat << 'EOF' > app.py
-from flask import Flask, render_template, request, jsonify, Response
-import os
-import subprocess
-import logging
-import markdown2
-import pandas as pd
-
-app = Flask(__name__)
-ROOT_DIR = '.'  # Root directory where inventory.yml is located
-GROUP_VARS_DIR = os.path.join(ROOT_DIR, 'group_vars')  # Subfolder where other YAML files are located
-FABRIC_DOCS_DIR = os.path.join(ROOT_DIR, 'documentation', 'fabric')
-DEVICES_DOCS_DIR = os.path.join(ROOT_DIR, 'documentation', 'devices')
-CONFIGS_DIR = os.path.join(ROOT_DIR, 'intended', 'configs')
-STRUCTURED_CONFIGS_DIR = os.path.join(ROOT_DIR, 'intended', 'structured_configs')
-
-# Ensure the documentation directories exist
-for directory in [FABRIC_DOCS_DIR, DEVICES_DOCS_DIR, CONFIGS_DIR, STRUCTURED_CONFIGS_DIR]:
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
-
-@app.route('/')
-def index():
-    try:
-        root_files = [f for f in os.listdir(ROOT_DIR) if f.endswith('.yml')]
-        group_vars_files = [f for f in os.listdir(GROUP_VARS_DIR) if f.endswith('.yml')]
-        fabric_docs_files = [f for f in os.listdir(FABRIC_DOCS_DIR) if f.endswith(('.md', '.csv'))]
-        devices_docs_files = [f for f in os.listdir(DEVICES_DOCS_DIR) if f.endswith(('.md', '.csv'))]
-        configs_files = [f for f in os.listdir(CONFIGS_DIR) if f.endswith('.cfg')]
-        structured_configs_files = [f for f in os.listdir(STRUCTURED_CONFIGS_DIR) if f.endswith('.yml')]
-        logging.debug(f"Root files: {root_files}")
-        logging.debug(f"Group vars files: {group_vars_files}")
-        logging.debug(f"Fabric docs files: {fabric_docs_files}")
-        logging.debug(f"Devices docs files: {devices_docs_files}")
-        logging.debug(f"Configs files: {configs_files}")
-        logging.debug(f"Structured configs files: {structured_configs_files}")
-        return render_template('index.html', root_files=root_files, group_vars_files=group_vars_files, fabric_docs_files=fabric_docs_files, devices_docs_files=devices_docs_files, configs_files=configs_files, structured_configs_files=structured_configs_files)
-    except Exception as e:
-        logging.error(f"Error loading file list: {e}")
-        return "Error loading file list", 500
-
-@app.route('/load_file', methods=['POST'])
-def load_file():
-    try:
-        filename = request.json['filename']
-        logging.debug(f"Loading file: {filename}")
-        if filename in os.listdir(ROOT_DIR):
-            file_path = os.path.join(ROOT_DIR, filename)
-        elif filename in os.listdir(GROUP_VARS_DIR):
-            file_path = os.path.join(GROUP_VARS_DIR, filename)
-        elif filename in os.listdir(FABRIC_DOCS_DIR):
-            file_path = os.path.join(FABRIC_DOCS_DIR, filename)
-        elif filename in os.listdir(DEVICES_DOCS_DIR):
-            file_path = os.path.join(DEVICES_DOCS_DIR, filename)
-        elif filename in os.listdir(CONFIGS_DIR):
-            file_path = os.path.join(CONFIGS_DIR, filename)
-        elif filename in os.listdir(STRUCTURED_CONFIGS_DIR):
-            file_path = os.path.join(STRUCTURED_CONFIGS_DIR, filename)
-        else:
-            raise FileNotFoundError(f"File not found: {filename}")
-
-        logging.debug(f"File path: {file_path}")
-        with open(file_path, 'r') as file:
-            content = file.read()
-
-        if filename.endswith('.md'):
-            content = markdown2.markdown(content, extras=["toc", "fenced-code-blocks", "header-ids"])
-            return jsonify(content=content, is_markdown=True)
-        elif filename.endswith('.csv'):
-            df = pd.read_csv(file_path)
-            content = df.to_html(index=False)
-            return jsonify(content=content, is_csv=True)
-        else:
-            return jsonify(content=content)
-    except Exception as e:
-        logging.error(f"Error loading file: {e}")
-        return jsonify(error=str(e)), 500
-
-@app.route('/save_file', methods=['POST'])
-def save_file():
-    try:
-        filename = request.json['filename']
-        content = request.json['content']
-
-        file_path = os.path.join(ROOT_DIR, filename) if filename in os.listdir(ROOT_DIR) else os.path.join(GROUP_VARS_DIR, filename)
-
-        with open(file_path, 'w') as file:
-            file.write(content)
-        return jsonify(success=True)
-    except Exception as e:
-        logging.error(f"Error saving file: {e}")
-        return jsonify(success=False, error=str(e)), 500
-
-def run_ansible_playbook(playbook):
-    process = subprocess.Popen(['ansible-playbook', playbook], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    for line in iter(process.stdout.readline, ''):
-        yield f"data: {line}\n\n"
-    process.stdout.close()
-    process.wait()
-
-@app.route('/run_playbook_stream/<playbook>')
-def run_playbook_stream(playbook):
-    return Response(run_ansible_playbook(playbook), mimetype='text/event-stream')
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-EOF
-
-# Create templates directory and index.html with the given content
-mkdir templates
-cat << 'EOF' > templates/index.html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Ansible Files</title>
-    <style>
-        #editor {
-            width: 100%;
-            height: 80vh;
-        }
-        #output, #fileContent {
-            width: 100%;
-            height: 200px;
-            white-space: pre-wrap;
-            background-color: #f0f0f0;
-            padding: 10px;
-            border: 1px solid #ccc;
-            overflow-y: scroll;
-        }
-        #fileContent {
-            height: auto;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.js" crossorigin="anonymous"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body>
-    <h1>Edit Ansible Files</h1>
-    <select id="fileSelector">
-        <option value="">Select a file</option>
-        <optgroup label="Root Files">
-            {% for file in root_files %}
-            <option value="{{ file }}">{{ file }}</option>
-            {% endfor %}
-        </optgroup>
-        <optgroup label="Group Vars Files">
-            {% for file in group_vars_files %}
-            <option value="{{ file }}">{{ file }}</option>
-            {% endfor %}
-        </optgroup>
-    </select>
-    <button id="saveButton">Save</button>
-    <div id="editor">Select a file to load...</div>
-
-    <h2>Documentation</h2>
-    <h3>Fabric</h3>
-    <div id="fabricDocs">
-        {% for file in fabric_docs_files %}
-        <button class="docButton" data-filename="{{ file }}">{{ file }}</button>
-        {% endfor %}
-    </div>
-    <h3>Devices</h3>
-    <div id="devicesDocs">
-        {% for file in devices_docs_files %}
-        <button class="docButton" data-filename="{{ file }}">{{ file }}</button>
-        {% endfor %}
-    </div>
-
-    <h2>Configs</h2>
-    <h3>Intended Configs</h3>
-    <div id="configs">
-        {% for file in configs_files %}
-        <button class="configButton" data-filename="{{ file }}">{{ file }}</button>
-        {% endfor %}
-    </div>
-    <h3>Structured Configs</h3>
-    <div id="structuredConfigs">
-        {% for file in structured_configs_files %}
-        <button class="configButton" data-filename="{{ file }}">{{ file }}</button>
-        {% endfor %}
-    </div>
-    <div id="fileContent"></div>
-
-    <button id="runBuildButton">Run Build Playbook</button>
-    <button id="runDeployButton">Run Deploy Playbook</button>
-    <div id="output"></div>
-
-    <script>
-        $(document).ready(function() {
-            var editor = ace.edit("editor");
-            editor.setTheme("ace/theme/monokai");
-            editor.session.setMode("ace/mode/yaml");
-
-            $('#fileSelector').change(function() {
-                var filename = $(this).val();
-                console.log("Selected file: " + filename);
-                if (filename) {
-                    $.ajax({
-                        url: '/load_file',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ filename: filename }),
-                        success: function(data) {
-                            console.log("File content received:", data);
-                            if (data && data.content) {
-                                editor.setValue(data.content, -1);
-                            } else {
-                                editor.setValue("Failed to load file content.", -1);
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error loading file content:", status, error);
-                            editor.setValue("Error loading file content: " + error, -1);
-                        }
-                    });
-                }
-            });
-
-            $('#saveButton').click(function() {
-                var filename = $('#fileSelector').val();
-                var content = editor.getValue();
-                console.log("Saving file: " + filename);
-                if (filename) {
-                    $.ajax({
-                        url: '/save_file',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ filename: filename, content: content }),
-                        success: function(data) {
-                            if (data.success) {
-                                alert('File saved successfully');
-                            } else {
-                                alert('Failed to save file');
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error saving file:", status, error);
-                            alert('Error saving file: ' + error);
-                        }
-                    });
-                }
-            });
-
-            $('.docButton, .configButton').click(function() {
-                var filename = $(this).data('filename');
-                console.log("Selected file: " + filename);
-                $.ajax({
-                    url: '/load_file',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ filename: filename }),
-                    success: function(data) {
-                        console.log("File content received:", data);
-                        if (data && data.content) {
-                            $('#fileContent').html(data.content);
-                            if (data.is_markdown || data.is_csv) {
-                                $('#fileContent a').click(function(event) {
-                                    event.preventDefault();
-                                    var targetId = $(this).attr('href').substring(1);
-                                    var targetElement = document.getElementById(targetId);
-                                    if (targetElement) {
-                                        targetElement.scrollIntoView();
-                                    }
-                                });
-                            }
-                        } else {
-                            $('#fileContent').text("Failed to load file content.");
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error("Error loading file content:", status, error);
-                        $('#fileContent').text("Error loading file content: " + error);
-                    }
-                });
-            });
-
-            $('#runBuildButton').click(function() {
-                runPlaybook('build.yml');
-            });
-
-            $('#runDeployButton').click(function() {
-                runPlaybook('deploy.yml');
-            });
-
-            function runPlaybook(playbook) {
-                var eventSource = new EventSource('/run_playbook_stream/' + playbook);
-                eventSource.onmessage = function(event) {
-                    $('#output').append(event.data + '\n');
-                    $('#output').scrollTop($('#output')[0].scrollHeight);
-                };
-                eventSource.onerror = function() {
-                    eventSource.close();
-                };
-            }
-        });
-    </script>
-</body>
-</html>
-EOF
-
-# Ask if the user wants to start the webserver
-echo "Do you want to start the webserver?
-1. Yes (remember to stop any previous python webservers running)
-2. No"
-read -p "Enter your choice (1-2): " start_server_choice
-
-# Handle the user's choice
-case $start_server_choice in
-  1) nohup python app.py & ;;
-  2) echo "To start the webserver head into the example folder you selected and run the command 'python app.py'" ;;
-  *) echo "Invalid choice"; exit 1 ;;
-esac
-
-# Keep the virtual environment activated after the script is done
-echo "source $PWD/../$input_name/bin/activate" >> ~/.bashrc
-source ~/.bashrc
+andreasm@linuxmgmt01:~/arista-automated-avd$ ll
+total 52
+drwxrwxr-x  5 andreasm andreasm  4096 Jun 13 06:19 ./
+drwxr-xr-x 44 andreasm andreasm  4096 Jun 13 06:18 ../
+-rwxrwxr-x  1 andreasm andreasm 14542 Jun 12 21:56 create-avd-project.sh*
+drwxrwxr-x  8 andreasm andreasm  4096 Jun 13 06:21 new-site-3/
 ```
 
-Together with my friend ChatGPT I have also created a web page to interact with the Arista Validated Designs a bit more interactively. The page is capable of editing and save all the needed *yml* files within its own "project/environment". When done editing, there is two buttons below that will trigger the ansible-playbook build.yml and ansible-playbook deploy.yml commands respectively with output below. Then it is capable of showing all the auto-created documentation contents under the folders *documentation/fabric* and *documentation/devices* respectively for easy acces and interactice Table of Contents. 
+The only thing I need to now is to activate my new Python environment also named after the input I gave (new-site-3):
 
-Make a short video recording of the web-page.... a short and snappy one. 
+```bash
+andreasm@linuxmgmt01:~/arista-automated-avd/new-site-3$ ls
+campus-fabric  dual-dc-l3ls  isis-ldp-ipvpn  l2ls-fabric  new-site-3  single-dc-l3ls
+andreasm@linuxmgmt01:~/arista-automated-avd/new-site-3$ source new-site-3/bin/activate
+(new-site-3) andreasm@linuxmgmt01:~/arista-automated-avd/new-site-3$
+```
+
+I can now cd into my example folder I want to use, edit the necessary files etc, do ansible-playbook build.yml and deploy.yml. Or even better, I will cd into the example folder I selected in the last prompt, there the script has placed a file called *app.py* and a new folder called *templates* containing a *index.html* file so I can start a webserver. With this webserver I can interact with the files more interactively.
+
+### Web-based interaction
+
+Together with my friend ChatGPT we have also created a web page to interact with the Arista Validated Designs a bit more interactively. 
+
+To start the webserver I need to cd into the example folder I selected from the script above (e.g *single-dc-l3ls*), and from there run the following command: `python app.py` (the python environment needs to be active). 
+
+```bash
+(new-site-3) andreasm@linuxmgmt01:~/arista-automated-avd/new-site-3/single-dc-l3ls$ python app.py
+ * Serving Flask app 'app'
+ * Debug mode: on
+INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.100.5.10:5000
+INFO:werkzeug:Press CTRL+C to quit
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 129-945-984
+```
+
+![webserver](images/image-20240613084457903.png)
 
 
 
-Then also show the documentation and the configs in separate buttons. 
+The page is capable of editing and save all the needed *yml* files within its own "project/environment" (e.g *single-dc-l3ls*). When done editing, there is two buttons that will trigger the ansible-playbook build.yml and ansible-playbook deploy.yml commands respectively with output. After the build command has been run it is capable of showing all the auto-created documentation contents under the folders *documentation/fabric* and *documentation/devices* respectively for easy access and interactive Table of Contents.
+
+See short video clip below:
+
+ 
+
+<video src="images/webpage_video.mp4" style="width:1200px" controls></video>
 
 
 
-Even the table of content has working links. Love it
+
+
+## Outro
+
+This post has been a very exciting exercise.
+
+The Arista Validated Design not only made deploying complex designs an easy task, but provided also much important documentation as part of the process. Regardless of the network switches being physical, they can be automated like anything else. Day 2 configurations are a joy to perform with this approach too.
+
+ 
 
