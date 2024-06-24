@@ -27,7 +27,7 @@ comment: false # Disable comment if false.
 
 Source: Arista's [homepage](https://www.arista.com/en/company/company-overview).
 
-Arista has some really great products and solutions, and in this post I will have a deeper look at using [Ansible Validated Design](https://avd.arista.com) automating the whole bringup process of a Spine-Leaf topology. I will also see how this can be used to make the network underlay more agile by adding changes "on-demand".
+Arista has some really great products and solutions, and in this post I will have a deeper look at using [Arista Validated Design](https://avd.arista.com) automating the whole bringup process of a Spine-Leaf topology. I will also see how this can be used to make the network underlay more agile by adding changes "on-demand".
 
 I have been working with VMware NSX for many years and one of NSX benefits is how easy it is to automate. I am very keen on testing out how I can achieve the same level of automation with the physical underlay network too.
 
