@@ -94,6 +94,15 @@ To add the unused disk I select it, click edit and choose SATA and bus 0. This w
 
 Now the disk has been added. One final note, I have added the network interfaces I need in my lab as seen above. The net0 will be used for dedicated oob management. 
 
+
+
+<div style="border-left: 4px solid #2196F3; background-color: #E3F2FD; padding: 10px; margin: 10px 0; color: #0000FF;"> <strong>Info:</strong>
+A note on the virtual network adapters for the vEOS appliances. I struggled to get any stateful sessions between my two test VMs connected to the Leaf switches and realized soon it had to be MTU issues. It is also mentioned in the official documentation to use the VIRTIO network adapter, it seemingly works (ping succeeded, traceroute not) but trying to SSH between my test VMs just timed out. Using tcpdump I could see some of the traffic, but only fragments. After changing the NICs to Intel E1000 no MTU issue and everything works as expected.
+
+I also changed the CPU emulation to use HOST. With this setup I could raise the MTU for the underlay BGP uplinks to 9000. 
+
+</div>
+
 Thats it, I can now power on my vEOS. 
 
 ![booting](images/image-20240610151817343.png)
