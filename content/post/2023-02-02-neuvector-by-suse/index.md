@@ -1,7 +1,7 @@
 ---
 author: "Andreas M"
 title: "NeuVector by SUSE - security where it is needed - part 1"
-date: 2024-05-13T12:42:04+02:00 
+date: 2023-02-02T12:42:04+02:00 
 description: "A deep dive in NeuVector - a comprehensive security platform"
 draft: false 
 toc: true

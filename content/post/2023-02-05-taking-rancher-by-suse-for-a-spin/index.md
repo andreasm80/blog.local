@@ -1,7 +1,7 @@
 ---
 author: "Andreas M"
 title: "Taking Rancher by SUSE for a Spin"
-date: 2024-05-05T21:18:48+02:00 
+date: 2023-02-05T21:18:48+02:00 
 description: "Trying out Rancher and some of its capabilities"
 draft: false 
 toc: true
