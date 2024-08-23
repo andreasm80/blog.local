@@ -21,6 +21,8 @@ tags:
   - arista
   - veos
   - ceos
+  - containerlab
+
 summary: Using Containerlab to provision cEOS containers for AVD and CloudVision
 comment: false # Disable comment if false.
 ---
@@ -29,7 +31,7 @@ comment: false # Disable comment if false.
 
 # Arista CloudVision, AVD and Containerlab
 
-This post will continue upon my previous post about [automated provisioning of EOS using Arista Validated Design](https://blog.andreasm.io/2024/06/10/arista-automated-configuration-using-ansible/). I will be using [Arista Validated Design](https://avd.arista.com/4.10/index.html) in combination with [Arista CloudVision](https://www.arista.com/en/products/eos/eos-cloudvision) for provisioning and configuration instead of sending the config directly to the switches. There are some differences (and many benefits) of using CloudVision, which I will quickly touch upon in the context of this post a bit further down. I will probably on a later stage create a dedicated post on Arista CloudVision as it is a very comprehensive management tool. 
+This post will continue upon my previous post about [automated provisioning of EOS using Arista Validated Design](https://blog.andreasm.io/2024/06/10/arista-automated-configuration-using-ansible/). I will be using [Arista Validated Design](https://avd.arista.com/4.10/index.html) in combination with [Arista CloudVision](https://www.arista.com/en/products/eos/eos-cloudvision) for provisioning and configuration instead of sending the config directly to the switches. There are some differences (and many benefits) of using CloudVision, which I will quickly touch upon in the context of this post a bit further down. I will probably at a later stage create a dedicated post on Arista CloudVision as it is a very comprehensive management tool. 
 
 Another difference in this post is that I will be using a containerized EOS (cEOS) instead of a virtual machine based EOS (vEOS). The benefit here is that I can make use of [Containerlab](https://containerlab.dev/) which takes care of the orchestrating of all the cEOS containers I need, and that in a very rapid way too. An absolute incredible tool to quickly facilitate a full blown lab with support for a vast set of scenarios and topologies.  
 
@@ -1094,15 +1096,142 @@ Job well done. When it comes to post-updates to the config they can continue to 
 
 Again, a note on CVP. There will be another post coming only focusing on CVP. So stay tuned for that one. 
 
-## Connecting generic VM to the cEOS switches
+## Connecting generic containers to the cEOS switches
 
-Now that I have my full fabric up and running, I would like to test connectivity between two generic containers running Ubuntu connected to each their Leaf L3 switch. Lets see how this can be done. 
+Now that I have my full fabric up and running, I would like to test connectivity between two generic containers running Ubuntu connected to each of their Leaf L3 switch, each on their different VLAN. Containerlabs supports several ways to interact with the network nodes. I decided to go with an easy approach, spin a couple of generic docker containers.  
+
+To deploy a generic Docker container, like Ubuntu, using Containerlab there were two ways I considered to do this. I could go ahead and just create a new Containerlab topology yaml (or several) where I add and define the amunt of nodes I need. Or just add additional nodes to my existing topology yaml with the *kind: linux*. As I already have my spine-leaf lab already running I just created a new topology yaml where I defined my "clients" and where they should be linked. Here is my "client" yaml:
+
+```yaml
+name: clients-attached
+topology:
+  nodes:
+    client-1:
+      kind: linux
+      image: ubuntu:latest
+    client-2:
+      kind: linux
+      image: ubuntu:latest
+    br-node-4:
+      kind: bridge
+    br-node-3:
+      kind: bridge
+  links:
+    - endpoints: ["client-1:eth1","br-node-3:eth4"]
+    - endpoints: ["client-2:eth1","br-node-4:eth12"]
+
+
+```
+
+  If I had added these to my existing topology, I would also gain the benefit of viewing the connection diagram using *containerlab graph*.
+
+Client 1 *eth1* is attached to *br-node-3* bridge eth4, that is the same bridge my *Leaf-1 Ethernet/3 is connected to. Client 2 *eth1* is attached to *br-node-4* bridge eth12, that is the same bridge my *Leaf-1 Ethernet/3 is connected to. The ethx in the bridge is just another free number. 
+
+Then I deployed my new topology containing the two above linux nodes. 
+
+As soon as they were up and running I exec into each and one of them and configured static IP addresses on both their *eth1* interfaces, adding a route on client-1 pointing to client-2s subnet using the eth1 as gateway (the reason is because they will come up with their managment interface eth0, I know it possible to disable that network.). 
+
+Then I could ping from client-1 to client-2 and vice versa. Connectivity wise here is how they are now connected:
+
+![client-client](images/index/image-20240823195453173.png)
+
+Client-1 is connected directly to Leaf-1 Ethernet/3 via Bridge br-node-3 and client-2 is connected directly to Leaf-2 Ethernet/3 via Bridge br-node-4. Client-1 is configured with a static ip of 10.71.0.11/24 and client-2 is configured with a static of 10.70.0.12/24. For these two clients to reach each other it has to go over VXLAN where both VLANs is encapsulated. A quick ping test from each client shows that this works:
 
 
 
+```bash
+## client 1 pinging client 2
+root@client-1:/# ip addr
+567: eth1@if568: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9500 qdisc noqueue state UP group default 
+    link/ether aa:c1:ab:18:8e:bb brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.71.0.11/24 scope global eth1
+       valid_lft forever preferred_lft forever
+569: eth0@if570: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:ac:14:14:02 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 172.20.20.2/24 brd 172.20.20.255 scope global eth0
+       valid_lft forever preferred_lft forever
+root@client-1:/# ping 10.70.0.12
+PING 10.70.0.12 (10.70.0.12) 56(84) bytes of data.
+64 bytes from 10.70.0.12: icmp_seq=1 ttl=62 time=2.96 ms
+64 bytes from 10.70.0.12: icmp_seq=2 ttl=62 time=2.66 ms
+64 bytes from 10.70.0.12: icmp_seq=3 ttl=62 time=2.61 ms
+64 bytes from 10.70.0.12: icmp_seq=4 ttl=62 time=3.05 ms
+64 bytes from 10.70.0.12: icmp_seq=5 ttl=62 time=3.08 ms
+64 bytes from 10.70.0.12: icmp_seq=6 ttl=62 time=3.03 ms
+^C
+--- 10.70.0.12 ping statistics ---
+6 packets transmitted, 6 received, 0% packet loss, time 5007ms
+rtt min/avg/max/mdev = 2.605/2.896/3.080/0.191 ms
+
+# client 2 pinging client-1
+
+root@client-2:~# ip add
+571: eth1@if572: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9500 qdisc noqueue state UP group default 
+    link/ether aa:c1:ab:f7:d8:60 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.70.0.12/24 scope global eth1
+       valid_lft forever preferred_lft forever
+573: eth0@if574: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:ac:14:14:03 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 172.20.20.3/24 brd 172.20.20.255 scope global eth0
+       valid_lft forever preferred_lft forever
+root@client-2:~# ping  10.71.0.11
+PING 10.71.0.11 (10.71.0.11) 56(84) bytes of data.
+64 bytes from 10.71.0.11: icmp_seq=3 ttl=62 time=2.81 ms
+64 bytes from 10.71.0.11: icmp_seq=4 ttl=62 time=2.49 ms
+64 bytes from 10.71.0.11: icmp_seq=8 ttl=62 time=2.97 ms
+64 bytes from 10.71.0.11: icmp_seq=9 ttl=62 time=2.56 ms
+64 bytes from 10.71.0.11: icmp_seq=10 ttl=62 time=3.14 ms
+64 bytes from 10.71.0.11: icmp_seq=11 ttl=62 time=2.82 ms
+^C
+--- 10.71.0.11 ping statistics ---
+6 packets transmitted, 6 received, 0% packet loss, time 10013ms
+rtt min/avg/max/mdev = 2.418/2.897/4.224/0.472 ms
+root@client-2:~# 
+
+```
+
+And on both Leaf-1 and Leaf-2 I can see the arp correctly and VXLAN address-table:
+
+```bash
+## DC Leaf-1
+dc1-leaf1(config)#show vxlan address-table 
+          Vxlan Mac Address Table
+----------------------------------------------------------------------
+
+VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
+----  -----------     ----      ---  ----             -----   ---------
+1070  aac1.abf7.d860  EVPN      Vx1  192.168.1.4      1       0:03:52 ago
+1300  001c.7356.0016  EVPN      Vx1  192.168.1.4      1       7:44:07 ago
+1300  001c.73c4.4a1d  EVPN      Vx1  192.168.1.5      1       7:44:07 ago
+Total Remote Mac Addresses for this criterion: 3
+
+dc1-leaf1(config)#show arp vrf VRF11
+Address         Age (sec)  Hardware Addr   Interface
+10.70.0.12              -  aac1.abf7.d860  Vlan1070, Vxlan1
+10.71.0.11        0:04:00  aac1.ab18.8ebb  Vlan1071, Ethernet3
+dc1-leaf1(config)#
+
+## DC Leaf-2
+
+dc1-leaf2(config)#show vxlan address-table 
+          Vxlan Mac Address Table
+----------------------------------------------------------------------
+
+VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
+----  -----------     ----      ---  ----             -----   ---------
+1071  aac1.ab18.8ebb  EVPN      Vx1  192.168.1.3      1       0:04:36 ago
+1300  001c.7357.10f4  EVPN      Vx1  192.168.1.3      1       7:44:50 ago
+Total Remote Mac Addresses for this criterion: 2
+dc1-leaf2(config)#
+dc1-leaf2(config)#show arp vrf VRF11 
+Address         Age (sec)  Hardware Addr   Interface
+10.70.0.12        0:04:36  aac1.abf7.d860  Vlan1070, Ethernet3
+10.71.0.11              -  aac1.ab18.8ebb  Vlan1071, Vxlan1
+dc1-leaf2(config)#
 
 
-Testing communication flows, VXLAN etc. 
+
+```
 
 
 
