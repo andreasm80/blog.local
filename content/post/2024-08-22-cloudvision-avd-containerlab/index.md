@@ -1098,9 +1098,19 @@ Again, a note on CVP. There will be another post coming only focusing on CVP. So
 
 ## Connecting generic containers to the cEOS switches
 
-Now that I have my full fabric up and running, I would like to test connectivity between two generic containers running Ubuntu connected to each of their Leaf L3 switch, each on their different VLAN. Containerlabs supports several ways to interact with the network nodes. I decided to go with an easy approach, spin a couple of generic docker containers.  
+Now that I have my full fabric up and running, I would like to test connectivity between two generic containers running Ubuntu connected to each of their Leaf L3 switch, each on their different VLAN. Containerlabs supports several ways to interact with the network nodes. I decided to go with an easy approach, spin a couple of generic docker containers.  When I deployed my cEOS lab earlier I created a couple of Linux bridges that my Leaf switches connect their Ethernet/3 interfaces to. Each leaf have their own dedicated bridge for their Ethernet/3 interfaces. That means I just need to deploy my container *clients* and connecting their interface to these bridges as well. 
 
-To deploy a generic Docker container, like Ubuntu, using Containerlab there were two ways I considered to do this. I could go ahead and just create a new Containerlab topology yaml (or several) where I add and define the amunt of nodes I need. Or just add additional nodes to my existing topology yaml with the *kind: linux*. As I already have my spine-leaf lab already running I just created a new topology yaml where I defined my "clients" and where they should be linked. Here is my "client" yaml:
+To make it a bit more interesting test I want to attach Client-1 to *br-node-3* where *dc1-leaf1 Ethernet/3* is attached and *Client-2* to *br-node4* where *dc1-leaf2 Ethernet/3* is attached.   
+
+![client-1-2-attached](images/index/image-20240824091617368.png)
+
+
+
+To deploy a generic Docker container, like a Ubuntu container, using Containerlab I need to either add additional nodes using the *kind: linux* to my existing lab topology yaml, or create a separate topology yaml. Both ways are explained below.
+
+### Create new topology and connect to existing bridges
+
+If I quickly want to add generic container nodes and add them to my already running cEOS topology I need to define an additional topology yaml where I define my "clients" and where they should be linked. Its not possible to update or apply updates to an existing running topology in Containerlab using Docker. Here is my "client" yaml:
 
 ```yaml
 name: clients-attached
@@ -1123,17 +1133,170 @@ topology:
 
 ```
 
-  If I had added these to my existing topology, I would also gain the benefit of viewing the connection diagram using *containerlab graph*.
-
 Client 1 *eth1* is attached to *br-node-3* bridge eth4, that is the same bridge my *Leaf-1 Ethernet/3 is connected to. Client 2 *eth1* is attached to *br-node-4* bridge eth12, that is the same bridge my *Leaf-1 Ethernet/3 is connected to. The ethx in the bridge is just another free number. 
 
-Then I deployed my new topology containing the two above linux nodes. 
+### Adding generic containers to existing topology
 
-As soon as they were up and running I exec into each and one of them and configured static IP addresses on both their *eth1* interfaces, adding a route on client-1 pointing to client-2s subnet using the eth1 as gateway (the reason is because they will come up with their managment interface eth0, I know it possible to disable that network.). 
+As it is very easy to just bring down my lab and re-provision everything back up again using Containerlab, AVD and CVP I can also modify my existing topology to include my test clients (generic linux containers). 
 
-Then I could ping from client-1 to client-2 and vice versa. Connectivity wise here is how they are now connected:
+```yaml
+name: spine-leaf-borderleaf
 
-![client-client](images/index/image-20240823195453173.png)
+mgmt:
+  network: custom_mgmt                # management network name
+  ipv4-subnet: 192.168.20.0/24       # ipv4 range
+
+topology:
+  nodes:
+    node-1:
+      kind: arista_ceos
+      image: ceos:4.32.2F
+      startup-config: node1-startup-config.cfg
+      mgmt-ipv4: 192.168.20.2
+    node-2:
+      kind: arista_ceos
+      image: ceos:4.32.2F
+      startup-config: node2-startup-config.cfg
+      mgmt-ipv4: 192.168.20.3
+    node-3:
+      kind: arista_ceos
+      image: ceos:4.32.2F
+      startup-config: node3-startup-config.cfg
+      mgmt-ipv4: 192.168.20.4
+    node-4:
+      kind: arista_ceos
+      image: ceos:4.32.2F
+      startup-config: node4-startup-config.cfg
+      mgmt-ipv4: 192.168.20.5
+    node-5:
+      kind: arista_ceos
+      image: ceos:4.32.2F
+      startup-config: node5-startup-config.cfg
+      mgmt-ipv4: 192.168.20.6
+# Clients attached to specific EOS Interfaces
+    client-1:
+      kind: linux
+      image: ubuntu:latest
+    client-2:
+      kind: linux
+      image: ubuntu:latest
+
+# Bridges for specific downlinks 
+    br-node-3:
+      kind: bridge
+    br-node-4:
+      kind: bridge
+    br-node-5:
+      kind: bridge
+
+
+  links:
+    - endpoints: ["node-3:eth1", "node-1:eth1"]
+    - endpoints: ["node-3:eth2", "node-2:eth1"]
+    - endpoints: ["node-4:eth1", "node-1:eth2"]
+    - endpoints: ["node-4:eth2", "node-2:eth2"]
+    - endpoints: ["node-5:eth1", "node-1:eth3"]
+    - endpoints: ["node-5:eth2", "node-2:eth3"]
+    - endpoints: ["node-3:eth3", "br-node-3:n3-eth3"]
+    - endpoints: ["node-4:eth3", "br-node-4:n4-eth3"]
+    - endpoints: ["node-5:eth3", "br-node-5:n5-eth3"]
+    - endpoints: ["client-1:eth1","br-node-3:eth4"]
+    - endpoints: ["client-2:eth1","br-node-4:eth12"]
+
+```
+
+
+
+Then I re-deployed my topology containing the additional two above linux nodes.
+
+
+
+```bash
+INFO[0000] Containerlab v0.56.0 started                 
+INFO[0000] Parsing & checking topology file: spine-leaf-border.yaml 
+INFO[0000] Creating docker network: Name="custom_mgmt", IPv4Subnet="192.168.20.0/24", IPv6Subnet="", MTU=0 
+INFO[0000] Creating lab directory: /home/andreasm/containerlab/lab-spine-leaf-cvp/clab-spine-leaf-borderleaf 
+INFO[0000] Creating container: "node-1"                 
+INFO[0000] Creating container: "node-4"                 
+INFO[0000] Creating container: "node-3"                 
+INFO[0000] Creating container: "node-5"                 
+INFO[0000] Creating container: "node-2"                 
+INFO[0000] Creating container: "client-2"               
+INFO[0000] Created link: node-5:eth1 <--> node-1:eth3   
+INFO[0000] Running postdeploy actions for Arista cEOS 'node-1' node 
+INFO[0001] Created link: node-3:eth1 <--> node-1:eth1   
+INFO[0001] Running postdeploy actions for Arista cEOS 'node-5' node 
+INFO[0001] Created link: node-4:eth1 <--> node-1:eth2   
+INFO[0001] Creating container: "client-1"               
+INFO[0001] Created link: node-5:eth3 <--> br-node-5:n5-eth3 
+INFO[0001] Created link: node-4:eth3 <--> br-node-4:n4-eth3 
+INFO[0001] Running postdeploy actions for Arista cEOS 'node-4' node 
+INFO[0001] Created link: node-3:eth2 <--> node-2:eth1   
+INFO[0001] Created link: node-4:eth2 <--> node-2:eth2   
+INFO[0001] Created link: node-3:eth3 <--> br-node-3:n3-eth3 
+INFO[0001] Running postdeploy actions for Arista cEOS 'node-3' node 
+INFO[0001] Created link: node-5:eth2 <--> node-2:eth3   
+INFO[0001] Running postdeploy actions for Arista cEOS 'node-2' node 
+INFO[0001] Created link: client-2:eth1 <--> br-node-4:eth12 
+INFO[0001] Created link: client-1:eth1 <--> br-node-3:eth4 
+INFO[0046] Adding containerlab host entries to /etc/hosts file 
+INFO[0046] Adding ssh config for containerlab nodes     
+INFO[0046] 🎉 New containerlab version 0.57.0 is available! Release notes: https://containerlab.dev/rn/0.57/
+Run 'containerlab version upgrade' to upgrade or go check other installation options at https://containerlab.dev/install/ 
++---+-------------------------------------+--------------+---------------+-------------+---------+-----------------+--------------+
+| # |                Name                 | Container ID |     Image     |    Kind     |  State  |  IPv4 Address   | IPv6 Address |
++---+-------------------------------------+--------------+---------------+-------------+---------+-----------------+--------------+
+| 1 | clab-spine-leaf-borderleaf-client-1 | b88f71f8461f | ubuntu:latest | linux       | running | 192.168.20.8/24 | N/A          |
+| 2 | clab-spine-leaf-borderleaf-client-2 | 030de9ac2c1a | ubuntu:latest | linux       | running | 192.168.20.7/24 | N/A          |
+| 3 | clab-spine-leaf-borderleaf-node-1   | 5aaa12968276 | ceos:4.32.2F  | arista_ceos | running | 192.168.20.2/24 | N/A          |
+| 4 | clab-spine-leaf-borderleaf-node-2   | 0ef9bfc0c093 | ceos:4.32.2F  | arista_ceos | running | 192.168.20.3/24 | N/A          |
+| 5 | clab-spine-leaf-borderleaf-node-3   | 85d18564c3fc | ceos:4.32.2F  | arista_ceos | running | 192.168.20.4/24 | N/A          |
+| 6 | clab-spine-leaf-borderleaf-node-4   | 11a1ecccb2aa | ceos:4.32.2F  | arista_ceos | running | 192.168.20.5/24 | N/A          |
+| 7 | clab-spine-leaf-borderleaf-node-5   | 34ecdecd10db | ceos:4.32.2F  | arista_ceos | running | 192.168.20.6/24 | N/A          |
++---+-------------------------------------+--------------+---------------+-------------+---------+-----------------+--------------+
+
+```
+
+ 
+
+![containerlab-graph-w-clients](images/index/image-20240824085541745.png)
+
+The benefit of adding the generic containers to my existing topology, I can view the connection diagram using *containerlab graph*.
+
+
+
+
+
+As soon as they were up and running I exec into each and one of them and configured static IP addresses on both their *eth1* interfaces, adding a route on client-1 pointing to client-2s subnet using the eth1 as gateway. And vice versa on client-2.
+
+```bash
+root@client-1:/# ip addr add 10.71.0.11/24 dev eth1
+root@client-1:/# ip route add 10.70.0.0/24 via 10.71.0.1
+root@client-1:/# ping 10.70.0.12
+PING 10.70.0.12 (10.70.0.12) 56(84) bytes of data.
+64 bytes from 10.70.0.12: icmp_seq=1 ttl=63 time=16.3 ms
+64 bytes from 10.70.0.12: icmp_seq=2 ttl=62 time=3.65 ms
+^C
+--- 10.70.0.12 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 3.653/9.955/16.257/6.302 ms
+root@client-1:/# 
+
+```
+
+
+
+```bash
+root@client-2:/# ip addr add 10.70.0.12/24 dev eth1
+root@client-2:/# ip route add 10.71.0.0/24 via 10.70.0.1
+root@client-2:/# ping 10.71.0.1
+PING 10.71.0.1 (10.71.0.1) 56(84) bytes of data.
+64 bytes from 10.71.0.1: icmp_seq=1 ttl=64 time=3.67 ms
+64 bytes from 10.71.0.1: icmp_seq=2 ttl=64 time=0.965 ms
+
+```
+
+Then I could ping from client-1 to client-2 and vice versa. 
 
 Client-1 is connected directly to Leaf-1 Ethernet/3 via Bridge br-node-3 and client-2 is connected directly to Leaf-2 Ethernet/3 via Bridge br-node-4. Client-1 is configured with a static ip of 10.71.0.11/24 and client-2 is configured with a static of 10.70.0.12/24. For these two clients to reach each other it has to go over VXLAN where both VLANs is encapsulated. A quick ping test from each client shows that this works:
 
