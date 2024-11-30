@@ -1,4 +1,5 @@
 ---
+
 author: "Andreas M"
 title: "Overlay on overlay - Arista in the underlay"
 date: 2024-11-08T08:56:51+01:00 
@@ -57,7 +58,171 @@ A diagram of the fabric underlay:
 
 ![layer-3-ls](images/image-20241127103701406.png)
 
-In the above diagram I have confgured my underlay with layer 3 routing, BGP exhanges route information between the leaves. So far in my configuration I can not have two servers connected to different leaves on the same layer 2 subnet. Only if they are connected to the same leaf I can have layer 2 adjacency. So when server 1, connected to leaf1a, wants to talk to server 2, connected on leaf2a, it has to be over layer 3 and both servers needs to be in their own subnet. Leaf1a and leaf2a advertises its subnets to both spine1 and spine2, server 1 and 2 has been configured to use their connected leaf switches  as gateway respectively. This is fine, I can go home and rest, no one needs to use layer 2. Or... 
+In the above diagram I have confgured my underlay with layer 3 routing, BGP exhanges route information between the leaves. So far in my configuration I can not have two servers connected to different leaves on the same layer 2 subnet. Only if they are connected to the same leaf I can have layer 2 adjacency. So when server 1, connected to leaf1a, wants to talk to server 2, connected on leaf2a, it has to be over layer 3 and both servers needs to be in their own subnet. Leaf1a and leaf2a advertises its subnets to both spine1 and spine2, server 1 and 2 has been configured to use their connected leaf switches  as gateway respectively. 
+
+If I do a ping in the "underlay" how will it look like when I ping from leaf1a to leaf2a using loopback interface 0 on my leaf1a and leaf2a to just simulate layer 3 connectivity without any overlay protocol involved (*I dont have any servers connected to a routed interfaces in my lab on any of my leaves at the moment*).
+
+Tcpdump on leaf1a on both its uplinks (the source of the icmp request):
+
+```bash
+[ansible@veos-dc1-leaf1a ~]$ tcpdump -i vmnicet1 -nnvvv -s 0 icmp -c2
+tcpdump: listening on vmnicet1, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:41:41.626368 bc:24:11:4a:9a:d0 > bc:24:11:1d:5f:a1, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 33961, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 53, seq 1, length 80
+13:41:41.628659 bc:24:11:4a:9a:d0 > bc:24:11:1d:5f:a1, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 33962, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 53, seq 2, length 80
+2 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+[ansible@veos-dc1-leaf1a ~]$ tcpdump -i vmnicet2 -nnvvv -s 0 icmp -c2
+tcpdump: listening on vmnicet2, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:41:51.177083 bc:24:11:1d:5f:a1 > bc:24:11:f5:c0:d2, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 21419, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 54, seq 1, length 80
+13:41:51.179460 bc:24:11:1d:5f:a1 > bc:24:11:f5:c0:d2, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 21420, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 54, seq 2, length 80
+2 packets captured
+2 packets received by filter
+0 packets dropped by kernel
+```
+
+Notice the change of direction on the MAC addresses.
+
+Now if I do a tcpdump on both spine 1 and spine 2 - depending on which path my request takes:
+
+Spine1 on downlinks to leaf1a and leaf2a :
+
+```bash
+[ansible@veos-dc1-spine1 ~]$ tcpdump -i vmnicet1 -nnvvv -s 0 icmp -c2
+tcpdump: listening on vmnicet1, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:44:38.739492 bc:24:11:4a:9a:d0 > bc:24:11:1d:5f:a1, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 39153, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 55, seq 1, length 80
+13:44:38.741578 bc:24:11:4a:9a:d0 > bc:24:11:1d:5f:a1, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 39154, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 55, seq 2, length 80
+2 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+
+[ansible@veos-dc1-spine1 ~]$ tcpdump -i vmnicet3 -nnvvv -s 0 icmp -c2
+tcpdump: listening on vmnicet3, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:44:57.720811 bc:24:11:31:35:db > bc:24:11:4a:9a:d0, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 41546, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 57, seq 1, length 80
+13:44:57.723117 bc:24:11:31:35:db > bc:24:11:4a:9a:d0, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 41547, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 57, seq 2, length 80
+2 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+[ansible@veos-dc1-spine1 ~]$
+```
+
+Spine2 on downlinks to leaf1a and leaf2a:
+
+```bash
+[ansible@veos-dc1-spine2 ~]$ tcpdump -i vmnicet1 icmp -nnvvv -s 0 -c 2
+tcpdump: listening on vmnicet1, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:46:42.934823 bc:24:11:1d:5f:a1 > bc:24:11:f5:c0:d2, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 64040, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 58, seq 1, length 80
+13:46:42.937184 bc:24:11:1d:5f:a1 > bc:24:11:f5:c0:d2, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 64041, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 58, seq 2, length 80
+2 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+[ansible@veos-dc1-spine2 ~]$ tcpdump -i vmnicet3 icmp -nnvvv -s 0 -c 2
+tcpdump: listening on vmnicet3, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:46:51.617532 bc:24:11:f5:c0:d2 > bc:24:11:31:35:db, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 497, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 59, seq 1, length 80
+13:46:51.620311 bc:24:11:f5:c0:d2 > bc:24:11:31:35:db, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 498, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 59, seq 2, length 80
+2 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+[ansible@veos-dc1-spine2 ~]$
+```
+
+And finally on leaf2a on both its uplinks:
+
+```bash
+[ansible@veos-dc1-leaf2a ~]$ tcpdump -i vmnicet1 -nnvvv -s 0 icmp -c2
+tcpdump: listening on vmnicet1, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:50:01.166378 bc:24:11:31:35:db > bc:24:11:4a:9a:d0, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 21154, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 60, seq 1, length 80
+13:50:01.168794 bc:24:11:31:35:db > bc:24:11:4a:9a:d0, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 64, id 21155, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.5 > 10.255.0.3: ICMP echo reply, id 60, seq 2, length 80
+2 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+[ansible@veos-dc1-leaf2a ~]$ tcpdump -i vmnicet2 -nnvvv -s 0 icmp -c2
+tcpdump: listening on vmnicet2, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+13:50:07.251988 bc:24:11:f5:c0:d2 > bc:24:11:31:35:db, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 31490, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 61, seq 1, length 80
+13:50:07.254459 bc:24:11:f5:c0:d2 > bc:24:11:31:35:db, ethertype IPv4 (0x0800), length 114: (tos 0x0, ttl 63, id 31491, offset 0, flags [none], proto ICMP (1), length 100)
+    10.255.0.3 > 10.255.0.5: ICMP echo request, id 61, seq 2, length 80
+2 packets captured
+5 packets received by filter
+0 packets dropped by kernel
+[ansible@veos-dc1-leaf2a ~]$
+```
+
+
+
+If I take a tcpdump and open it in Wireshark, I can have a look at the protocols in the frame.
+
+![image-20241130135824702](images/image-20241130135824702.png)
+
+Something to have in the back of the mind to later in this post...
+
+Depending on which path my traffic takes, via spine 1 or spine 2, (remember one of the bonuses with L3 is ECMP), I see the mac address of my leaf1a `bc:24:11:1d:5f:a1` as source and the destination spine2 mac address `bc:24:11:f5:c0:d2`. Then the source IP and destination IP of their respective loopback interfaces. Nothing special here. Why do I see the spine2's mac address as destination mac address? Remember that this is a pure layer 3 fabric which means leaf1a and leaf2a are not seeing each other directly, everything is routed over spine1 and spine2. So the destination mac will be either spine1 and spine2 as those are both intermediary. The packets IP header (source and destination IP address) on the other hand corresponds to the right source and destination ip address. Its only the layer 2 ethernet header thats is being updated along the hops: leaf1a  -> spine 1 or spine 2 -> leaf2a.
+
+For reference I have my leaf1a, spine1, spine2 and leaf2a's mac and ip address below:
+
+```bash
+[ansible@veos-dc1-leaf1a ~]$ ip link show et1
+29: et1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9194 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether bc:24:11:1d:5f:a1 brd ff:ff:ff:ff:ff:ff
+[ansible@veos-dc1-leaf1a ~]$
+
+veos-dc1-leaf1a#show interfaces loopback 0
+Loopback0 is up, line protocol is up (connected)
+  Hardware is Loopback
+  Description: EVPN_Overlay_Peering
+  Internet address is 10.255.0.3/32
+  Broadcast address is 255.255.255.255
+```
+
+```bash
+[ansible@veos-dc1-spine1 ~]$ ip link show et1
+16: et1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9194 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether bc:24:11:4a:9a:d0 brd ff:ff:ff:ff:ff:ff
+[ansible@veos-dc1-spine1 ~]$
+```
+
+```bash
+[ansible@veos-dc1-spine2 ~]$ ip link show et1
+22: et1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9194 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether bc:24:11:f5:c0:d2 brd ff:ff:ff:ff:ff:ff
+[ansible@veos-dc1-spine2 ~]$
+```
+
+
+
+```bash
+[ansible@veos-dc1-leaf2a ~]$ ip link show et1
+26: et1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9194 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether bc:24:11:31:35:db brd ff:ff:ff:ff:ff:ff
+[ansible@veos-dc1-leaf2a ~]$
+
+veos-dc1-leaf2a#show interfaces loopback 0
+Loopback0 is up, line protocol is up (connected)
+  Hardware is Loopback
+  Description: EVPN_Overlay_Peering
+  Internet address is 10.255.0.5/32
+  Broadcast address is 255.255.255.255
+```
+
+
+
+![icmp-request-reply](images/image-20241130133641620.png)
+
+This is fine, I can go home and rest, no one needs to use layer 2. Or... Well it depends. 
 
 Having solved a well performing layer 3 fabric, the routing in the underlay does not help me if I want layer 2 mobility between servers, virtual machines etc connected to different layer 3 leafs. This is where the overlay part comes in to the rescue. And to make it a bit more interesting, I will add several overlay layers into the mix.  
 
@@ -73,7 +238,7 @@ In the diagram above all my leaf switches has become VTEPs, VXLAN Tunnel Endpoin
 
 The two switches in the diagram above that will be the best place to look at all packages using tcpdump will be the spine 1 and spine 2 as they are connecting everything together and there is no direct communication between any leaf, they have to go through spine 1 and spine 2. 
 
-If I do a ping from server 1 to server 2, how will the ethernet packet look like when captured at spine1s ethernet interface 1 (the one connected to leaf1a)?
+If I do a ping from server 1 to server 2 going over my VXLAN tunnel, how will the ethernet packet look like when captured at spine1s ethernet interface 1 (the one connected to leaf1a)?
 
 Looking at the tcpdump below from *spine 1* I can clearly see some additional information added to the packet. First I see two mac addresses where source `bc:24:11:1d:5f:a1` is my *leaf1a*  a the destination mac address, `bc:24:11:4a:9a:d0` is my *spine1* switch. The first two ip addresses `10.255.1.3` and `10.255.1.4` is *leaf1a* and *leaf1b* VXLAN loopback interfaces respectively with the corresponding mac addresses `bc:24:11:1d:5f:a1`and `bc:24:11:9b:8f:08`. Then I get to the actual payload itself, the ICMP, between my *server 1* and *server 2* where I can see the source and destination ip of the actual servers doing the ping. 
 
@@ -87,6 +252,16 @@ bc:24:11:1d:5f:a1 > bc:24:11:9b:8f:08, ethertype IPv4 (0x0800), length 98: (tos 
 ![encap-decap](images/vxlan_flow_diagram_2.gif)
 
 A quick explanation on what we are looking at. The ICMP request comes in from *server 1* to *leaf1a* and before it sends it to its destination leaf1b (vtep) it  encapsulates the packet by removing  some headers and adding some headers. As seen above it is adding an outer header including the source and destination VTEP mac addresses (leaf1a and leaf1b). Spine1 knows of the mac and IP address for both leaf1a and leaf1b. More info on VXLAN encapsulation further down.
+
+Having a further look at a tcpdump in Wireshark captured at Spine1:
+
+![vxlan](images/image-20241130141355245.png)
+
+I now notice another protocl in the header, VXLAN. The "outer" source IP and destination IP addresses are now my leaf1a and leaf1b's VXLAN loopback interfaces. The inner source and destination IP addresses will still be my original frame, namely server 1 and server 2's ip addresses:
+
+![inner-src-dst](images/image-20241130141817568.png)
+
+
 
 ### TCPdump on Arista switches (EOS)
 
@@ -324,7 +499,13 @@ For VLXLAN we need at least 50 additional bytes: 14b (outer ethernet header) + 2
 
 So, to summarize. As long as one are aware of these MTU requirements it should be fine to run multiple stacked overlay protocols.
 
-### Monitor and troubleshoot mtu issues 
+## Simulating an environment with triple encapsulation
+
+I have configured in my lab a spine leaf using Arista vEOS switches. It is a full spine leaf fabric using EVPN and VXLAN. Then I have attached three virtual machines on each of their leaf switches. Server 1 is attached to leaf1a, server 2 is attached to leaf1b and server 3 is attached to leaf2a. 
+
+These three servers have been configured in their own clan, vlan 11-13 respectively for their "management" interface. Additionally they have been configured with a secondary network in a separate VRF than the management interface, and also in their separate vlan and subnets. Then I have configured VXLAN on the second interface on all three servers to span a common subnet across these 3 servers. Kubernetes is installed and configured on these servers. The pod network is using the second nic interfaces over VXLAN and the CNI inside Kubernetes has been configured to provided its own overlay protocol which happens to be Geneve. So in this scenario I have 3 overlay protocols in motion. VXLAN configured in my Arista spine leaf, VXLAN in the Ubuntu operating system layer, then Geneve in the pod network stack. 
+
+## Monitor and troubleshoot mtu issues 
 
 Everything has been configured but nothing works. Could it be MTU? Lets quickly go through how to check for MTU issues and if it is related to any overlay protocols being dropped due to defragmentation.
 
