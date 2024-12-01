@@ -501,11 +501,212 @@ So, to summarize. As long as one are aware of these MTU requirements it should b
 
 ## Simulating an environment with triple encapsulation
 
-I have configured in my lab a spine leaf using Arista vEOS switches. It is a full spine leaf fabric using EVPN and VXLAN. Then I have attached three virtual machines on each of their leaf switches. Server 1 is attached to leaf1a, server 2 is attached to leaf1b and server 3 is attached to leaf2a. 
+I have configured in my lab a spine leaf fabric using Arista vEOS switches. It is a full spine leaf fabric using EVPN and VXLAN. The fabric has been configured with 3 VRFS. A dedicated oob mgmt vrf called MGMT. Then VRF 10 for vlan 11-3 and VRF 11 for vlan 21-23. Then I have attached three virtual machines on each of their leaf switches. Server 1 is attached to leaf1a, server 2 is attached to leaf1b and server 3 is attached to leaf2a. These three servers have been configured with two network cards each.
 
-These three servers have been configured in their own clan, vlan 11-13 respectively for their "management" interface. Additionally they have been configured with a secondary network in a separate VRF than the management interface, and also in their separate vlan and subnets. Then I have configured VXLAN on the second interface on all three servers to span a common subnet across these 3 servers. Kubernetes is installed and configured on these servers. The pod network is using the second nic interfaces over VXLAN and the CNI inside Kubernetes has been configured to provided its own overlay protocol which happens to be Geneve. So in this scenario I have 3 overlay protocols in motion. VXLAN configured in my Arista spine leaf, VXLAN in the Ubuntu operating system layer, then Geneve in the pod network stack. 
+NIC1 (ens18) on all three have been configured and placed in VRF10 but in their own vlan, vlan 11-13 respectively for their "management" interface. VRF 10 is the only VRF that is configured to reach internet. NIC2 (ens19) on all three servers have been configured and placed in an another VRF, VRF11, also placed in their separate vlan (vlan 21-23) respectively. NIC2 (ens19) have been configured to use VXLAN via a bridge called br-vxlan on all three servers to span a common layer 2 subnet across these 3 servers. Kubernetes is installed and configured on these servers. The pod network is using the second nic interfaces over VXLAN and the CNI inside Kubernetes has been configured to provide its own overlay protocol which happens to be Geneve. So in this scenario I have 3 overlay protocols in motion. VXLAN configured in my Arista spine leaf, VXLAN in the Ubuntu operating system layer, then Geneve in the pod network stack. 
+*The only reason I have chosen to use a dedicated management interface is just so I can have a network that is only encapsulated in my Arista fabric. Kubernetes can work perfectly well with just on network card, also most common config.* 
 
-## Monitor and troubleshoot mtu issues 
+I have tried to illustrate my setup below, to get some more context. 
+
+
+
+![kubernetes-compute-layer](images/image-20241130160953187.png)
+
+![three-overlays](images/image-20241201104907035.png)
+
+| Server 1                                             | Server 2                                             | Server 3                                             |
+| ---------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| ens18 - 10.20.11.10/24                               | ens18 - 10.20.12.10/24                               | ens18 - 10.20.13.10/24                               |
+| ens19 - 10.21.21.10/24                               | ens19 - 10.21.22.10/24                               | ens19 - 10.21.23.10/24                               |
+| br-vxlan (vxlan via ens19) - 192.168.100.11/24       | br-vxlan (vxlan via ens19) - 192.168.100.12/24       | br-vxlan (vxlan via ens19) - 192.168.100.13/24       |
+| pod-cidr (Antrea geneve tun0 via ens19) 10.40.0.0/24 | pod-cidr (Antrea geneve tun0 via ens19) 10.40.1.0/24 | pod-cidr (Antrea geneve tun0 via ens19) 10.40.2.0/24 |
+
+*K8s cluster pod cidr is 10.40.0.0/16, each node carves out pr default a /24.* 
+
+When the 3 nodes communicate with each other using ens18 they will only be encapsulated once, but when using the br-vxlan interface it will be double encapsulated, first vxlan in the server, then in the Arista fabric. When the pods communicate between nodes I will end up with triple encapsulation, Geneve, VXLAN in the server then VXLAN in the Arista fabric. Now it starts to be interesting.
+The Antrea CNI has been configured to use br-vxlan as pod transport interface:
+
+```yaml
+# traffic across Nodes.
+transportInterface: "br-vxlan"
+```
+
+
+
+### Let see some triple encapsulation in action
+
+I have two pods deployed called *ubuntu-1* and *ubuntu-2* with one Ubuntu container instance in each pod, these two are running on ther own Kubernetes node 1 and 2. So they have to egress the nodes to communicate. How will this look like if I do a TCP dump on spine 1 or 2 if I initiate a ping from pod ubuntu-1 and ubuntu-2?
+
+![pod-2-pod](images/image-20241201114908055.png)
+
+![triple-encap](images/image-20241201114323805.png)
+
+Protocols in frame: vxlan, vxlan and geneve - look at that. Whats more inside? Lets have a look at the different headers:
+
+```bash
+Frame 10: 248 bytes on wire (1984 bits), 248 bytes captured (1984 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Dec  1, 2024 11:41:13.749900000 CET
+    UTC Arrival Time: Dec  1, 2024 10:41:13.749900000 UTC
+    Epoch Arrival Time: 1733049673.749900000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 0.092505000 seconds]
+    [Time delta from previous displayed frame: 0.092505000 seconds]
+    [Time since reference or first frame: 0.648590000 seconds]
+    Frame Number: 10
+    Frame Length: 248 bytes (1984 bits)
+    Capture Length: 248 bytes (1984 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:ip:udp:vxlan:eth:ethertype:ip:udp:vxlan:eth:ethertype:ip:udp:geneve:eth:ethertype:ip:icmp:data]
+    [Coloring Rule Name: ICMP]
+    [Coloring Rule String: icmp || icmpv6]
+Ethernet II, Src: ProxmoxServe_4a:9a:d0 (bc:24:11:4a:9a:d0), Dst: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
+    Destination: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
+    Source: ProxmoxServe_4a:9a:d0 (bc:24:11:4a:9a:d0)
+    Type: IPv4 (0x0800)
+    [Stream index: 0]
+Internet Protocol Version 4, Src: 10.255.1.4, Dst: 10.255.1.3
+    0100 .... = Version: 4
+    .... 0101 = Header Length: 20 bytes (5)
+    Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
+        0000 00.. = Differentiated Services Codepoint: Default (0)
+        .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
+    Total Length: 234
+    Identification: 0x0000 (0)
+    010. .... = Flags: 0x2, Don't fragment
+    ...0 0000 0000 0000 = Fragment Offset: 0
+    Time to Live: 63
+    Protocol: UDP (17)
+    Header Checksum: 0x22ff [validation disabled]
+    [Header checksum status: Unverified]
+    Source Address: 10.255.1.4
+    Destination Address: 10.255.1.3
+    [Stream index: 1]
+User Datagram Protocol, Src Port: 53766, Dst Port: 4789
+    Source Port: 53766
+    Destination Port: 4789
+    Length: 214
+    Checksum: 0x0000 [zero-value ignored]
+    [Stream index: 7]
+    [Stream Packet Number: 1]
+    [Timestamps]
+    UDP payload (206 bytes)
+Virtual eXtensible Local Area Network
+    Flags: 0x0800, VXLAN Network ID (VNI)
+    Group Policy ID: 0
+    VXLAN Network Identifier (VNI): 11
+    Reserved: 0
+Ethernet II, Src: ProxmoxServe_9b:8f:08 (bc:24:11:9b:8f:08), Dst: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
+    Destination: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
+    Source: ProxmoxServe_9b:8f:08 (bc:24:11:9b:8f:08)
+    Type: IPv4 (0x0800)
+    [Stream index: 1]
+Internet Protocol Version 4, Src: 10.21.22.10, Dst: 10.21.21.10
+    0100 .... = Version: 4
+    .... 0101 = Header Length: 20 bytes (5)
+    Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
+        0000 00.. = Differentiated Services Codepoint: Default (0)
+        .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
+    Total Length: 184
+    Identification: 0x8d6a (36202)
+    000. .... = Flags: 0x0
+    ...0 0000 0000 0000 = Fragment Offset: 0
+    Time to Live: 63
+    Protocol: UDP (17)
+    Header Checksum: 0xae8d [validation disabled]
+    [Header checksum status: Unverified]
+    Source Address: 10.21.22.10
+    Destination Address: 10.21.21.10
+    [Stream index: 2]
+User Datagram Protocol, Src Port: 56889, Dst Port: 4789
+    Source Port: 56889
+    Destination Port: 4789
+    Length: 164
+    Checksum: 0x93c6 [unverified]
+    [Checksum Status: Unverified]
+    [Stream index: 8]
+    [Stream Packet Number: 1]
+    [Timestamps]
+    UDP payload (156 bytes)
+Virtual eXtensible Local Area Network
+    Flags: 0x0800, VXLAN Network ID (VNI)
+    Group Policy ID: 0
+    VXLAN Network Identifier (VNI): 666
+    Reserved: 0
+Ethernet II, Src: 0e:a9:a0:1b:df:4b (0e:a9:a0:1b:df:4b), Dst: a6:58:bc:c5:47:62 (a6:58:bc:c5:47:62)
+    Destination: a6:58:bc:c5:47:62 (a6:58:bc:c5:47:62)
+    Source: 0e:a9:a0:1b:df:4b (0e:a9:a0:1b:df:4b)
+    Type: IPv4 (0x0800)
+    [Stream index: 2]
+Internet Protocol Version 4, Src: 192.168.100.12, Dst: 192.168.100.13
+    0100 .... = Version: 4
+    .... 0101 = Header Length: 20 bytes (5)
+    Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
+        0000 00.. = Differentiated Services Codepoint: Default (0)
+        .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
+    Total Length: 134
+    Identification: 0x1921 (6433)
+    010. .... = Flags: 0x2, Don't fragment
+    ...0 0000 0000 0000 = Fragment Offset: 0
+    Time to Live: 64
+    Protocol: UDP (17)
+    Header Checksum: 0xd7db [validation disabled]
+    [Header checksum status: Unverified]
+    Source Address: 192.168.100.12
+    Destination Address: 192.168.100.13
+    [Stream index: 3]
+User Datagram Protocol, Src Port: 19380, Dst Port: 6081
+    Source Port: 19380
+    Destination Port: 6081
+    Length: 114
+    Checksum: 0x0000 [zero-value ignored]
+    [Stream index: 9]
+    [Stream Packet Number: 1]
+    [Timestamps]
+    UDP payload (106 bytes)
+Generic Network Virtualization Encapsulation, VNI: 0x000000
+Ethernet II, Src: ce:7f:43:8a:0e:3c (ce:7f:43:8a:0e:3c), Dst: aa:bb:cc:dd:ee:ff (aa:bb:cc:dd:ee:ff)
+    Destination: aa:bb:cc:dd:ee:ff (aa:bb:cc:dd:ee:ff)
+    Source: ce:7f:43:8a:0e:3c (ce:7f:43:8a:0e:3c)
+    Type: IPv4 (0x0800)
+    [Stream index: 4]
+Internet Protocol Version 4, Src: 10.40.1.3, Dst: 10.40.2.4
+    0100 .... = Version: 4
+    .... 0101 = Header Length: 20 bytes (5)
+    Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
+        0000 00.. = Differentiated Services Codepoint: Default (0)
+        .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
+    Total Length: 84
+    Identification: 0x6661 (26209)
+    010. .... = Flags: 0x2, Don't fragment
+    ...0 0000 0000 0000 = Fragment Offset: 0
+    Time to Live: 63
+    Protocol: ICMP (1)
+    Header Checksum: 0xbdf1 [validation disabled]
+    [Header checksum status: Unverified]
+    Source Address: 10.40.1.3
+    Destination Address: 10.40.2.4
+    [Stream index: 6]
+Internet Control Message Protocol
+    Type: 8 (Echo (ping) request)
+    Code: 0
+    Checksum: 0x1431 [correct]
+    [Checksum Status: Good]
+    Identifier (BE): 652 (0x028c)
+    Identifier (LE): 35842 (0x8c02)
+    Sequence Number (BE): 97 (0x0061)
+    Sequence Number (LE): 24832 (0x6100)
+    [Response frame: 11]
+    Timestamp from icmp data: Dec  1, 2024 11:41:13.748161000 CET
+    [Timestamp from icmp data (relative): 0.001739000 seconds]
+    Data (40 bytes)
+
+```
+
+
+
+### Monitor and troubleshoot mtu issues 
 
 Everything has been configured but nothing works. Could it be MTU? Lets quickly go through how to check for MTU issues and if it is related to any overlay protocols being dropped due to defragmentation.
 
