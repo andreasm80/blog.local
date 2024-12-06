@@ -240,7 +240,7 @@ The two switches in the diagram above that will be the best place to look at all
 
 If I do a ping from server 1 to server 2 going over my VXLAN tunnel, how will the ethernet packet look like when captured at spine1s ethernet interface 1 (the one connected to leaf1a)?
 
-Looking at the tcpdump below from *spine 1* I can clearly see some additional information added to the packet. First I see two mac addresses where source `bc:24:11:1d:5f:a1` is my *leaf1a*  a the destination mac address, `bc:24:11:4a:9a:d0` is my *spine1* switch. The first two ip addresses `10.255.1.3` and `10.255.1.4` is *leaf1a* and *leaf1b* VXLAN loopback interfaces respectively with the corresponding mac addresses `bc:24:11:1d:5f:a1`and `bc:24:11:9b:8f:08`. Then I get to the actual payload itself, the ICMP, between my *server 1* and *server 2* where I can see the source and destination ip of the actual servers doing the ping. 
+Looking at the tcpdump below from *spine 1* I can clearly see some additional information added to the packet. First I see two mac addresses where source `bc:24:11:1d:5f:a1` is my *leaf1a*  and the destination mac address, `bc:24:11:4a:9a:d0` is my *spine1* switch. The first two ip addresses `10.255.1.3` and `10.255.1.4` is *leaf1a* and *leaf1b* VXLAN loopback interfaces respectively with the corresponding mac addresses `bc:24:11:1d:5f:a1`and `bc:24:11:9b:8f:08`. Then I get to the actual payload itself, the ICMP, between my *server 1* and *server 2* where I can see the source and destination ip of the actual servers doing the ping. 
 
 ```yaml
 15:44:33.125961 bc:24:11:1d:5f:a1 > bc:24:11:4a:9a:d0, ethertype IPv4 (0x0800), length 148: (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto UDP (17), length 134)
@@ -257,7 +257,7 @@ Having a further look at a tcpdump in Wireshark captured at Spine1:
 
 ![vxlan](images/image-20241130141355245.png)
 
-I now notice another protocl in the header, VXLAN. The "outer" source IP and destination IP addresses are now my leaf1a and leaf1b's VXLAN loopback interfaces. The inner source and destination IP addresses will still be my original frame, namely server 1 and server 2's ip addresses:
+I now notice another protocol in the header, VXLAN. The "outer" source IP and destination IP addresses are now my leaf1a and leaf1b's VXLAN loopback interfaces. The inner source and destination IP addresses will still be my original frame, namely server 1 and server 2's ip addresses:
 
 ![inner-src-dst](images/image-20241130141817568.png)
 
@@ -429,7 +429,7 @@ Below we have a spine leaf fabric using VXLAN and NSX in the compute layer using
 
 ![nsx-teps-arista-vteps](images/image-20241108111853681.png)
 
-But what if we are also running Kubernetes in our VMware NSX environment, which also happens to use some kind of overlay protocol (common CNIs supports VXLAN/Geneve/NVGre/STT) between the control and worker nodes. That will be hard to do right? Should we disable encapsulation in our Kubernetes clusters then? No, well it depends of course, but if you dont have any specific requirements to NOT use overlay (*like no-snat*) between your Kubernetes nodes then it makes your Kubernetes network connectivity (like pod to pod across nodes) so much easier. 
+But what if we are also running Kubernetes in our VMware NSX environment, which also happens to use some kind of overlay protocol (common CNIs supports VXLAN/Geneve/NVGre/STT) between the control plane and worker nodes. That will be hard to do right? Should we disable encapsulation in our Kubernetes clusters then? No, well it depends of course, but if you dont have any specific requirements to NOT use overlay (*like no-snat*) between your Kubernetes nodes then it makes your Kubernetes network connectivity (like pod to pod across nodes) so much easier. 
 
 How will this look like then?
 
@@ -519,6 +519,7 @@ I have tried to illustrate my setup below, to get some more context.
 | ens18 - 10.20.11.10/24                               | ens18 - 10.20.12.10/24                               | ens18 - 10.20.13.10/24                               |
 | ens19 - 10.21.21.10/24                               | ens19 - 10.21.22.10/24                               | ens19 - 10.21.23.10/24                               |
 | br-vxlan (vxlan via ens19) - 192.168.100.11/24       | br-vxlan (vxlan via ens19) - 192.168.100.12/24       | br-vxlan (vxlan via ens19) - 192.168.100.13/24       |
+| antrea-gw0 (interface mtu -50)                       | antrea-gw0 (interface mtu -50)                       | antrea-gw0 (interface mtu -50)                       |
 | pod-cidr (Antrea geneve tun0 via ens19) 10.40.0.0/24 | pod-cidr (Antrea geneve tun0 via ens19) 10.40.1.0/24 | pod-cidr (Antrea geneve tun0 via ens19) 10.40.2.0/24 |
 
 *K8s cluster pod cidr is 10.40.0.0/16, each node carves out pr default a /24.* 
@@ -531,29 +532,45 @@ The Antrea CNI has been configured to use br-vxlan as pod transport interface:
 transportInterface: "br-vxlan"
 ```
 
-
+*A note on the Antrea CNI geneve tunnel. When Antrea is deployed in the cluster it will automatically adjust the MTU based on the interfaces it is selected to use a transport interface. It does that by reading the current MTU, if it is 1500 on the transport interface it will create a Antrea GW interface -50 MTU. If br-vxlan as above is 1500MTU Antrea GW will then be 1450MTU. If I happen to adjust this MTU at a later stage to either a higher or lower MTU I just need to restart the Antrea Agents and the respective Antrea GW interfaces should automatically adjust to the new MTU again. So in theory the Antrea GW should not be making any headaches in regards to MTU issues, but one never know and it should be something to be aware of.* 
 
 ### Let see some triple encapsulation in action
 
-I have two pods deployed called *ubuntu-1* and *ubuntu-2* with one Ubuntu container instance in each pod, these two are running on ther own Kubernetes node 1 and 2. So they have to egress the nodes to communicate. How will this look like if I do a TCP dump on spine 1 or 2 if I initiate a ping from pod ubuntu-1 and ubuntu-2?
+I have two pods deployed called *ubuntu-1* and *ubuntu-2* with one Ubuntu container instance in each pod, these two are running on ther own Kubernetes node 1 and 2. So they have to egress the nodes to communicate. How will this look like if I do a TCP dump on leaf1b (source), where node1 is connected, if I initiate a ping from pod ubuntu-1 and ubuntu-2?
 
 ![pod-2-pod](images/image-20241201114908055.png)
 
-![triple-encap](images/image-20241201114323805.png)
+![protocols-in-frame](images/image-20241202101352635.png)
 
-Protocols in frame: vxlan, vxlan and geneve - look at that. Whats more inside? Lets have a look at the different headers:
+Protocols in frame: vxlan, vxlan and geneve - look at that. Lets break it down further, layer by layer.
+
+As there is some encapsulation going on for sure, at different layers, it can be a good excercise to a layer by layer breakdown:
 
 ```bash
-Frame 10: 248 bytes on wire (1984 bits), 248 bytes captured (1984 bits)
+    [Protocols in frame: eth:ethertype:ip:udp:vxlan:eth:ethertype:ip:udp:vxlan:eth:ethertype:ip:udp:geneve:eth:ethertype:ip:icmp:data]
+```
+
+
+
+
+
+![layer-by-layer](images/image-20241202134602692.png)
+
+In total 4 pairs of source > destination ip addresses, including the actual payload ICMP packet between the two pods. 
+
+Full dump for reference below.
+
+```bash
+Frame 7: 248 bytes on wire (1984 bits), 248 bytes captured (1984 bits)
     Encapsulation type: Ethernet (1)
-    Arrival Time: Dec  1, 2024 11:41:13.749900000 CET
-    UTC Arrival Time: Dec  1, 2024 10:41:13.749900000 UTC
-    Epoch Arrival Time: 1733049673.749900000
+    Arrival Time: Dec  2, 2024 10:01:56.510773000 CET
+    UTC Arrival Time: Dec  2, 2024 09:01:56.510773000 UTC
+    Epoch Arrival Time: 1733130116.510773000
     [Time shift for this packet: 0.000000000 seconds]
-    [Time delta from previous captured frame: 0.092505000 seconds]
-    [Time delta from previous displayed frame: 0.092505000 seconds]
-    [Time since reference or first frame: 0.648590000 seconds]
-    Frame Number: 10
+    [Time delta from previous captured frame: 0.034183000 seconds]
+    [Time delta from previous displayed frame: 0.034183000 seconds]
+    [Time since reference or first frame: 0.229242000 seconds]
+    Frame Number: 7
     Frame Length: 248 bytes (1984 bits)
     Capture Length: 248 bytes (1984 bits)
     [Frame is marked: False]
@@ -561,12 +578,12 @@ Frame 10: 248 bytes on wire (1984 bits), 248 bytes captured (1984 bits)
     [Protocols in frame: eth:ethertype:ip:udp:vxlan:eth:ethertype:ip:udp:vxlan:eth:ethertype:ip:udp:geneve:eth:ethertype:ip:icmp:data]
     [Coloring Rule Name: ICMP]
     [Coloring Rule String: icmp || icmpv6]
-Ethernet II, Src: ProxmoxServe_4a:9a:d0 (bc:24:11:4a:9a:d0), Dst: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
-    Destination: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
-    Source: ProxmoxServe_4a:9a:d0 (bc:24:11:4a:9a:d0)
+Ethernet II, Src: ProxmoxServe_9b:8f:08 (bc:24:11:9b:8f:08), Dst: ProxmoxServe_4a:9a:d0 (bc:24:11:4a:9a:d0)
+    Destination: ProxmoxServe_4a:9a:d0 (bc:24:11:4a:9a:d0)
+    Source: ProxmoxServe_9b:8f:08 (bc:24:11:9b:8f:08)
     Type: IPv4 (0x0800)
     [Stream index: 0]
-Internet Protocol Version 4, Src: 10.255.1.4, Dst: 10.255.1.3
+Internet Protocol Version 4, Src: 10.255.1.4, Dst: 10.255.1.5
     0100 .... = Version: 4
     .... 0101 = Header Length: 20 bytes (5)
     Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
@@ -576,15 +593,15 @@ Internet Protocol Version 4, Src: 10.255.1.4, Dst: 10.255.1.3
     Identification: 0x0000 (0)
     010. .... = Flags: 0x2, Don't fragment
     ...0 0000 0000 0000 = Fragment Offset: 0
-    Time to Live: 63
+    Time to Live: 64
     Protocol: UDP (17)
-    Header Checksum: 0x22ff [validation disabled]
+    Header Checksum: 0x21fd [validation disabled]
     [Header checksum status: Unverified]
     Source Address: 10.255.1.4
-    Destination Address: 10.255.1.3
-    [Stream index: 1]
-User Datagram Protocol, Src Port: 53766, Dst Port: 4789
-    Source Port: 53766
+    Destination Address: 10.255.1.5
+    [Stream index: 4]
+User Datagram Protocol, Src Port: 64509, Dst Port: 4789
+    Source Port: 64509
     Destination Port: 4789
     Length: 214
     Checksum: 0x0000 [zero-value ignored]
@@ -597,33 +614,33 @@ Virtual eXtensible Local Area Network
     Group Policy ID: 0
     VXLAN Network Identifier (VNI): 11
     Reserved: 0
-Ethernet II, Src: ProxmoxServe_9b:8f:08 (bc:24:11:9b:8f:08), Dst: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
-    Destination: ProxmoxServe_1d:5f:a1 (bc:24:11:1d:5f:a1)
+Ethernet II, Src: ProxmoxServe_9b:8f:08 (bc:24:11:9b:8f:08), Dst: ProxmoxServe_31:35:db (bc:24:11:31:35:db)
+    Destination: ProxmoxServe_31:35:db (bc:24:11:31:35:db)
     Source: ProxmoxServe_9b:8f:08 (bc:24:11:9b:8f:08)
     Type: IPv4 (0x0800)
-    [Stream index: 1]
-Internet Protocol Version 4, Src: 10.21.22.10, Dst: 10.21.21.10
+    [Stream index: 3]
+Internet Protocol Version 4, Src: 10.21.22.10, Dst: 10.21.23.10
     0100 .... = Version: 4
     .... 0101 = Header Length: 20 bytes (5)
     Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)
         0000 00.. = Differentiated Services Codepoint: Default (0)
         .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
     Total Length: 184
-    Identification: 0x8d6a (36202)
+    Identification: 0x0de9 (3561)
     000. .... = Flags: 0x0
     ...0 0000 0000 0000 = Fragment Offset: 0
     Time to Live: 63
     Protocol: UDP (17)
-    Header Checksum: 0xae8d [validation disabled]
+    Header Checksum: 0x2c0f [validation disabled]
     [Header checksum status: Unverified]
     Source Address: 10.21.22.10
-    Destination Address: 10.21.21.10
-    [Stream index: 2]
+    Destination Address: 10.21.23.10
+    [Stream index: 5]
 User Datagram Protocol, Src Port: 56889, Dst Port: 4789
     Source Port: 56889
     Destination Port: 4789
     Length: 164
-    Checksum: 0x93c6 [unverified]
+    Checksum: 0x91c6 [unverified]
     [Checksum Status: Unverified]
     [Stream index: 8]
     [Stream Packet Number: 1]
@@ -646,12 +663,12 @@ Internet Protocol Version 4, Src: 192.168.100.12, Dst: 192.168.100.13
         0000 00.. = Differentiated Services Codepoint: Default (0)
         .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
     Total Length: 134
-    Identification: 0x1921 (6433)
+    Identification: 0x8e54 (36436)
     010. .... = Flags: 0x2, Don't fragment
     ...0 0000 0000 0000 = Fragment Offset: 0
     Time to Live: 64
     Protocol: UDP (17)
-    Header Checksum: 0xd7db [validation disabled]
+    Header Checksum: 0x62a8 [validation disabled]
     [Header checksum status: Unverified]
     Source Address: 192.168.100.12
     Destination Address: 192.168.100.13
@@ -678,12 +695,12 @@ Internet Protocol Version 4, Src: 10.40.1.3, Dst: 10.40.2.4
         0000 00.. = Differentiated Services Codepoint: Default (0)
         .... ..00 = Explicit Congestion Notification: Not ECN-Capable Transport (0)
     Total Length: 84
-    Identification: 0x6661 (26209)
+    Identification: 0x54ad (21677)
     010. .... = Flags: 0x2, Don't fragment
     ...0 0000 0000 0000 = Fragment Offset: 0
     Time to Live: 63
     Protocol: ICMP (1)
-    Header Checksum: 0xbdf1 [validation disabled]
+    Header Checksum: 0xcfa5 [validation disabled]
     [Header checksum status: Unverified]
     Source Address: 10.40.1.3
     Destination Address: 10.40.2.4
@@ -691,48 +708,560 @@ Internet Protocol Version 4, Src: 10.40.1.3, Dst: 10.40.2.4
 Internet Control Message Protocol
     Type: 8 (Echo (ping) request)
     Code: 0
-    Checksum: 0x1431 [correct]
+    Checksum: 0xf1a5 [correct]
     [Checksum Status: Good]
-    Identifier (BE): 652 (0x028c)
-    Identifier (LE): 35842 (0x8c02)
-    Sequence Number (BE): 97 (0x0061)
-    Sequence Number (LE): 24832 (0x6100)
-    [Response frame: 11]
-    Timestamp from icmp data: Dec  1, 2024 11:41:13.748161000 CET
-    [Timestamp from icmp data (relative): 0.001739000 seconds]
+    Identifier (BE): 690 (0x02b2)
+    Identifier (LE): 45570 (0xb202)
+    Sequence Number (BE): 52 (0x0034)
+    Sequence Number (LE): 13312 (0x3400)
+    [No response seen]
+    Timestamp from icmp data: Dec  2, 2024 10:01:56.508523000 CET
+    [Timestamp from icmp data (relative): 0.002250000 seconds]
     Data (40 bytes)
 
 ```
 
 
 
-### Monitor and troubleshoot mtu issues 
+### Monitor and troubleshoot 
 
-Everything has been configured but nothing works. Could it be MTU? Lets quickly go through how to check for MTU issues and if it is related to any overlay protocols being dropped due to defragmentation.
+Everything has been configured but nothing works. Could it be MTU? There is a high probability it is MTU as both VXLAN and Geneve will not tolerate fragmentation. Lets quickly go through how to check for MTU issues and if it is related to any overlay protocols being dropped due to defragmentation.
 
-As more or less everything in your datacenter needs to traverse the spine leaf fabric (unless VM to VM traffic on same host within same VLAN or two different NSX segments but still on same host) to gather as much information of whats going on in as few places as possible I will start by capturing some information from my spines. Looking for defragmentation also depends on where the defragmentation happens in the infrastructure. 
+### Ethernet MTU and IP MTU
 
-**How to see if the traffic is double or even triple encapsulated?**
+A quick note on MTU. MTU can be referred to as Ethernet MTU and IP MTU. This can be important to be aware of as these numbers are quite different and operate at two different levels: the Data Link Layer and Network Layer. 
 
-Connected to my spine leaf fabric I have a Kubernetes cluster where the nodes are connected over a VXLAN tunnel, already there I have double encapsulation. Then the pods have been configured to use another overlay tunnel using Geneve.  The Kubernetes nodes uses VXLAN as they are placed on different leaves and on different vlans/subnets. For the sake of this post I have confgured the nodes to simulate the additional overlay layer as a potential NSX environment would have (I dont have access to NSX any longer in my lab). 
+The Ethernet MTU is the maximum payload in bytes an Ethernet frame can carry. This refers to the Layer 2 Data Link Layer size limit. What does that mean then? Well an ethernet MTU only considers the the size of the actual packet, it does not include the ethernet frame headers MAC addresses, ether type, and fcs. Remember the ethernet frame explanation above:
+
+![standard ethernet frame](images/image-20241203120426517.png)
+
+The IP MTU on the other hand is the maximum size in bytes of the IP packet than can be transmitted. This operates at the Layer 3 Network layer and includes the entire IP packet, ip header, and transport payload (tcp/udp headers and application data). The IP MTU must fit within the Ethernet MTU. The IP packet is encapsulated in the Ethernet payload.
+
+```lua
++--------------------+--------------------+
+| Ethernet Frame (1518 bytes)            |
+| 14B Header + 1500B Payload + 4B Trailer|
++----------------------------------------+
+| IP Packet (1500 bytes max)             |
+| 20B IP Header + 1480B Payload          |
++----------------------------------------+
+
+```
+
+<div style="border-left: 4px solid #2196F3; background-color: #E3F2FD; padding: 10px; margin: 10px 0; color: #0000FF;"> <strong>Info:</strong>
+You will notice when switching between bash and cli in EOS that it is using IP MTU and Ethernet MTU respectively. When using bash it is using MTU 9194 and in CLI it is 9214 which is 9194 + 20. As I am using vEOS its not representative for real Arista hardware </div>
+
+### Verifying everything in the Arista fabric
+
+**Underly links**
+To do this as "methodically" as possible I will first start by checking mtu in the Arista fabric. This will be the ptp links between the spines and leaves. They should be configured with the highest supported MTU in EOS. 
+
+<div style="border-left: 4px solid #2196F3; background-color: #E3F2FD; padding: 10px; margin: 10px 0; color: #0000FF;"> <strong>Info:</strong>
+This is all done in my lab using vEOS (virtual machines running on my hypervisor). The max MTU I can use in my lab is 9194 in vEOS. In a real physical Arista switch it is 9214MTU. So the numbers I am operating with is not representative to the real products </div>
+
+As soon as I have verified the mtu size there, I also need to verify that there is no issues with the VXLAN tunnel. 
+
+ From *leaf1b* uplink 1 and 2 to spine 1 and 2:
+
+```bash
+veos-dc1-leaf1b#ping 10.255.255.4 source 10.255.255.5 df-bit size 9194
+PING 10.255.255.4 (10.255.255.4) from 10.255.255.5 : 9166(9194) bytes of data.
+9174 bytes from 10.255.255.4: icmp_seq=1 ttl=64 time=1.50 ms
+9174 bytes from 10.255.255.4: icmp_seq=2 ttl=64 time=0.836 ms
+9174 bytes from 10.255.255.4: icmp_seq=3 ttl=64 time=0.549 ms
+9174 bytes from 10.255.255.4: icmp_seq=4 ttl=64 time=0.558 ms
+9174 bytes from 10.255.255.4: icmp_seq=5 ttl=64 time=0.556 ms
+
+--- 10.255.255.4 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 5ms
+rtt min/avg/max/mdev = 0.549/0.800/1.503/0.367 ms, ipg/ewma 1.255/1.134 ms
+```
+
+If I try one byte too high it should tell me:
+
+```bash
+veos-dc1-leaf1b#ping 10.255.255.4 source 10.255.255.5 df-bit size 9195
+PING 10.255.255.4 (10.255.255.4) from 10.255.255.5 : 9167(9195) bytes of data.
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+
+--- 10.255.255.4 ping statistics ---
+5 packets transmitted, 0 received, +5 errors, 100% packet loss, time 41ms
+```
+
+Ok, MTU in the ptp links are good. How is the status of the VXLAN tunnel:
+
+```bash
+veos-dc1-leaf1b#show int vx1
+Vxlan1 is up, line protocol is up (connected)
+  Hardware is Vxlan
+  Description: veos-dc1-leaf1b_VTEP
+  Source interface is Loopback1 and is active with 10.255.1.4
+  Listening on UDP port 4789
+  Replication/Flood Mode is headend with Flood List Source: EVPN
+  Remote MAC learning via EVPN
+  VNI mapping to VLANs
+  Static VLAN to VNI mapping is
+    [11, 10011]       [12, 10012]       [13, 10013]       [21, 10021]
+    [22, 10022]       [23, 10023]       [1079, 11079]     [3401, 13401]
+    [3402, 13402]
+  Dynamic VLAN to VNI mapping for 'evpn' is
+    [4097, 11]        [4098, 10]
+  Note: All Dynamic VLANs used by VCS are internal VLANs.
+        Use 'show vxlan vni' for details.
+  Static VRF to VNI mapping is
+   [VRF20, 10]
+   [VRF21, 11]
+  Headend replication flood vtep list is:
+    11 10.255.1.6      10.255.1.3      10.255.1.5
+    12 10.255.1.6      10.255.1.3      10.255.1.5
+    13 10.255.1.6      10.255.1.3      10.255.1.5
+    21 10.255.1.6      10.255.1.3      10.255.1.5
+    22 10.255.1.6      10.255.1.3      10.255.1.5
+    23 10.255.1.6      10.255.1.3      10.255.1.5
+  1079 10.255.1.6      10.255.1.3      10.255.1.5
+  3401 10.255.1.6      10.255.1.3      10.255.1.5
+  3402 10.255.1.6      10.255.1.3      10.255.1.5
+  Shared Router MAC is 0000.0000.0000
+```
+
+
+
+```bash
+veos-dc1-leaf1b#show vxlan config-sanity detail
+Category                            Result
+---------------------------------- --------
+Local VTEP Configuration Check        OK
+  Loopback IP Address                 OK
+  VLAN-VNI Map                        OK
+  Flood List                          OK
+  Routing                             OK
+  VNI VRF ACL                         OK
+  Decap VRF-VNI Map                   OK
+  VRF-VNI Dynamic VLAN                OK
+Remote VTEP Configuration Check       OK
+  Remote VTEP                         OK
+Platform Dependent Check              OK
+  VXLAN Bridging                      OK
+  VXLAN Routing                       OK
+CVX Configuration Check               OK
+  CVX Server                          OK
+MLAG Configuration Check              OK
+  Peer VTEP IP                        OK
+  MLAG VTEP IP                        OK
+  Peer VLAN-VNI                       OK
+  Virtual VTEP IP                     OK
+  MLAG Inactive State                 OK
+
+Detail
+--------------------------------------------------
+
+Not in controller client mode
+Run 'show mlag config-sanity' to verify MLAG config
+MLAG peer is not connected
+
+
+
+```
+
+
+
+**Downlinks to connected endpoints and VLAN interfaces**
+
+So my underlay links are in good shape, but I also need to have a look at the downlinks to my servers including the respective vlan interfaces whether they have been configured to also support jumbo frames. This is needed as they will be configured with jumbo frames too to accommodate their overlay tunnels. 
+To verify that the MTU is correct there I can use one of my leafs and do some ping tests using higher mtu payload. From my *leaf1b* I start by verifying the default MTU on the ethernet interface 6 which is connected to server 2:
+
+```bash
+veos-dc1-leaf1b(config)#interface ethernet 6
+veos-dc1-leaf1b(config-if-Et6)#show active
+interface Ethernet6
+   description dc1-leaf1b-client2-vxlan_CLIENT2-VXLAN
+   switchport trunk native vlan 22
+   switchport trunk allowed vlan 11-13,21-23
+   switchport mode trunk
+veos-dc1-leaf1b(config-if-Et6)#show interfaces ethernet 6
+Ethernet6 is up, line protocol is up (connected)
+  Hardware is Ethernet, address is bc24.117e.e982 (bia bc24.117e.e982)
+  Description: dc1-leaf1b-client2-vxlan_CLIENT2-VXLAN
+  Ethernet MTU 9194 bytes, BW 1000000 kbit
+  Full-duplex, 1Gb/s, auto negotiation: off, uni-link: n/a
+  Up 9 days, 10 hours, 40 minutes, 10 seconds
+  Loopback Mode : None
+  2 link status changes since last clear
+  Last clearing of "show interface" counters never
+  5 minutes input rate 6.34 kbps (0.0% with framing overhead), 5 packets/sec
+  5 minutes output rate 7.01 kbps (0.0% with framing overhead), 6 packets/sec
+     3517540 packets input, 614301075 bytes
+     Received 35 broadcasts, 459 multicast
+     0 runts, 0 giants
+     0 input errors, 0 CRC, 0 alignment, 0 symbol, 0 input discards
+     0 PAUSE input
+     3913885 packets output, 625341082 bytes
+     Sent 526 broadcasts, 427958 multicast
+     0 output errors, 0 collisions
+     0 late collision, 0 deferred, 0 output discards
+     0 PAUSE output
+```
+
+
+
+
+
+<div style="border-left: 4px solid #2196F3; background-color: #E3F2FD; padding: 10px; margin: 10px 0; color: #0000FF;"> <strong>Info:</strong>
+A note on MTU in Arista EOS. By default all Layer 2 ports are default 9214, while layer 3/routed ports are default 1500. </div>
+
+Then I will need to verify the MTU size on the VLAN interface I am using for VXLAN in my servers, vlan interfaces 21,22 and 23.
+
+```bash
+veos-dc1-leaf1b(config-if-Et6)#interface vlan 22
+veos-dc1-leaf1b(config-if-Vl22)#show active
+interface Vlan22
+   description VRF11_VLAN22
+   mtu 9194
+   vrf VRF21
+   ip address virtual 10.21.22.1/24
+veos-dc1-leaf1b(config-if-Vl22)#show interfaces vlan 22
+Vlan22 is up, line protocol is up (connected)
+  Hardware is Vlan, address is bc24.119b.8f08 (bia bc24.119b.8f08)
+  Description: VRF11_VLAN22
+  Internet address is virtual 10.21.22.1/24
+  Broadcast address is 255.255.255.255
+  IP MTU 9194 bytes
+  Up 9 days, 10 hours, 42 minutes, 23 seconds
+```
+
+Now I would like to see it with my own eyes that I can actually use this MTU to the server (server2) connected. I will use ping as the tool to set a payload size of 9194 which is the switch interface mtu size that is connected to server 2. Server 2 nic has been configured with a MTU of 9000. The last ping is just 1 byte more than allowed. 
+
+```bash
+veos-dc1-leaf1b#ping vrf VRF21 10.21.22.10 source 10.21.21.1 size 9194 df-bit
+PING 10.21.22.10 (10.21.22.10) from 10.21.21.1 : 9166(9194) bytes of data.
+9174 bytes from 10.21.22.10: icmp_seq=1 ttl=64 time=1.71 ms
+9174 bytes from 10.21.22.10: icmp_seq=2 ttl=64 time=1.55 ms
+9174 bytes from 10.21.22.10: icmp_seq=3 ttl=64 time=1.29 ms
+9174 bytes from 10.21.22.10: icmp_seq=4 ttl=64 time=1.41 ms
+9174 bytes from 10.21.22.10: icmp_seq=5 ttl=64 time=1.15 ms
+
+--- 10.21.22.10 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 8ms
+rtt min/avg/max/mdev = 1.149/1.422/1.707/0.194 ms, ipg/ewma 2.001/1.552 ms
+veos-dc1-leaf1b#ping vrf VRF21 10.21.22.10 source 10.21.21.1 size 9195 df-bit
+PING 10.21.22.10 (10.21.22.10) from 10.21.21.1 : 9167(9195) bytes of data.
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+ping: local error: message too long, mtu=9194
+^C
+--- 10.21.22.10 ping statistics ---
+5 packets transmitted, 0 received, +5 errors, 100% packet loss, time 41ms
+```
 
  
 
-See VXLAN packets, look for defragmentation. 
+There is also some other nifty tools in EOS that can be used to check if  fragmentation is going on, *show kernel ip counters*:
 
-VXLAN ports and Geneve ports
-
-How can I see that double encapsulation is the case, or even triple encapsulation?
-
-How can I see fragmentation... Could something be seen in the stream coming from TerminAttr?
-
-What about performance?
-
-There is nothing denying that running only overlay in the Arista fabric would be far the most performant way of doing it. There is nothing denying that if switching is done by the part in your network that has this as its sole role we often refer to terms like line rate speed. This is because network switches are purpose built devices with some very efficient CPU (ASICS) to handle switching and routing. 
+```bash
+veos-dc1-leaf2a#show kernel ip counters vrf VRF21 | grep -A1 "ICMP output"
+    ICMP output histogram:
+        destination unreachable: 285
+```
 
 
 
+And *netstat -s* from EOS bash:
 
+```
+Arista Networks EOS shell
+
+[ansible@veos-dc1-leaf2a ~]$ netstat -s
+Ip:
+    Forwarding: 2
+    372 total packets received
+    367 forwarded
+    0 incoming packets discarded
+    5 incoming packets delivered
+    657 requests sent out
+Icmp:
+    5 ICMP messages received
+    0 input ICMP message failed
+    ICMP input histogram:
+        echo replies: 5
+    290 ICMP messages sent
+    0 ICMP messages failed
+    ICMP output histogram:
+        destination unreachable: 285
+        echo requests: 5
+IcmpMsg:
+        InType0: 5
+        OutType3: 285
+        OutType8: 5
+Tcp:
+    0 active connection openings
+    0 passive connection openings
+    0 failed connection attempts
+    0 connection resets received
+    0 connections established
+    0 segments received
+    0 segments sent out
+    0 segments retransmitted
+    0 bad segments received
+    0 resets sent
+Udp:
+    0 packets received
+    0 packets to unknown port received
+    0 packet receive errors
+    0 packets sent
+    0 receive buffer errors
+    0 send buffer errors
+UdpLite:
+TcpExt:
+    0 packet headers predicted
+IpExt:
+    InOctets: 47155
+    OutOctets: 139570
+    InNoECTPkts: 372
+Arista:
+[ansible@veos-dc1-leaf2a ~]$
+```
+
+*netstat -s* will also be used in the compute stack later on. 
+
+### Verifying MTU in the compute stack
+
+To make it a bit easier to follow I will refer to the table below again with relevant information on the differents servers in my compute stack:
+
+| Server 1                                                     | Server 2                                                     | Server 3                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ens18 - 10.20.11.10/24 MTU 1500                              | ens18 - 10.20.12.10/24 - MTU 1500                            | ens18 - 10.20.13.10/24 - MTU 1500                            |
+| ens19 - 10.21.21.10/24 - MTU 9000                            | ens19 - 10.21.22.10/24 - MTU 9000                            | ens19 - 10.21.23.10/24 - MTU 9000                            |
+| vxlan10: MTU 1500 VNI: 666                                   | vxlan10: MTU 1500 VNI: 666                                   | vxlan10: MTU 1500 VNI: 666                                   |
+| br-vxlan (vxlan via ens19) - 192.168.100.11/24 - MTU 1500    | br-vxlan (vxlan via ens19) - 192.168.100.12/24 - MTU 1500    | br-vxlan (vxlan via ens19) - 192.168.100.13/24 - MTU 1500    |
+| antrea-gw0 (interface mtu -50)                               | antrea-gw0 (interface mtu -50)                               | antrea-gw0 (interface mtu -50)                               |
+| pod-cidr (Antrea geneve tun0 via ens19) 10.40.0.0/24 - MTU 1450 (auto adapts to br-vxlan) | pod-cidr (Antrea geneve tun0 via ens19) 10.40.1.0/24 - MTU 1450 (auto adapts to br-vxlan) | pod-cidr (Antrea geneve tun0 via ens19) 10.40.2.0/24 - MTU 1450 (auto adapts to br-vxlan) |
+| ens18 > leaf1a ethernet 5 - mtu1500 > mtu9194                | ens18 > leaf1b ethernet 5 - mtu1500 > mtu9194                | ens18 > leaf2a ethernet 5 - mtu1500 > mtu9194                |
+| ens19 > leaf1a ethernet 6 - mtu9000 > mtu9194                | ens19 > leaf1b ethernet 6 - mtu9000 > mtu9194                | ens19 > leaf2a ethernet 6 - mtu9000 > mtu9194                |
+
+
+
+My first test will be to verify that I can do a max IP MTU of 8972 using the ens19 interface between server 2 and server 3. The reason for that is because interface ens19 will be the uplink that vxlan in my compute stack will use, so I need to make sure it can handle bigger than 1500 mtu.
+
+```bash
+andreasm@eos-client-2:~$ ping -I ens19 10.21.23.10 -M do -s 8972 -c 4
+PING 10.21.23.10 (10.21.23.10) 8972(9000) bytes of data.
+8980 bytes from 10.21.23.10: icmp_seq=1 ttl=62 time=3.89 ms
+8980 bytes from 10.21.23.10: icmp_seq=2 ttl=62 time=4.36 ms
+8980 bytes from 10.21.23.10: icmp_seq=3 ttl=62 time=4.70 ms
+8980 bytes from 10.21.23.10: icmp_seq=4 ttl=62 time=4.17 ms
+
+--- 10.21.23.10 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3006ms
+rtt min/avg/max/mdev = 3.889/4.278/4.697/0.293 ms
+```
+
+
+
+That went fine. Now I have verified the mtu between my servers running on top of my Arista fabrics that they can actually handle the additional overhead by using VXLAN between my hosts. 
+
+Next test is trying to ping using the overlay subnet configured on a bridge called br-vxlan:
+
+```bash
+andreasm@eos-client-2:~$ ping -I br-vxlan 192.168.100.13 -M do -s 1472 -c 4
+PING 192.168.100.13 (192.168.100.13) from 192.168.100.12 br-vxlan: 1472(1500) bytes of data.
+1480 bytes from 192.168.100.13: icmp_seq=1 ttl=64 time=3.52 ms
+1480 bytes from 192.168.100.13: icmp_seq=2 ttl=64 time=4.24 ms
+1480 bytes from 192.168.100.13: icmp_seq=3 ttl=64 time=4.04 ms
+1480 bytes from 192.168.100.13: icmp_seq=4 ttl=64 time=3.97 ms
+
+--- 192.168.100.13 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 3.515/3.939/4.242/0.265 ms
+```
+
+This is for now only confgured to use an mtu of 1500. 
+
+To verify the vxlan tunnel status:
+
+```bash
+andreasm@eos-client-2:~$ bridge fdb show
+33:33:00:00:00:01 dev ens18 self permanent
+01:00:5e:00:00:01 dev ens18 self permanent
+33:33:ff:ca:c7:03 dev ens18 self permanent
+01:80:c2:00:00:00 dev ens18 self permanent
+01:80:c2:00:00:03 dev ens18 self permanent
+01:80:c2:00:00:0e dev ens18 self permanent
+01:00:5e:00:00:01 dev ens19 self permanent
+33:33:00:00:00:01 dev ens19 self permanent
+33:33:ff:b8:13:63 dev ens19 self permanent
+01:80:c2:00:00:00 dev ens19 self permanent
+01:80:c2:00:00:03 dev ens19 self permanent
+01:80:c2:00:00:0e dev ens19 self permanent
+33:33:00:00:00:01 dev ovs-system self permanent
+33:33:00:00:00:01 dev genev_sys_6081 self permanent
+01:00:5e:00:00:01 dev genev_sys_6081 self permanent
+33:33:ff:b9:ce:70 dev genev_sys_6081 self permanent
+01:00:5e:00:00:01 dev antrea-gw0 self permanent
+33:33:00:00:00:01 dev antrea-gw0 self permanent
+33:33:ff:4f:1c:f0 dev antrea-gw0 self permanent
+33:33:00:00:00:01 dev antrea-egress0 self permanent
+a6:58:bc:c5:47:62 dev vxlan10 master br-vxlan
+42:87:fd:bd:57:63 dev vxlan10 master br-vxlan
+1a:f1:cc:65:97:37 dev vxlan10 vlan 1 master br-vxlan permanent
+1a:f1:cc:65:97:37 dev vxlan10 master br-vxlan permanent
+00:00:00:00:00:00 dev vxlan10 dst 10.21.21.10 self permanent
+00:00:00:00:00:00 dev vxlan10 dst 10.21.23.10 self permanent
+33:33:00:00:00:01 dev br-vxlan self permanent
+01:00:5e:00:00:6a dev br-vxlan self permanent
+33:33:00:00:00:6a dev br-vxlan self permanent
+01:00:5e:00:00:01 dev br-vxlan self permanent
+33:33:ff:1b:df:4b dev br-vxlan self permanent
+0e:a9:a0:1b:df:4b dev br-vxlan vlan 1 master br-vxlan permanent
+0e:a9:a0:1b:df:4b dev br-vxlan master br-vxlan permanent
+33:33:00:00:00:01 dev ubuntu-2-ce6914 self permanent
+01:00:5e:00:00:01 dev ubuntu-2-ce6914 self permanent
+33:33:ff:8f:cf:b7 dev ubuntu-2-ce6914 self permanent
+```
+
+Its also possible to see some increasing statistics here:
+
+```bash
+andreasm@eos-client-2:~$ cat /sys/class/net/vxlan10/statistics/tx_packets
+82088
+andreasm@eos-client-2:~$ cat /sys/class/net/vxlan10/statistics/tx_packets
+82100
+andreasm@eos-client-2:~$ cat /sys/class/net/vxlan10/statistics/tx_packets
+82102
+andreasm@eos-client-2:~$ cat /sys/class/net/vxlan10/statistics/tx_packets
+82104
+andreasm@eos-client-2:~$ cat /sys/class/net/vxlan10/statistics/rx_packets
+81016
+andreasm@eos-client-2:~$ cat /sys/class/net/vxlan10/statistics/rx_packets
+81035
+```
+
+If I want to allow for higher mtu I will need to adjust both the vxlan interface and br-vxlan bridge interface. Lets try by just raising the MTU on the br-vxlan interface:
+
+```bash
+andreasm@eos-client-2:~$ sudo ip link set mtu 8000 dev br-vxlan
+[sudo] password for andreasm:
+andreasm@eos-client-2:~$ ping -I br-vxlan 192.168.100.13 -M do -s 1600 -c 4
+PING 192.168.100.13 (192.168.100.13) from 192.168.100.12 br-vxlan: 1600(1628) bytes of data.
+
+--- 192.168.100.13 ping statistics ---
+4 packets transmitted, 0 received, 100% packet loss, time 3062ms
+```
+
+Thats not promising.. Remember the monster truck? Thats just what I did now. I came with a car too big to fit the tunnel. The *br-vxlan* interface had a higher MTU than the *VXLAN* interface which is still at 1500
+
+Reverting *br-vxlan* back to MTU1500 again. I will now set the mtu to 100 on the vlan interfaces where my server 2 ens19 interface is connected, I will hit the same scenario as above, but can I see it somehow in my Arista  fabric, and the server itself?
+
+```bash
+veos-dc1-leaf1b(config-if-Vl22)#show active
+interface Vlan22
+   description VRF11_VLAN22
+   mtu 100
+   vrf VRF21
+   ip address virtual 10.21.22.1/24
+```
+
+Using netstat -s on my affected server 2 I can notice an increase in *destination unreachable*:
+
+```bash
+andreasm@eos-client-2:~/vxlan$ netstat -s | grep -A 10 -E "^Icmp:"
+Icmp:
+    5420 ICMP messages received
+    216 input ICMP message failed
+    ICMP input histogram:
+        destination unreachable: 3452
+        echo requests: 619
+        echo replies: 1349
+    7111 ICMP messages sent
+    0 ICMP messages failed
+    ICMP output histogram:
+        destination unreachable: 3152
+andreasm@eos-client-2:~/vxlan$
+andreasm@eos-client-2:~/vxlan$ netstat -s | grep -A 10 -E "^Icmp:"
+Icmp:
+    5455 ICMP messages received
+    216 input ICMP message failed
+    ICMP input histogram:
+        destination unreachable: 3453
+        echo requests: 619
+        echo replies: 1383
+    7179 ICMP messages sent
+    0 ICMP messages failed
+    ICMP output histogram:
+        destination unreachable: 3152
+```
+
+Doing tcpdump on interface ethernet 6 on my leaf1b switch I can see a whole bunch of Fragmented IP protocol:
+
+![ip-fragments](images/image-20241206091506273.png)
+
+The same is seen on my server 2 ens19 interface:
+
+![ip-fragments-ens19](images/image-20241206092135310.png)
+
+
+
+Doing tcpdump directly on server 2 itself I see a lots of *bytes missing!*:
+
+```bash
+andreasm@eos-client-2:~/tcpdump/mtu_issues$ sudo tcpdump -i ens19 -c 100  -vvv
+tcpdump: listening on ens19, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+10:47:43.473406 IP (tos 0x0, ttl 61, id 48283, offset 0, flags [+], proto UDP (17), length 100)
+    10.21.23.10.43221 > eos-client-2.4789: VXLAN, flags [I] (0x08), vni 666
+IP truncated-ip - 63 bytes missing! (tos 0x0, ttl 64, id 43823, offset 0, flags [DF], proto UDP (17), length 113)
+    192.168.100.13.10351 > 192.168.100.11.10351: UDP, length 85
+10:47:43.473407 IP (tos 0x0, ttl 61, id 48283, offset 80, flags [none], proto UDP (17), length 83)
+    10.21.23.10 > eos-client-2: udp
+10:47:43.476149 IP (tos 0x0, ttl 62, id 11890, offset 0, flags [none], proto UDP (17), length 100)
+    10.21.21.10.55208 > eos-client-2.4789: [udp sum ok] VXLAN, flags [I] (0x08), vni 666
+IP (tos 0x0, ttl 64, id 33812, offset 0, flags [DF], proto UDP (17), length 50)
+    192.168.100.11.10351 > 192.168.100.13.10351: [udp sum ok] UDP, length 22
+10:47:43.709133 IP (tos 0x0, ttl 61, id 48311, offset 0, flags [+], proto UDP (17), length 100)
+    10.21.23.10.35009 > eos-client-2.4789: VXLAN, flags [I] (0x08), vni 666
+IP truncated-ip - 978 bytes missing! (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto ICMP (1), length 1028)
+```
+
+
+
+
+
+Reverting back to the correct mtu size on the vlan interface on leaf1b again, I should no longer see any fragments or missing bytes:
+
+```bash
+andreasm@eos-client-2:~/tcpdump/mtu_issues$ sudo tcpdump -i ens19 -c 100  -vvv
+tcpdump: listening on ens19, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+09:29:38.728403 IP (tos 0x0, ttl 64, id 36841, offset 0, flags [none], proto UDP (17), length 1128)
+    eos-client-2.53002 > 10.21.23.10.4789: [udp sum ok] VXLAN, flags [I] (0x08), vni 666
+IP (tos 0x0, ttl 64, id 39910, offset 0, flags [DF], proto UDP (17), length 1078)
+    eos-client-2.34860 > 192.168.100.13.6081: [no cksum] Geneve, Flags [none], vni 0x0
+	IP (tos 0x0, ttl 63, id 0, offset 0, flags [DF], proto ICMP (1), length 1028)
+    10.40.1.4 > 10.40.2.4: ICMP echo request, id 350, seq 1369, length 1008
+09:29:38.728444 IP (tos 0x0, ttl 64, id 21433, offset 0, flags [none], proto UDP (17), length 1128)
+    eos-client-2.53002 > 10.21.21.10.4789: [udp sum ok] VXLAN, flags [I] (0x08), vni 666
+IP (tos 0x0, ttl 64, id 39910, offset 0, flags [DF], proto UDP (17), length 1078)
+    eos-client-2.34860 > 192.168.100.13.6081: [no cksum] Geneve, Flags [none], vni 0x0
+	IP (tos 0x0, ttl 63, id 0, offset 0, flags [DF], proto ICMP (1), length 1028)
+    10.40.1.4 > 10.40.2.4: ICMP echo request, id 350, seq 1369, length 1008
+```
+
+ 
+
+## Summary
+
+It is not unusual to end up with double or even triple encapsulation. Its just a matter of having control of the MTU at the different levels. They physical fabric needs to accommodate the highest MTU as thats where all traffic needs to traverse. Then the next encapsulation layer also needs to adjust according to the physical MTU configuration. If a third encapsulation layer is deployed this needs to be adjusted to the second encapsulation layers MTU configuration. The third encapsulation layer in my environment above comes from the Kubernetes CNI Antrea, which handles this automatically, but should still be something to be aware of in case of performance or any issues thats needs to be looked into. 
+
+If one follow the MTU sizing accordingly it shouldn't be any issues, but if it does it is good to know where to look? 
+
+If using tcpdump and manual cli commands is cumbersome, there may be another more elegant way to monitor such things. I will create a follow up post on this at a later stage.
+
+I will end this post with a simple diagram.
+
+![one-mtu-to-rule-them-all](images/image-20241206095739636.png)
 
 [^1]: *(Earlier version of VMware NSX called NSX-V used VXLAN too, for a period VMware had two NSX versions NSX-V and NSX-T where the latter used Geneve and is the current NSX product, NSX-V is obsolete and NSX-T now is the only product and is just called NSX.)*
 
