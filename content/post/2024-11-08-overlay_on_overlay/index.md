@@ -44,7 +44,7 @@ In a typical datacenter today a common architecture is the Spine/Leaf design ([C
 
 ## Underlay
 
-There are two ways to design a spine leaf fabric. We can do layer 2 designs and layer 3 designs. I will be focusing on the layer 3 design in this post as this is the most common design. Layer 3 scales and performs better, we dont need to consider STP (spanning tree) and we get Equal Cost Multi Path as a bonus. In a layer 3 design all switches in the fabric are connected using routed ports, which also means there is no layer 2 possibilities between the switches, unless we introduce some kind of layer on top that can carry this layer 2 over the layer 3 links. This layer is what this post will cover and is often referrred to as the overlay layer. Before going all in on overlay I need to also cover the underlay. The underlay in a spine leaf fabric is the physical ports configured as routed ports connecting the switches together. All switches in a layer 3 fabric is being connected to each other using routed ports. All leaves exchange routes/peers with the spines.
+There are two ways to design a spine leaf fabric. We can do layer 2 designs and layer 3 designs. I will be focusing on the layer 3 design in this post as this is the most common design. Layer 3 scales and performs better, we dont need to consider STP (spanning tree) and we get Equal Cost Multi Path as a bonus. In a layer 3 design all switches in the fabric are connected using routed ports, which also means there is no layer 2 possibilities between the switches, unless we introduce some kind of layer on top that can carry this layer 2 over the layer 3 links. This layer is what this post will cover and is often referrred to as the overlay layer. Before going all in on overlay I need to also cover the underlay. The underlay in a spine leaf fabric is the physical ports configured as routed ports connecting the switches together. All switches in a layer 3 fabric is being connected to each other using routed ports. All leafs exchange routes/peers with the spines.
 
 As everything is routed we need to add some routing information in the underlay to let all switches know where to go to reach certain destinations. This can in theory be any kind of routing protocols (even static routes) supported by the [IETF](https://www.ietf.org/) such as OSFP, ISIS and BGP.
 
@@ -52,15 +52,15 @@ In Arista the preferred and recommended routing protocol in both the underlay an
 
 So if you read any Arista deployment recommendations, use Arista Validated Design, Arista's protocol of choice will always be BGP. It just makes everything so much easier. 
 
-In a spine leaf fabric, all leaves peers with the spines. The leaves do not peer with the other leaves in the underlay, unless there is an mlag config between two [leaf pairs](https://www.arista.com/en/um-eos/eos-multi-chassis-link-aggregation). All leaves have their own BGP AS, the spines usually share the same BGP AS.  
+In a spine leaf fabric, all leafs peers with the spines. The leafs do not peer with the other leafs in the underlay, unless there is an mlag config between two [leaf pairs](https://www.arista.com/en/um-eos/eos-multi-chassis-link-aggregation). All leafs have their own BGP AS, the spines usually share the same BGP AS.  
 
 A diagram of the fabric underlay:
 
 ![layer-3-ls](images/image-20241127103701406.png)
 
-In the above diagram I have confgured my underlay with layer 3 routing, BGP exhanges route information between the leaves. So far in my configuration I can not have two servers connected to different leaves on the same layer 2 subnet. Only if they are connected to the same leaf I can have layer 2 adjacency. So when server 1, connected to leaf1a, wants to talk to server 2, connected on leaf2a, it has to be over layer 3 and both servers needs to be in their own subnet. Leaf1a and leaf2a advertises its subnets to both spine1 and spine2, server 1 and 2 has been configured to use their connected leaf switches  as gateway respectively. 
+In the above diagram I have confgured my underlay with layer 3 routing, BGP exhanges route information between the leafs. So far in my configuration I can not have two servers connected to different leafs on the same layer 2 subnet. Only if they are connected to the same leaf I can have layer 2 adjacency. So when server 1, connected to leaf1a, wants to talk to server 2, connected on leaf2a, it has to be over layer 3 and both servers needs to be in their own subnet. Leaf1a and leaf2a advertises its subnets to both spine1 and spine2, server 1 and 2 has been configured to use their connected leaf switches  as gateway respectively. 
 
-If I do a ping in the "underlay" how will it look like when I ping from leaf1a to leaf2a using loopback interface 0 on my leaf1a and leaf2a to just simulate layer 3 connectivity without any overlay protocol involved (*I dont have any servers connected to a routed interfaces in my lab on any of my leaves at the moment*).
+If I do a ping in the "underlay" how will it look like when I ping from leaf1a to leaf2a using loopback interface 0 on my leaf1a and leaf2a to just simulate layer 3 connectivity without any overlay protocol involved (*I dont have any servers connected to a routed interfaces in my lab on any of my leafs at the moment*).
 
 Tcpdump on leaf1a on both its uplinks (the source of the icmp request):
 
@@ -230,7 +230,7 @@ Having solved a well performing layer 3 fabric, the routing in the underlay does
 
 In a Spine/Leaf architecture **the** most used overlay protocol is [VXLAN](https://datatracker.ietf.org/doc/html/rfc7348) as the transport plane and BGP EVPN as the control plane. Why use overlay in the physical network you say? Well its the best way of moving L2 over L3, and in a "distributed world" as the services in the datacenter today mostly is we need to make sure this can be done in a controlled and effective way in our network. Doing pure L2 will not scale, L3 is the way. EVPN for multi-tenancy.
 
-Adding VXLAN as the overlay protocol in my spine leaf fabric I can stretch my layer 2 networks across all my layer 3 leaves without worries. This means I can now suddenly have multiple servers physical as virtual in the same layer 2 subnet. To make that happen as effectively and with as low admin overhead as possible VXLAN will be the transport plane (overlay protocol) and again BGP will be used as the control plane. This means we now need to configure BGP in the overlay, on top of our BGP in the underlay. BGP EVPN will be used to create isolation and multi tenancy on top of the underlay. To quickly summarize, VXLAN is the transport protocol responsible of carrying the layer 2 subnets over any layer 3 link in the fabric. BGP and EVPN will be the control plane that always knows where things are located and can effectively inform where the traffic should go. This is stil all in the physical network fabric. As we will see a bit later, we can also introduce network overlay protocols in other parts of the infrastructure. 
+Adding VXLAN as the overlay protocol in my spine leaf fabric I can stretch my layer 2 networks across all my layer 3 leafs without worries. This means I can now suddenly have multiple servers physical as virtual in the same layer 2 subnet. To make that happen as effectively and with as low admin overhead as possible VXLAN will be the transport plane (overlay protocol) and again BGP will be used as the control plane. This means we now need to configure BGP in the overlay, on top of our BGP in the underlay. BGP EVPN will be used to create isolation and multi tenancy on top of the underlay. To quickly summarize, VXLAN is the transport protocol responsible of carrying the layer 2 subnets over any layer 3 link in the fabric. BGP and EVPN will be the control plane that always knows where things are located and can effectively inform where the traffic should go. This is stil all in the physical network fabric. As we will see a bit later, we can also introduce network overlay protocols in other parts of the infrastructure. 
 
 ![vxlan-l2-over-l3](images/image-20241127110441121.png)
 
@@ -266,6 +266,11 @@ I now notice another protocol in the header, VXLAN. The "outer" source IP and de
 ### TCPdump on Arista switches (EOS)
 
 Doing tcpdump on Arista switches is straight forward. Its just one of the benefits Arista has as it uses its EOS operating system which is a pure Linux operating system. I can do tcpdump directly from bash or remote. Here I will show a couple of methods of doing tcpumps in EOS. 
+
+<div style="border-left: 4px solid #2196F3; background-color: #E3F2FD; padding: 10px; margin: 10px 0; color: #0000FF;"> <strong>Info:</strong>
+As I am using vEOS (the virtual machine based EOS) I can capture dataplane traffic directly with tcpdump by using the virtual machine nics (eg vmnicX). On an actual Arista switch using the etX interfaces only captures controlplane traffic. To capture dataplane traffic on an Arista switch you can use mirror to CPU or monitoring ports. See the two links below for more info ->    </div>
+
+[here](https://arista.my.site.com/AristaCommunity/s/article/using-tcpdump-for-troubleshooting#Comm_Kna_ka0Uw0000005qxFIAQ_81) and [here](https://arista.my.site.com/AristaCommunity/s/article/using-tcpdump-for-troubleshooting#Comm_Kna_ka02I000000QqZmQAK_44)
 
 ***Locally on the switch in bash***
 
@@ -457,11 +462,11 @@ When traffic egresses a Kubernetes nodes configured to use VXLAN or Geneve it wi
 
 ## Will it fit then?
 
-A default ethernet frame size is 1500MTU (Maximum Transmission Unit). When encapsulating a standard ethernet frame using VXLAN some headers are removed from the original frame, and additional headers are being added. See illustration:
+A default IP frame size is 1500MTU (Maximum Transmission Unit). When encapsulating a standard ethernet frame using VXLAN some headers are removed from the original frame, and additional headers are being added. See illustration:
 
 ![std-eth-frame](images/image-20241109101619428.png)
 
-Standard Ethernet fram to a VXLAN encapsulated ethernet frame:
+Standard Ethernet frame to a VXLAN encapsulated ethernet frame:
 
 ![headers-stripped-and-added](images/image-20241109102130032.png)
 
@@ -469,7 +474,7 @@ Standard Ethernet fram to a VXLAN encapsulated ethernet frame:
 
 
 
-
+*See more explanation on ethernet mtu and ip mtu further down.*
 
 These additional headers requires some more room which makes the default size of 1500mtu too small. So in a very simple setup using VXLAN encapsulation we need to accomodate for this increase in size.  If this is not considered you will end up with nothing working. A general rule of thumb, VXLAN and Geneve will not handle fragmentation and will drop if it does not fit. A new buzzword will then become *its always MTU*.
 
@@ -501,7 +506,7 @@ So, to summarize. As long as one are aware of these MTU requirements it should b
 
 ## Simulating an environment with triple encapsulation
 
-I have configured in my lab a spine leaf fabric using Arista vEOS switches. It is a full spine leaf fabric using EVPN and VXLAN. The fabric has been configured with 3 VRFS. A dedicated oob mgmt vrf called MGMT. Then VRF 10 for vlan 11-3 and VRF 11 for vlan 21-23. Then I have attached three virtual machines on each of their leaf switches. Server 1 is attached to leaf1a, server 2 is attached to leaf1b and server 3 is attached to leaf2a. These three servers have been configured with two network cards each.
+I have configured in my lab a spine leaf fabric using Arista vEOS switches. It is a full spine leaf fabric using EVPN and VXLAN. The fabric has been configured with 3 VRFS. A dedicated oob mgmt vrf called MGMT. Then VRF 10 for vlan 11-13 and VRF 11 for vlan 21-23. Then I have attached three virtual machines on each of their leaf switches. Server 1 is attached to leaf1a, server 2 is attached to leaf1b and server 3 is attached to leaf2a. These three servers have been configured with two network cards each.
 
 NIC1 (ens18) on all three have been configured and placed in VRF10 but in their own vlan, vlan 11-13 respectively for their "management" interface. VRF 10 is the only VRF that is configured to reach internet. NIC2 (ens19) on all three servers have been configured and placed in an another VRF, VRF11, also placed in their separate vlan (vlan 21-23) respectively. NIC2 (ens19) have been configured to use VXLAN via a bridge called br-vxlan on all three servers to span a common layer 2 subnet across these 3 servers. Kubernetes is installed and configured on these servers. The pod network is using the second nic interfaces over VXLAN and the CNI inside Kubernetes has been configured to provide its own overlay protocol which happens to be Geneve. So in this scenario I have 3 overlay protocols in motion. VXLAN configured in my Arista spine leaf, VXLAN in the Ubuntu operating system layer, then Geneve in the pod network stack. 
 *The only reason I have chosen to use a dedicated management interface is just so I can have a network that is only encapsulated in my Arista fabric. Kubernetes can work perfectly well with just on network card, also most common config.* 
@@ -748,13 +753,13 @@ The IP MTU on the other hand is the maximum size in bytes of the IP packet than 
 
 ```
 
-<div style="border-left: 4px solid #2196F3; background-color: #E3F2FD; padding: 10px; margin: 10px 0; color: #0000FF;"> <strong>Info:</strong>
-You will notice when switching between bash and cli in EOS that it is using IP MTU and Ethernet MTU respectively. When using bash it is using MTU 9194 and in CLI it is 9214 which is 9194 + 20. As I am using vEOS its not representative for real Arista hardware </div>
+
+
 
 ### Verifying everything in the Arista fabric
 
 **Underly links**
-To do this as "methodically" as possible I will first start by checking mtu in the Arista fabric. This will be the ptp links between the spines and leaves. They should be configured with the highest supported MTU in EOS. 
+To do this as "methodically" as possible I will first start by checking mtu in the Arista fabric. This will be the ptp links between the spines and leafs. They should be configured with the highest supported MTU in EOS. 
 
 <div style="border-left: 4px solid #2196F3; background-color: #E3F2FD; padding: 10px; margin: 10px 0; color: #0000FF;"> <strong>Info:</strong>
 This is all done in my lab using vEOS (virtual machines running on my hypervisor). The max MTU I can use in my lab is 9194 in vEOS. In a real physical Arista switch it is 9214MTU. So the numbers I am operating with is not representative to the real products </div>
