@@ -1,0 +1,4 @@
+pre {
+  max-height: 25em; /* Limit code block height */
+  overflow-y: auto; /* Add vertical scroll if content exceeds limit */
+}

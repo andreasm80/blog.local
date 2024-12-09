@@ -1,0 +1,30 @@
+disabled = false
+languageCode = "en"
+languageName = "English"
+weight = 1
+title = "blog.andreasm.io"
+
+[params]
+  displayName = "EN"
+  isoCode = "en"
+  rtl = false
+  dateFormat = "2 January 2006"
+  logo = "ynwa2.png"
+  secondaryLogo = "lfc.webp"
+  description = "From 0.985mhz to ... several ghz"
+#  copyright = "Copy, _right?_ :thinking_face:"
+
+[params.author]
+  name = "Andreas Marqvardsen"
+  image = "profile.png"
+  imageQuality = 96
+  headline = "Systems Engineer @ Arista"
+  bio = "Always curious, always learning"
+  links = [
+    { email = "mailto:andreas.marqvardsen[AT]gmail.com" },
+    { link = "https://blog.andreasm.io/" },
+    { github = "https://github.com/andreasm80" },
+    { linkedin = "https://linkedin.com/in/andreas-marqvardsen" },
+    { mastodon = "https://vmst.io/@andreasm" },
+    { x-twitter = "https://x.com/NATsoFast" },
+  ]

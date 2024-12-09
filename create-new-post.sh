@@ -38,9 +38,9 @@ if [[ $1 = "post" ]]; then
 
 	hugo new post/$DATE-$SLUG/index.md
 
-	mkdir -p content/post/$DATE-$SLUG/images/;
+	mkdir -p content/posts/$DATE-$SLUG/images/;
 
-	open content/post/$DATE-$SLUG/; $EDITOR content/post/$DATE-$SLUG/; cd content/post/$DATE-$SLUG/;
+	open content/posts/$DATE-$SLUG/; $EDITOR content/posts/$DATE-$SLUG/; cd content/posts/$DATE-$SLUG/;
 fi
 
 # I think Hugo now does this on it's own.

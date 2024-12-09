@@ -5,7 +5,7 @@ date: "2016-07-14"
 
 Welcome to my blog.
 
-This is the personal blog of Andreas Marqvardsen. He is currently a Systems Engineer @Arista Networking and have been working in the IT industry since 2001. Joined Arista Networks in 2024, before that he worked for VMware from 2019 as a Solution Engineer in the Networking and Security Business unit focusing on NSX and NSX Advanced LoadBalancer, joined Tanzu Business Unit in 2022 covering everything Kubernetes infrastructure related with focus on network and security.
+This is the personal blog of Andreas Marqvardsen. He is currently a Systems Engineer @Arista Networks and have been working in the IT industry since 2001. Joined Arista Networks in 2024, before that he worked for VMware from 2019 as a Solution Engineer in the Networking and Security Business unit focusing on NSX and NSX Advanced LoadBalancer, joined Tanzu Business Unit in 2022 covering everything Kubernetes infrastructure related with focus on network and security.
 
 Always interested in new technology, understanding how the technology works and how it can be used. This blog is mostly around what he does in his line of work, but it can also reflect some other stuff he finds interesting from time to time. 
 
