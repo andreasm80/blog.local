@@ -47,7 +47,7 @@ Now I had the necessary connectivity and security policies in place for me to lo
 ### VMC on AWS K8s worker nodes
 
 In VMC vCenter I deployed three Ubuntu worker nodes, and configured them to be one master worker and two worker nodes by following my previous blog post covering these steps:  
-[here](http://blog.andreasm.io/2020/10/08/ako-with-antrea-on-native-k8s-cluster/#Deploy_Kubernetes_on_Ubuntu_2004)  
+[here](https://blog.andreasm.io/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/#deploy-kubernetes-on-ubuntu-2004)  
 
 ![](images/image-3.png)
 
@@ -151,7 +151,6 @@ Under "Application" I have a rule that is allowing internet access (could be don
 ![](images/image-9-1024x182.png)
 
 Allow "internet access"
-
 
 Further under Application I am specifying a bit more granular rules for what the k8s cluster is allowed in/out. Again, this is just some simple rules restricting the k8s cluster to not allow any-any by utilizing the NSX DFW already in VMC on AWS. One can and should be more granular, but its to give you an idea.  
 In the K8s-Backbone security policy section below I am allowing HTTP in to the k8s cluster as I am planning to run an k8s application there that uses HTTP where I allow a specific IP subnet/range as source and my loadbalancer IP range as the destination.  

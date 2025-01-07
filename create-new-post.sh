@@ -36,7 +36,7 @@ if [[ $1 = "post" ]]; then
 	export SLUG=$2
 	DATE=`date "+%Y-%m-%d"`
 
-	hugo new post/$DATE-$SLUG/index.md
+	hugo new posts/$DATE-$SLUG/index.md
 
 	mkdir -p content/posts/$DATE-$SLUG/images/;
 
