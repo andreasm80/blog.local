@@ -19,7 +19,7 @@ tags:
   - vxlan
   - overlay
 
-summary: First post in a series of posts covering EVPN and getting to know EVPN
+summary: First post in a series of posts covering EVPN and getting to know EVPN with Arista EOS
 comment: false # Disable comment if false.
 ---
 
@@ -397,7 +397,6 @@ interface Loopback0
 !
 ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
    seq 10 permit 10.255.0.0/27 eq 32
-   seq 20 permit 10.255.1.0/27 eq 32
 !
 route-map RM-CONN-2-BGP permit 10
    match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY
@@ -422,7 +421,9 @@ router bgp 65111
       neighbor IPv4-UNDERLAY-PEERS activate
 ```
 
-The added Loopback0 interface is used for overlay peering as we will see a bit later in the BGP summary and routes. Then the IP prefix is created and mapped to the route map telling BGP only redistribute the overlay loopback interfaces subnet. There is no need to redistribute the underlay peer to peer links as they are directly connected. The sole reason for using BGP also in the underlay (plus all the benefits of using BGP, scalability, robustness, less management overhead) is to achieve reachability of Loopback0 as a stable endpoint for EVPN BGP sessions.  
+The added Loopback0 interface is used for BGP EVPN sessions as we will see a bit later in the BGP summary and routes. Then the IP prefix is created and mapped to the route map telling BGP only redistribute the EVPN overlay loopback interfaces subnet. There is no need to redistribute the underlay peer to peer links as they are directly connected. The sole reason for using BGP also in the underlay (plus all the benefits of using BGP, scalability, robustness, less management overhead) is to achieve reachability of Loopback0 as a stable endpoint for EVPN BGP sessions.  
+
+Later on I will add another Loopback interface (Loopback1) for VXLAN and a corresponding prefix-list on my leaf switches, which is also part of the underlay configuration. I have not added it yet as I want to add it in the VXLAN section. This additional Loopback interface is part of the BGP in the underlay and being redistributed there. 
 
 AS table:
 
@@ -582,7 +583,6 @@ interface Loopback0
 !
 ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
    seq 10 permit 10.255.0.0/27 eq 32
-   seq 20 permit 10.255.1.0/27 eq 32
 !
 route-map RM-CONN-2-BGP permit 10
    match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY
@@ -620,7 +620,6 @@ interface Loopback0
 !
 ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
    seq 10 permit 10.255.0.0/27 eq 32
-   seq 20 permit 10.255.1.0/27 eq 32
 !
 route-map RM-CONN-2-BGP permit 10
    match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY
@@ -725,13 +724,18 @@ interface Loopback1
    description VTEP_VXLAN_Tunnel_Source
    ip address 10.255.1.3/32
 !
+ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
+   seq 20 permit 10.255.1.0/27 eq 32
+!
 interface Vxlan1
    description veos-dc1-leaf1a_VTEP
    vxlan source-interface Loopback1
    vxlan udp-port 4789
 ```
 
-I have added another loopback interface (Loopback1) which will serve as the VTEP IP address, then the general VXLAN configuration, description, source-interface and udp-port. 
+I have added another loopback interface (Loopback1) which will serve as the VTEP IP address, then the general VXLAN configuration, description, source-interface and udp-port. Note also that I have added another prefix to my route map PL-LOOPBACKS-EVPN-OVERLAY to distribute the VTEP IP addresses in the underlay. As mentioned above these Loopback interfaces are considered part of the underlay configuration. 
+
+I could have achieved the same with just one loopback interface for both EVPN and VXLAN but best practice is to have a dedicated loopback for EVPN and a dedicated loopback for VXLAN. 
 
 The VXLAN loopback1 interface for all my leaf switches for reference:
 
@@ -758,7 +762,108 @@ The VXLAN configuration is done, but I have not added any networks. Next up is a
 
 #### Adding layer 2 networks using VXLAN
 
-Now that VXLAN is configured, I need to create some networks. When creating layer 2 subnets using VXLAN they are often referred to as virtualized layer 2 or simply overlay networks. In VXLAN these layer 2 networks are placed in segments or VXLAN segments where VNI (VXLAN Network Identifier) is used as the identifier for the respective segment, not VLAN. VXLAN provides a 24-bit VNI meaning we can have a total of 16 million segments in a VXLAN fabric. This does not mean 16 million pr VTEP, but across different VTEPS in the same fabric. The reason for this is because there is a 1:1 mapping between VLAN and VNI. So to create a layer 2 network I will have to map a VLAN to a VNI. Lets have a look at my configuration below (*scroll down inside code field to see all content of the config*):
+Now that VXLAN is configured, I need to create some networks. When creating layer 2 subnets using VXLAN they are often referred to as virtualized layer 2 or simply overlay subnets. In VXLAN these layer 2 subnets are placed in segments or VXLAN segments where VNI (VXLAN Network Identifier) is used as the identifier for the respective segment, not VLAN. VXLAN provides a 24-bit VNI meaning we can have a total of 16 million segments in a VXLAN fabric. This does not mean 16 million per VTEP, but across different VTEPS in the same fabric. The reason for this is because there is a 1:1 mapping between VLAN and VNI (more info on this later). So to create a layer 2 network I will have to map a VLAN to a VNI. Lets have a look at my configuration below:
+
+```bash
+!
+vlan 11
+   name VRF10_VLAN11
+!
+interface Vxlan1
+   description veos-dc1-leaf1b_VTEP
+   vxlan source-interface Loopback1
+   vxlan udp-port 4789
+   vxlan vlan 11 vni 10011
+```
+
+To keep it very simple I have in my config above added one vlan, *VLAN 11*. Then in my VXLAN configuration I am doing a VLAN to VNI mapping:
+
+```bash
+   vxlan vlan 11 vni 10011
+```
+
+The VNI number can be anything from 1 to 16777215. The VLAN to VNI mappings are called L2VNI. There is no SVI (Switch Virtual Interface) configured, no gateway so a pure layer 2 and reachability is isolated inside this broadcast domain. 
+
+If I take a look at my VLAN 11 on leaf1a after the VLAN to VNI mapping:
+
+```bash
+veos-dc1-leaf1a#show vlan 11
+VLAN  Name                             Status    Ports
+----- -------------------------------- --------- -------------------------------
+11    VRF10_VLAN11                     active    Cpu, Et5, Et6, Vx1 # notice the Vx1 
+```
+
+The vxlan1 interface has been added. 
+
+When a server is attached to *leaf1a* in VLAN 11 in subnet 10.20.11.0/24 and this VLAN is mapped to VNI 10011 and it wants to do an ICMP request to another server attached to *leaf2b* using the same VLAN , same subnet and same VNI mapping they are in the same layer 2 broadcast domain and there will be no routing in the overlay. In the underlay there will ofcourse be some routing done as explained earlier. The responsibility of VXLAN in this case is encapsulating the ethernet frame on leaf1a (source or ingress vtep) and decapsulate it on leaf2b (destination or egress vtep) before it is delivered to server 2, also called *bridging*.
+
+![vlan:vni mapping](images/image-20250109103322001.png)
+
+
+
+But will this work? How does the VTEP leaf1a know that I do have a server 2 on the same subnet on leaf2b? Well here is where the control plane comes into play, BGP. BGP advertises the Loopback0 and Loopback1 (EVPN and VXLAN) in the underlay for reachability. That is why I dont configure any static peering in my VXLAN configuration, BGP is handling this in the control plane. Right now though, my VLAN 11 is not being advertised anywhere so it will not be possible for Server 1 and Server 2 to reach each other. I need to configure BGP to advertise the VLAN 11 to VNI 10011 mapping in my overlay so the VTEPs can form a tunnel and span this layer 2 subnet across my layer 3 spine leaf fabric.
+
+```bash
+ router bgp 65111
+   router-id 10.255.0.3
+<----redacted--->
+   !
+   vlan 11
+      rd 10.255.0.3:10011
+      route-target both 10011:10011
+      redistribute learned
+   !
+```
+
+The tunnel between leaf1a and leaf2b is established dynamically meaning its not only until any VTEP is advertising the same VNI in BGP and there is an ARP request from a source to another destination in the same VNI (L2VNI) the VXLAN tunnel is established. No flood and learn, but MAC addresses learnt locally are advertised to EVPN peers.
+
+![bgp-evpn-table](images/image-20250109144322247.png)
+
+
+
+*I mentioned that VNI uses 24-bit and can create 16777215 segments. The maximum number of VLANs on a single switch is 4094, even less if factoring in VLANS that are system/internally reserved. So to be able to achieve  4094< (max 16777215) VNIs or VXLAN segments it is fully possible to map different same VLAN to a different VNI, but this cant be done on the same switch or VTEP. In a spine leaf fabric with several leafs and every leaf is a VTEP they can have a different range of VNI mapped to same VLAN individually, creating their own layer 2 broadcast domains. In the illustration below I have 4 leafs where each "pair" of leafs have been configured using a set of VLAN to VNI mappings. Leaf pair leaf1a and leaf1b maps VLAN 10,20 and 30 to VNIs 10010, 10020 and 10030 while the other leaf pair leaf2a and leaf2b maps VLAN 10,20 and 30 to VNIs 20010, 20020 and 20030:*
+
+![vlan-vni-mappings](images/image-20250109150301864.png)
+
+
+
+Thats it for L2VNI, but what if I want to route between L2VNIs? 
+
+#### Integrated routing and bridging (IRB)
+
+In a traditional network with a lot of north south traffic it made sense to have a "nortbound" centralized gateway to both apply policies and route networks where isolation was needed. In todays modern datacenter that traffic pattern has changed to become dominantly east-west due to the distributed nature of the applications like virtual machines and containers (e.g Kubernetes clusters). There is no longer one big server handling many roles at the same time, but instead many virtual machines and often a huge amount of containers must work together to provide the "full" application. This change is a natural evolution in the datacenter where scalability, performance and management is key. For these VMs and containers to "interact" network is critical in both performance and reliability. Having a centralized router/gateway such a scenario may not be so optimal. Therefore we need to have a solution that can provide "de-centralized" routing or distributed routing.
+
+Distributed routing means in this case that all my switches with VTEPS can become a default gateway for my VXLAN segments, where routing is done between L2VNIs (inter-subnet routing) without exiting the VXLAN fabric at line-rate and in the first hop, close to my application. 
+
+With VXLAN it is possible to configure exactly this behavior, instead of just doing regular L2VNIs it is also possible to do L3VNI using an extension in VXLAN called Integrated Routing and Bridging ([IETF draft](https://datatracker.ietf.org/doc/html/draft-sajassi-l2vpn-evpn-inter-subnet-forwarding-05)). Integrated Routing and Bridging can be configured two ways, asymmetric IRB or symmetric IRB. 
+
+##### Asymmetric IRB
+
+In asymmetric IRB, the ingress VTEP performs both the routing and bridging tasks. When a packet moves between subnets, the ingress VTEP routes the packet to the destination subnet and then encapsulates it with the corresponding VXLAN VNI. The egress VTEP simply decapsulates the packet and forwards it based on layer 2 information. Each VTEP must maintain information about all tenant hosts, including their MAC and IP bindings. This necessitates that every VTEP be a member of all tenant subnets/VNIs and have associated SVIs with anycast IPs for each subnet.
+
+![asymmetric-irb](images/image-20250109215737293.png)
+
+Due to the need for each VTEP to handle all tenant subnets, asymmetric IRB can face scalability challenges, especially in large multi-tenant environments.
+
+##### Symmetric IRB
+
+In symmetric IRB both ingress and egress VTEPs participate in routing. When a packet traverses subnets, the ingress VTEP routes the packet from the source subnet to an intermediate IP-VRF. The packet is then VXLAN encapsulated and sent to the egress VTEP, which routes it from the IP-VRF to the destination subnet.
+
+VTEPs need to be configured with an IP-VRF that interconnects all subnets. This model allows for better scalability as each VTEP doesn't need to maintain complete information about all tenant hosts.
+
+![symmetric-irb](images/image-20250109221110154.png)
+
+Symmetric IRB offers improved scalability and flexibility, making it more suitable for large-scale deployments with multiple tenants.
+
+
+
+Arista supports both asymmetric and symmetric IRB!
+
+For more information on how this works in Arista EOS see [here](https://www.arista.com/en/um-eos/eos-integrated-routing-and-bridging)
+
+
+
+Below I have added several VLANS, SVIs and VRFs respectively on all my leafs (my lab is not prone to scaling issues with too many VNIs etc):
 
 ```bash
 !
@@ -853,9 +958,222 @@ ip routing vrf VRF20
 ip routing vrf VRF21
 ```
 
-In my config above I have some VLANs defined and VLAN interfaces respectively. Then in my VXLAN configuration I am doing a VLAN to VNI mapping:
+Packet walk to see symmetric routing done....?
+
+
+
+
+
+
+
+### Complete configuration
+
+Below I will provide the full relevant configuration for spine-1 and leaf1a for easier reference:
+
+spine-1:
 
 ```bash
+interface Ethernet1
+   description P2P_LINK_TO_VEOS-DC1-LEAF1A_Ethernet1
+   mtu 9194
+   no switchport
+   ip address 10.255.255.0/31
+!
+interface Ethernet2
+   description P2P_LINK_TO_VEOS-DC1-LEAF1B_Ethernet1
+   mtu 9194
+   no switchport
+   ip address 10.255.255.4/31
+!
+interface Ethernet3
+   description P2P_LINK_TO_VEOS-DC1-LEAF2A_Ethernet1
+   mtu 9194
+   no switchport
+   ip address 10.255.255.8/31
+!
+interface Ethernet4
+   description P2P_LINK_TO_VEOS-DC1-LEAF2B_Ethernet1
+   mtu 9194
+   no switchport
+   ip address 10.255.255.12/31
+!
+interface Loopback0
+   description EVPN_Overlay_Peering
+   ip address 10.255.0.1/32
+!
+ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
+   seq 10 permit 10.255.0.0/27 eq 32
+!
+route-map RM-CONN-2-BGP permit 10
+   match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY
+!
+router bfd
+   multihop interval 300 min-rx 300 multiplier 3
+!
+router bgp 65110
+   router-id 10.255.0.1
+   no bgp default ipv4-unicast
+   maximum-paths 4 ecmp 4
+   neighbor EVPN-OVERLAY-PEERS peer group
+   neighbor EVPN-OVERLAY-PEERS next-hop-unchanged
+   neighbor EVPN-OVERLAY-PEERS update-source Loopback0
+   neighbor EVPN-OVERLAY-PEERS bfd
+   neighbor EVPN-OVERLAY-PEERS ebgp-multihop 3
+   neighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==
+   neighbor EVPN-OVERLAY-PEERS send-community
+   neighbor EVPN-OVERLAY-PEERS maximum-routes 0
+   neighbor IPv4-UNDERLAY-PEERS peer group
+   neighbor IPv4-UNDERLAY-PEERS password 7 7x4B4rnJhZB438m9+BrBfQ==
+   neighbor IPv4-UNDERLAY-PEERS send-community
+   neighbor IPv4-UNDERLAY-PEERS maximum-routes 12000
+   neighbor 10.255.0.3 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.255.0.3 remote-as 65111
+   neighbor 10.255.0.3 description veos-dc1-leaf1a
+   neighbor 10.255.0.4 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.255.0.4 remote-as 65112
+   neighbor 10.255.0.4 description veos-dc1-leaf1b
+   neighbor 10.255.0.5 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.255.0.5 remote-as 65113
+   neighbor 10.255.0.5 description veos-dc1-leaf2a
+   neighbor 10.255.0.6 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.255.0.6 remote-as 65114
+   neighbor 10.255.0.6 description veos-dc1-leaf2b
+   neighbor 10.255.255.1 peer group IPv4-UNDERLAY-PEERS
+   neighbor 10.255.255.1 remote-as 65111
+   neighbor 10.255.255.1 description veos-dc1-leaf1a_Ethernet1
+   neighbor 10.255.255.5 peer group IPv4-UNDERLAY-PEERS
+   neighbor 10.255.255.5 remote-as 65112
+   neighbor 10.255.255.5 description veos-dc1-leaf1b_Ethernet1
+   neighbor 10.255.255.9 peer group IPv4-UNDERLAY-PEERS
+   neighbor 10.255.255.9 remote-as 65113
+   neighbor 10.255.255.9 description veos-dc1-leaf2a_Ethernet1
+   neighbor 10.255.255.13 peer group IPv4-UNDERLAY-PEERS
+   neighbor 10.255.255.13 remote-as 65114
+   neighbor 10.255.255.13 description veos-dc1-leaf2b_Ethernet1
+   redistribute connected route-map RM-CONN-2-BGP
+   !
+   address-family evpn
+      neighbor EVPN-OVERLAY-PEERS activate
+   !
+   address-family ipv4
+      no neighbor EVPN-OVERLAY-PEERS activate
+      neighbor IPv4-UNDERLAY-PEERS activate
+```
+
+ Leaf1a configuration:
+
+```bash
+vlan 11
+   name VRF10_VLAN11
+!
+vlan 12-13
+   name VRF10_VLAN12
+!
+vlan 21
+   name VRF11_VLAN21
+!
+vlan 22
+   name VRF11_VLAN22
+!
+vlan 23
+   name VRF11_VLAN23
+!
+vlan 1079
+   name VRF10_VLAN1079_WAN
+!
+vlan 3401
+   name L2_VLAN3401
+!
+vlan 3402
+   name L2_VLAN3402
+!
+vrf instance VRF20
+!
+vrf instance VRF21
+!
+interface Ethernet1
+   description P2P_LINK_TO_VEOS-DC1-SPINE1_Ethernet1
+   mtu 9194
+   no switchport
+   ip address 10.255.255.1/31
+!
+interface Ethernet2
+   description P2P_LINK_TO_VEOS-DC1-SPINE2_Ethernet1
+   mtu 9194
+   no switchport
+   ip address 10.255.255.3/31
+!
+interface Ethernet5
+   description dc1-leaf1a-client1_CLIENT1
+   switchport trunk native vlan 11
+   switchport trunk allowed vlan 11-13,21-22
+   switchport mode trunk
+!
+interface Ethernet6
+   description dc1-leaf1a-client1-vxlan_CLIENT1-VXLAN
+   switchport trunk native vlan 21
+   switchport trunk allowed vlan 11-13,21-23
+   switchport mode trunk
+!
+interface Loopback0
+   description EVPN_Overlay_Peering
+   ip address 10.255.0.3/32
+!
+interface Loopback1
+   description VTEP_VXLAN_Tunnel_Source
+   ip address 10.255.1.3/32
+!
+interface Loopback10
+   description VRF20_VTEP_DIAGNOSTICS
+   vrf VRF20
+   ip address 10.255.10.3/32
+!
+interface Loopback11
+   description VRF21_VTEP_DIAGNOSTICS
+   vrf VRF21
+   ip address 10.255.11.3/32
+!
+interface Vlan11
+   description VRF10_VLAN11
+   vrf VRF20
+   ip address virtual 10.20.11.1/24
+!
+interface Vlan12
+   description VRF10_VLAN12
+   vrf VRF20
+   ip address virtual 10.20.12.1/24
+!
+interface Vlan13
+   description VRF10_VLAN12
+   vrf VRF20
+   ip address virtual 10.20.13.1/24
+!
+interface Vlan21
+   description VRF11_VLAN21
+   mtu 9194
+   vrf VRF21
+   ip address virtual 10.21.21.1/24
+!
+interface Vlan22
+   description VRF11_VLAN22
+   mtu 9194
+   vrf VRF21
+   ip address virtual 10.21.22.1/24
+!
+interface Vlan23
+   description VRF11_VLAN23
+   mtu 9194
+   vrf VRF21
+   ip address virtual 10.21.23.1/24
+!
+interface Vlan1079
+   description VRF10_VLAN1079_WAN
+   vrf VRF20
+!
+interface Vxlan1
+   description veos-dc1-leaf1a_VTEP
+   vxlan source-interface Loopback1
+   vxlan udp-port 4789
    vxlan vlan 11 vni 10011
    vxlan vlan 12 vni 10012
    vxlan vlan 13 vni 10013
@@ -867,40 +1185,121 @@ In my config above I have some VLANs defined and VLAN interfaces respectively. T
    vxlan vlan 3402 vni 13402
    vxlan vrf VRF20 vni 10
    vxlan vrf VRF21 vni 11
-```
-
-The VNI number can be anything from 1 to 16777215. The VLAN to VNI mappings are called L2VNI. I can also have L3VNI mappings where I want to create different routing domains for a set of L2VNIs to be routed inside the same routing domain, VRFs. By mapping a VRF (tenant) to a VNI, L3VNI, I allow routing to be done between L2VNIs in the same VRF. Not only can I do routing between segments inside same tenant but also allow for ovelapping IP addresses between the tenants (VRFs) as I cant map a VRF to multiple VNIs. A VRF (tenant) can only be mapped to its unique VNI. Now where is that routing done? And how does that work? Then we need to talk about Integrated Routing and Bridging, IRB.
-
-##### Integrated routing and bridging
-
-When a server is attached to leaf1a in VLAN 11 in subnet 10.10.1.0/24 and this VLAN is mapped to VNI 10011 and it wants to do an ICMP request to another server attached to leaf2a using the same VLAN (could potentially be a different VLAN), same subnet and same VNI mapping they are in the same layer 2 broadcast domain and there will be no routing in the overlay. In the underlay there will ofcourse be some routing done as explained earlier. The responsibility of  VXLAN in this case is encapsulating the ethernet frame on leaf1a (source vtep) and decapsulate it on leaf2a (destination vtep) before it is delivered to server 2, also called *bridging*. If I happen to have a VRF mapped to a VNI and inside this VRF I have VLANs also mapped to their respective VNI for VXLAN tunneling they must in addition to being bridged also routed between the segments, meaning they stay being bridged but needs to be routed in and out of different L2VNIs inside the same VRF, L3VNI. There are two ways this routing can performed, either using *asymmetric IRB* or *symmetric IRB*. To be able to use IRB at all I need to configure *Anycast Gateway* as I have done here:
-
-```bash
-interface Vlan11
-   description VRF10_VLAN11
-   vrf VRF20
-   ip address virtual 10.20.11.1/24 # for each vlan I want to have a gateway enabled.
-!
 !
 ip virtual-router mac-address 00:1c:73:00:00:99
-ip address virtual source-nat vrf VRF20 address 10.255.10.4
-ip address virtual source-nat vrf VRF21 address 10.255.11.4
+ip address virtual source-nat vrf VRF20 address 10.255.10.3
+ip address virtual source-nat vrf VRF21 address 10.255.11.3
 !
 ip routing
-no ip routing vrf MGMT
 ip routing vrf VRF20
 ip routing vrf VRF21
+!
+ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
+   seq 10 permit 10.255.0.0/27 eq 32
+   seq 20 permit 10.255.1.0/27 eq 32
+!
+route-map RM-CONN-2-BGP permit 10
+   match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY
+!
+router bfd
+   multihop interval 300 min-rx 300 multiplier 3
+!
+router bgp 65111
+   router-id 10.255.0.3
+   no bgp default ipv4-unicast
+   maximum-paths 4 ecmp 4
+   neighbor EVPN-OVERLAY-PEERS peer group
+   neighbor EVPN-OVERLAY-PEERS update-source Loopback0
+   neighbor EVPN-OVERLAY-PEERS bfd
+   neighbor EVPN-OVERLAY-PEERS ebgp-multihop 3
+   neighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==
+   neighbor EVPN-OVERLAY-PEERS send-community
+   neighbor EVPN-OVERLAY-PEERS maximum-routes 0
+   neighbor IPv4-UNDERLAY-PEERS peer group
+   neighbor IPv4-UNDERLAY-PEERS password 7 7x4B4rnJhZB438m9+BrBfQ==
+   neighbor IPv4-UNDERLAY-PEERS send-community
+   neighbor IPv4-UNDERLAY-PEERS maximum-routes 12000
+   neighbor 10.255.0.1 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.255.0.1 remote-as 65110
+   neighbor 10.255.0.1 description veos-dc1-spine1
+   neighbor 10.255.0.2 peer group EVPN-OVERLAY-PEERS
+   neighbor 10.255.0.2 remote-as 65110
+   neighbor 10.255.0.2 description veos-dc1-spine2
+   neighbor 10.255.255.0 peer group IPv4-UNDERLAY-PEERS
+   neighbor 10.255.255.0 remote-as 65110
+   neighbor 10.255.255.0 description veos-dc1-spine1_Ethernet1
+   neighbor 10.255.255.2 peer group IPv4-UNDERLAY-PEERS
+   neighbor 10.255.255.2 remote-as 65110
+   neighbor 10.255.255.2 description veos-dc1-spine2_Ethernet1
+   redistribute connected route-map RM-CONN-2-BGP
+   !
+   vlan 11
+      rd 10.255.0.3:10011
+      route-target both 10011:10011
+      redistribute learned
+   !
+   vlan 12
+      rd 10.255.0.3:10012
+      route-target both 10012:10012
+      redistribute learned
+   !
+   vlan 13
+      rd 10.255.0.3:10013
+      route-target both 10013:10013
+      redistribute learned
+   !
+   vlan 21
+      rd 10.255.0.3:10021
+      route-target both 10021:10021
+      redistribute learned
+   !
+   vlan 22
+      rd 10.255.0.3:10022
+      route-target both 10022:10022
+      redistribute learned
+   !
+   vlan 23
+      rd 10.255.0.3:10023
+      route-target both 10023:10023
+      redistribute learned
+   !
+   vlan 1079
+      rd 10.255.0.3:11079
+      route-target both 11079:11079
+      redistribute learned
+   !
+   vlan 3401
+      rd 10.255.0.3:13401
+      route-target both 13401:13401
+      redistribute learned
+   !
+   vlan 3402
+      rd 10.255.0.3:13402
+      route-target both 13402:13402
+      redistribute learned
+   !
+   address-family evpn
+      neighbor EVPN-OVERLAY-PEERS activate
+   !
+   address-family ipv4
+      no neighbor EVPN-OVERLAY-PEERS activate
+      neighbor IPv4-UNDERLAY-PEERS activate
+   !
+   vrf VRF20
+      rd 10.255.0.3:10
+      route-target import evpn 10:10
+      route-target export evpn 10:10
+      router-id 10.255.0.3
+      redistribute connected
+   !
+   vrf VRF21
+      rd 10.255.0.3:11
+      route-target import evpn 11:11
+      route-target export evpn 11:11
+      router-id 10.255.0.3
+      redistribute connected
+!
 ```
-
-This enables VXLAN routing where each VTEP can be a default gateway, no hairpinning to a centralized gateway but distributed routing. 
-
-Now what is the difference between Symmetric IRB and Asymmetric IRB?
-
-
-
-
-
-
 
 
 
@@ -912,54 +1311,7 @@ show vxlan etc
 
 
 
-Who does what etc.. EVPN routes in leaf, spine etc.. BGP in the leaf, BGP in the spine. What is the BGP version in the spine vs the leaf MP-BGP vs BGP, do the spine need to have MP-BGP? See this: 
 
->    This document defines extensions to BGP-4 to enable it to carry
->    routing information for multiple Network Layer protocols (e.g., IPv6,
->    IPX, L3VPN, etc.).  The extensions are backward compatible - a router
->    that supports the extensions can interoperate with a router that
->    doesn't support the extensions.
->
-> The only three pieces of information carried by BGP-4 [BGP-4] that
->    are IPv4 specific are (a) the NEXT_HOP attribute (expressed as an
->    IPv4 address), (b) AGGREGATOR (contains an IPv4 address), and (c)
->    NLRI (expressed as IPv4 address prefixes).  This document assumes
->    that any BGP speaker (including the one that supports multiprotocol
->    capabilities defined in this document) has to have an IPv4 address
->    (which will be used, among other things, in the AGGREGATOR
->    attribute).  Therefore, to enable BGP-4 to support routing for
->    multiple Network Layer protocols, the only two things that have to be
->    added to BGP-4 are (a) the ability to associate a particular Network
->    Layer protocol with the next hop information, and (b) the ability to
->    associate a particular Network Layer protocol with NLRI.  To identify
->    individual Network Layer protocols associated with the next hop
->    information and semantics of NLRI, this document uses a combination
->    of Address Family, as defined in [IANA-AF], and Subsequent Address
->    Family (as described in this document).
->
->    One could further observe that the next hop information (the
->    information provided by the NEXT_HOP attribute) is meaningful (and
->    necessary) only in conjunction with the advertisements of reachable
->    destinations - in conjunction with the advertisements of unreachable
->    destinations (withdrawing routes from service), the next hop
->    information is meaningless.  This suggests that the advertisement of
->    reachable destinations should be grouped with the advertisement of
->    the next hop to be used for these destinations, and that the
->    advertisement of reachable destinations should be segregated from the
->    advertisement of unreachable destinations.
->
->    To provide backward compatibility, as well as to simplify
->    introduction of the multiprotocol capabilities into BGP-4, this
->    document uses two new attributes, Multiprotocol Reachable NLRI
->    (MP_REACH_NLRI) and Multiprotocol Unreachable NLRI (MP_UNREACH_NLRI).
->    The first one (MP_REACH_NLRI) is used to carry the set of reachable
->    destinations together with the next hop information to be used for
->    forwarding to these destinations.  The second one (MP_UNREACH_NLRI)
->    is used to carry the set of unreachable destinations.  Both of these
->    attributes are optional and non-transitive.  This way, a BGP speaker
->    that doesn't support the multiprotocol capabilities will just ignore
->    the information carried in these attributes and will not pass it to
->    other BGP speakers.
 
 
 
@@ -978,4 +1330,5 @@ Who does what etc.. EVPN routes in leaf, spine etc.. BGP in the leaf, BGP in the
 - IETF RFC7348 https://datatracker.ietf.org/doc/html/rfc7348
 - IETF RFC3021 https://datatracker.ietf.org/doc/rfc3021/
 - Arista Networks https://www.arista.com/en/um-eos/eos-evpn-overview
+- Arista Networks https://www.arista.com/en/um-eos/eos-integrated-routing-and-bridging
 
