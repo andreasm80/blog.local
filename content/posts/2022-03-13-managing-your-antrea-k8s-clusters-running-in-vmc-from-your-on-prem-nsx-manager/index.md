@@ -408,6 +408,7 @@ No, there are no yelb pods here. Lets make that a reality. Nothing reported in k
 
   
 
+```bash
 andreasm@vmc-k8s-master-01:~/pods$ kubectl get pods -A
 NAMESPACE              NAME                                        READY   STATUS    RESTARTS   AGE
 kube-system            antrea-agent-2pdcr                          2/2     Running   0          3d
@@ -428,7 +429,7 @@ metallb-system         speaker-58s5v                               1/1     Runni
 metallb-system         speaker-7tnhr                               1/1     Running   0          2d23h
 metallb-system         speaker-lcq4n                               1/1     Running   0          2d23h
 vmware-system-antrea   interworking-7889dc5494-clk97               4/4     Running   18         2d23h
-
+```
 
 Spin up the Yelb application in my VMC k8s cluster by using the same manifest:  
 `kubectl apply -f yelb-lb.yaml`  
@@ -436,6 +437,7 @@ The result in my k8s cluster:
 
   
 
+```bash
 andreasm@vmc-k8s-master-01:~/pods$ kubectl get pods -A
 NAMESPACE              NAME                                        READY   STATUS    RESTARTS   AGE
 kube-system            antrea-agent-2pdcr                          2/2     Running   0          3d
@@ -460,6 +462,7 @@ yelb                   redis-server-74556bbcb7-fk85b               1/1     Runni
 yelb                   yelb-appserver-6b6dbbddc9-9nkd4             1/1     Running   0          4s
 yelb                   yelb-db-5444d69cd8-dcfcp                    1/1     Running   0          4s
 yelb                   yelb-ui-f74hn                               1/1     Running   0          4s
+```
 
 What does my on-prem NSX manager reports?  
 
