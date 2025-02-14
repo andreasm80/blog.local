@@ -59,7 +59,7 @@ To make this post as focused as possible on the CI/CD pipeline for network autom
 * Git cli installed on a Linux machine
 * Access to a Github account or Gitea hosted locally, with a runner configured (this is what I am using) [Gitea Docs](https://docs.gitea.com/)
 * A Github/Gitea Repository ready and initialized from the Linux machine and Actions enabled (Default in Github).
-* Arista CloudVision
+* Arista CloudVision (not mandatory as AVD can deploy directly to EOS as seen later, but CloudVision do provide som important features)
 * Containerlab with x instances of Arista cEOS (see this [post](https://blog.andreasm.io/2024/08/22/arista-cloudvision-and-avd-using-containerlab/))
 * Arista Validated Design installed on a Linux machine to grab an example just to get started (See this [post](https://avd.arista.com/5.2/docs/installation/collection-installation.html))
 * Knowledge about Arista Validated Design
@@ -364,7 +364,7 @@ The file above has three hooks configured
 
 
 
-*Thanks to my collegue Emil for providing this file, and pointing me in the right direction* 
+*Thanks to my collegue Emil Landström for providing this file, and pointing me in the right direction* 
 
 After adding this file I need to add, commit and push in my main branch:
 
