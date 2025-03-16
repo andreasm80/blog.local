@@ -1,6 +1,6 @@
-[submodule "public"]
-	path = public
-	url = git@github.com:andreasm80/andreasm80.github.io.git
 [submodule "themes/blowfish"]
 	path = themes/blowfish
 	url = https://github.com/andreasm80/blowfish.git
+[submodule "public"]
+	path = public
+	url = git@github.com:andreasm80/andreasm80.github.io.git
