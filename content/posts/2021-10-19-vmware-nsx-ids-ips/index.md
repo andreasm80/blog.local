@@ -4,7 +4,7 @@ date: "2021-10-19"
 toc: true
 #thumbnail: "/images/icon-prod-nsx-ids-ips-rgb-400px.svg"
 categories: 
-  - Netowkring
+  - Networking
   - Security
 tags: 
   - nsx
