@@ -3,7 +3,7 @@ author: "Andreas M"
 title: "EVPN Route Types 2 and 3 "
 date: 2025-01-23T10:17:20+01:00
 description: "What is EVPN route type 2 and 3"
-draft: true
+draft: false
 toc: true
 #featureimage: ""
 #thumbnail: "/images/thumbnail.png" # Sets thumbnail image appearing inside card on homepage.
@@ -48,13 +48,196 @@ In this post I will build upon the same environment and topology as in previous 
 
 
 
+## Route Type 3 - inclusive multicast Ethernet tag route
+
+Why start with route type 3 and 2? Not because I wanted to do it in a chronological order, because then I would start with route type 1. Route type 2 and 3 are the most common route types in an EVPN VXLAN fabric and both are kind of necessary together. Hopefully in this post I shed some light on why that is.
+
+In my previous post I covered how we can use BGP to configure EVPN and VXLAN so they can create vpn tunnels between them and how they find each other. 
+
+I have not covered how the VTEPS advertise to the other VTEP peers which VNIs (or broadcast domains) they are interested in or participating in. It may not come as a surprise, but this will involve route type 3. 
+
+Below is the diagram illustrating how servers in the same broadcast domain think they are connected in a L3 spine-leaf. 
+
+They think they are connected like this:
+
+![layer2](images/image-20250207102715229.png)
+
+But in reality they are connected like this:
+
+![layer3](images/image-20250127092740097.png)
+
+For these two connected servers to find each other, the first thing they do is sending out an ARP request, which is broadcast traffic and thus part of a BUM packet (Broadcast Unknown Unicast Multicast), to figure out how to get the mac of the server to get the specific ip address. This BUM is sent using "ingress replication" as default from local VTEP to remote VTEPs, encapsulated into a VXLAN-packet for the respective VTEP destination. BUM may also be sent using EVPN multicast which is something I will get back to in a later post. If the request comes from Server 1 on VLAN 11 leaf1a will forward this BUM packet to all local ports configured with VLAN 11, if the server 2 is not there it needs to forward this BUM to the other VTEP peers where Server 2 may be connected.  I know where they are connected, but how do the VTEPs know where the servers are connected in my fabric so they can forward this BUM packet to the other VTEPs? 
+
+In short, route type 3 will be used by the VTEPs to advertise their participation in a broadcast domain (VLAN-VNI mapping). Leaf1a hosts Server 1 connected to VLAN 11 and if this server needs to reach Server 2 also at VLAN 11, but hosted at leaf2b leaf1a and leaf2b must form a tunnel for the same broadcast domain (layer 2). By using route type 3 this is advertised when I configure the VLAN to VNI mapping on both VTEPS. This way the source VTEP will only send BUM packets to remote VTEPS participating in the same VXLAN segment. 
+
+Without EVPN route type 3 there will be no connectivity between the hosts connected to same VLAB but on different VTEPS. 
+
+Lets have a look at how this route type.
+
+First the inclusive multicast ethernet tag route EVPN NRLI:
+
+```bash
+               +---------------------------------------+
+               |  RD (8 octets)                        |
+               +---------------------------------------+
+               |  Ethernet Tag ID (4 octets)           |
+               +---------------------------------------+
+               |  IP Address Length (1 octet)          |
+               +---------------------------------------+
+               |  Originating Router's IP Address      |
+               |          (4 or 16 octets)             |
+               +---------------------------------------+
+```
+
+Then from my leaf1a and leaf2b I will run the command *show bgp evpn route-type imet vni 10011* (filtering for 10011).
+
+leaf1a:
+
+```bash
+veos-dc1-leaf1a(config-if-Vx1)#show bgp evpn route-type imet vni 10011
+BGP routing table information for VRF default
+Router identifier 10.255.0.3, local AS number 65111
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending best path selection
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >      RD: 10.255.0.3:10011 imet 10.255.1.3
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.255.0.4:10011 imet 10.255.1.4
+                                 10.255.1.4            -       100     0       65110 65112 i
+ *  ec    RD: 10.255.0.4:10011 imet 10.255.1.4
+                                 10.255.1.4            -       100     0       65110 65112 i
+ * >Ec    RD: 10.255.0.5:10011 imet 10.255.1.5
+                                 10.255.1.5            -       100     0       65110 65113 i
+ *  ec    RD: 10.255.0.5:10011 imet 10.255.1.5
+                                 10.255.1.5            -       100     0       65110 65113 i
+ * >Ec    RD: 10.255.0.6:10011 imet 10.255.1.6
+                                 10.255.1.6            -       100     0       65110 65114 i
+ *  ec    RD: 10.255.0.6:10011 imet 10.255.1.6
+                                 10.255.1.6            -       100     0       65110 65114 i
+```
+
+leaf2b:
+
+```bash
+veos-dc1-leaf2b#show bgp evpn route-type imet vni 10011
+BGP routing table information for VRF default
+Router identifier 10.255.0.6, local AS number 65114
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending best path selection
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >Ec    RD: 10.255.0.3:10011 imet 10.255.1.3
+                                 10.255.1.3            -       100     0       65110 65111 i
+ *  ec    RD: 10.255.0.3:10011 imet 10.255.1.3
+                                 10.255.1.3            -       100     0       65110 65111 i
+ * >Ec    RD: 10.255.0.4:10011 imet 10.255.1.4
+                                 10.255.1.4            -       100     0       65110 65112 i
+ *  ec    RD: 10.255.0.4:10011 imet 10.255.1.4
+                                 10.255.1.4            -       100     0       65110 65112 i
+ * >Ec    RD: 10.255.0.5:10011 imet 10.255.1.5
+                                 10.255.1.5            -       100     0       65110 65113 i
+ *  ec    RD: 10.255.0.5:10011 imet 10.255.1.5
+                                 10.255.1.5            -       100     0       65110 65113 i
+ * >      RD: 10.255.0.6:10011 imet 10.255.1.6
+                                 -                     -       -       0       i
+```
+
+The first thing I notice is that all my leafs (VTEPS) are participating in VNI10011, the next hops are the respective VXLAN loopback interfaces (see earlier in this post for interfaces reference). I can see the RD: 10.255.0.x:10011, which represents the leafs EVPN loopback interfaces and the respective VNI. What I do not see here is any mac or mac-ip entries. 
+
+Now what more do I see if I add some more details to the output of the above command *show bgp evpn route-type imet vni 10011 detail* (I will only take a snippet of the output to keep it a bit shorter, its local and leaf1a and leaf2b respectively):
+
+leaf1a:
+
+```bash
+veos-dc1-leaf1a(config-if-Vx1)#show bgp evpn route-type imet vni 10011 detail
+BGP routing table information for VRF default
+Router identifier 10.255.0.3, local AS number 65111
+BGP routing table entry for imet 10.255.1.3, Route Distinguisher: 10.255.0.3:10011
+ Paths: 1 available
+  Local
+    - from - (0.0.0.0)
+      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
+      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
+      VNI: 10011
+      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.3
+BGP routing table entry for imet 10.255.1.6, Route Distinguisher: 10.255.0.6:10011
+ Paths: 2 available
+  65110 65114
+    10.255.1.6 from 10.255.0.2 (10.255.0.2)
+      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP head, ECMP, best, ECMP contributor
+      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
+      VNI: 10011
+      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6
+  65110 65114
+    10.255.1.6 from 10.255.0.1 (10.255.0.1)
+      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP, ECMP contributor
+      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
+      VNI: 10011
+      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6
+```
+
+leaf2b:
+
+```bash
+veos-dc1-leaf2b#show bgp evpn route-type imet vni 10011 detail
+BGP routing table information for VRF default
+Router identifier 10.255.0.6, local AS number 65114
+BGP routing table entry for imet 10.255.1.3, Route Distinguisher: 10.255.0.3:10011
+ Paths: 2 available
+  65110 65111
+    10.255.1.3 from 10.255.0.2 (10.255.0.2)
+      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP head, ECMP, best, ECMP contributor
+      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
+      VNI: 10011
+      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.3
+  65110 65111
+    10.255.1.3 from 10.255.0.1 (10.255.0.1)
+      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP, ECMP contributor
+      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
+      VNI: 10011
+      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.3
+BGP routing table entry for imet 10.255.1.6, Route Distinguisher: 10.255.0.6:10011
+ Paths: 1 available
+  Local
+    - from - (0.0.0.0)
+      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
+      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
+      VNI: 10011
+      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6
+```
+
+The additional and required information that differs from the detailed output of route type 2 is this:
+
+*PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6*
+
+PMSI Tunnel - Provider Multicast Service Interface - Ingress replication
+
+MPLS Label - 10011 VNI ID
+
+Tunnel ID -  VTEP VXLAN loopback interface
+
+
+
+To sum up route type 3:
+
+- Advertising their participation in specific broadcast domains between the VTEPS in the fabric 
+- EVPN route type 3 is not about advertising host routes nor ip-subnets, but VNI participation. 
+- BUM is only forward to those that are interested or require it. 
+
+
+
 ## Route Type 2 - MAC/IP advertisement route
 
-Why start with route type 2 and 3? Not because I wanted to do it in a chronological order, because then I would start with route type 1. Route type 2 and 3 are the most common route types in an EVPN VXLAN fabric and both are kind of necessary together. Hopefully in this post I shed some light on why that is. EVPN route type 2's main purpose is to advertise hosts mac addresses "over" BGP and optionally hosts ip addresses in a /32 format (host routes) to all interested VTEP peers. BGP will be used to dynamically update the VTEP peers about the network reachability of hosts attached in the configured overlay networks so they can reach each other. Having a host connected to Leaf1a and another host connected to Leaf2a in the same Layer 2 broadcast domain (VLAN), when they interact, they use MAC addresses to communicate, as a result of ARP. How these mac-addresses and ip addresses are advertised and why this is needed is something I will try to explain and cover here.
+ EVPN route type 2's main purpose is to advertise hosts mac addresses "over" BGP and optionally hosts ip addresses in a /32 format (host routes) to all interested VTEP peers. BGP will be used to dynamically update the VTEP peers about the network reachability of hosts attached in the configured overlay networks so they can reach each other. Having a host connected to Leaf1a and another host connected to Leaf2a in the same Layer 2 broadcast domain (VLAN), when they interact, they use MAC addresses to communicate, as a result of ARP. How these mac-addresses and ip addresses are advertised and why this is needed is something I will try to explain and cover here.
 
 
 
-In the previous [post](https://blog.andreasm.io/2024/12/09/evpn-introduction/) I covered how the EVPN peers (all the leafs and spines) were advertised using BGP in the underlay to establish a secure BGP connection between all the peers. Similarily BGP is used to advertise the VTEP peers themselves in the fabric (the leafs). This configuration is done so the VTEPs can be "found" in the fabric and establish tunnels between them. Why I mention a secure connection is because I am using authentication between all the peers in the fabric, including the spines. One cant just add a new BGP peer in the fabric without the correct authentication, these will be dropped, this to minimize unwanted BGP peers. One can probably do more to secure the BGP connection like ACLs, additional prefix lists etc. Not in the scope for this post. Using BGP instead of static routes brings a whole lot more flexibility, and as it removes any flood and learn across the fabric, or between the vteps, the network is much more optimised and scale better. Now as this is an EVPN/VXLAN fabric stretching layer 2 over a layer 3 fabric, I need BGP to also advertise layer 2 mac addresses between the VTEPS. This is where EVPN route type 2 comes into play. 
+In the previous [post](https://blog.andreasm.io/2024/12/09/evpn-introduction/) I covered how the EVPN peers (all the leafs and spines) were advertised using BGP in the underlay to establish a secure BGP connection between all the peers. Similarily BGP is used to advertise the VTEP peers themselves in the fabric (the leafs). This configuration is done so the VTEPs can discover each other in the fabric and are able to encapsulate and forward VXLAN traffic between them using stateless tunnels. VXLAN uses a shim header inserted between the IP/UDP headers and the inner Ethernet frame, allowing Layer 2 frames to be tunneled over a Layer 3 network without establishing stateful tunnels. Why I mention a secure connection is because I am using authentication between all the peers in the fabric, including the spines. One cant just add a new BGP peer in the fabric without the correct authentication, these will be dropped, this to minimize unwanted BGP peers. One can probably do more to secure the BGP connection like ACLs, additional prefix lists etc. Not in the scope for this post. Using BGP instead of static routes brings a whole lot more flexibility, and as it removes any flood and learn across the fabric, or between the vteps, the network is much more optimised and scale better. Now as this is an EVPN/VXLAN fabric stretching layer 2 over a layer 3 fabric, I need BGP to also advertise layer 2 mac addresses between the VTEPS. This is where EVPN route type 2 comes into play. 
 
 To get some more context below is my topology with their respective leafs loopback interfaces:
 
@@ -109,11 +292,13 @@ This is just to verify that all my peers are advertised as they should, now if I
 
 
 
-I have configured an overlay network with two hosts connected to each their leaf, they are in the same layer 2 network, they can reach each other as it was a regular VLAN between two switches using layer 2 links. The hosts or servers themselves are not aware of any VXLAN configuration, spine leaf or layer 3 links, as far as they are concerned they think they are connected to the same physical vlan or broadcast domain.  They think they are connected like this:
+I have configured an overlay network with two hosts connected to each their leaf, they are in the same layer 2 network, they can reach each other as it was a regular VLAN between two switches using layer 2 links. The hosts or servers themselves are not aware of any VXLAN configuration, spine leaf or layer 3 links, as far as they are concerned they think they are connected to the same vlan or broadcast domain.  They think they are connected like this:
 
 ![layer2](images/image-20250207102715229.png)
 
-How is the reachability advertised between the leafs with server 1 and server 2 connected so the servers can reach each other using regular ARP, knowing the VTEPS are interconnected using layer 3? Lets have a look at the bgp evpn route type 2 at both leaf1a and leaf2b below (sorted on the VNI 10011):
+Using the information from Route Type 3, the ARP request from server 1 is sent as BUM traffic to all relevant VTEPs in the VXLAN segment, including the VTEP hosting server 2. When server 2 responds, its VTEP advertises a Route Type 2 with the MAC/IP mapping. This allows future unicast traffic from server 1 to go directly to the correct VTEP without any further flooding.
+
+Lets have a look at the bgp evpn route type 2 at both leaf1a and leaf2b below (sorted on the VNI 10011):
 
 Leaf1a:
 
@@ -509,185 +694,6 @@ To sum up the main responsibilites of BGP EVPN route type 2:
   - Handling ARP advertisements efficiently, reducing ARP broadcasts and flooding. In environments with dynamic workloads like virtual machines being moved between physical hosts it handles updates efficiently, including GARP updates. Ensures ARP tables are refreshed and ip-to-mac mappings are correctly propagated. 
 
 
-
-## Route Type 3 - inclusive multicast Ethernet tag route
-
-In the previous section I covered how reachability information was exhanged between VTEPS configured with same VNI, and between VTEPS with unique VNIs configured (local presence and remote presence of VNIs). How routes are advertised and installed when services in respective VNI needs to communicate with other services in same or different VNIs attached to different VTEPs. In my previous post I covered how we can use BGP to configure EVPN and VXLAN so they can create vpn tunnels between them and how they find each other. 
-
-I have not covered how the VTEPS advertise to the other VTEP peers which VNIs (or broadcast domains) they are interested in or participating in. It may not come as a surprise, but this will involve route type 3. 
-
-Remember the diagram above how the connected servers think they are connected? 
-
-They think they are connected like this:
-
-![layer2](images/image-20250207102715229.png)
-
-But in reality they are connected like this:
-
-![layer3](images/image-20250127092740097.png)
-
-For these two connected servers to find each other, the first thing they do is sending out a BUM (Broadcast Unknown Unicast Multicast) to figure out how to get the mac of the server to get the specific ip address. If the request comes from Server 1 on VLAN 11 leaf1a will forward this BUM packet to all local ports configured with VLAN 11, if the server 2 is not there it needs to forward this BUM to the other peers where Server 2 may be connected.  I know where they are connected, but how do the VTEPs know where the servers are connected in my fabric so they can forward this BUM packet to the other VTEPs? 
-
-In short, route type 3 will be used by the VTEPs to advertise their participation in a broadcast domain (VLAN-VNI mapping). Leaf1a hosts Server 1 connected to VLAN 11 and if this server needs to reach Server 2 also at VLAN 11, but hosted at leaf2b leaf1a and leaf2b must form a tunnel for the same broadcast domain (layer 2). By using route type 3 this is advertised when I configure the VLAN to VNI mapping on both VTEPS.
-
-Without EVPN route type 3 there will be no connectivity between the hosts connected to same VLAB but on different VTEPS. 
-
-Lets have a look at how this route type.
-
-First the inclusive multicast ethernet tag route EVPN NRLI:
-
-```bash
-               +---------------------------------------+
-               |  RD (8 octets)                        |
-               +---------------------------------------+
-               |  Ethernet Tag ID (4 octets)           |
-               +---------------------------------------+
-               |  IP Address Length (1 octet)          |
-               +---------------------------------------+
-               |  Originating Router's IP Address      |
-               |          (4 or 16 octets)             |
-               +---------------------------------------+
-```
-
-Then from my leaf1a and leaf2b I will run the command *show bgp evpn route-type imet vni 10011* (filtering for 10011).
-
-leaf1a:
-
-```bash
-veos-dc1-leaf1a(config-if-Vx1)#show bgp evpn route-type imet vni 10011
-BGP routing table information for VRF default
-Router identifier 10.255.0.3, local AS number 65111
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending best path selection
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >      RD: 10.255.0.3:10011 imet 10.255.1.3
-                                 -                     -       -       0       i
- * >Ec    RD: 10.255.0.4:10011 imet 10.255.1.4
-                                 10.255.1.4            -       100     0       65110 65112 i
- *  ec    RD: 10.255.0.4:10011 imet 10.255.1.4
-                                 10.255.1.4            -       100     0       65110 65112 i
- * >Ec    RD: 10.255.0.5:10011 imet 10.255.1.5
-                                 10.255.1.5            -       100     0       65110 65113 i
- *  ec    RD: 10.255.0.5:10011 imet 10.255.1.5
-                                 10.255.1.5            -       100     0       65110 65113 i
- * >Ec    RD: 10.255.0.6:10011 imet 10.255.1.6
-                                 10.255.1.6            -       100     0       65110 65114 i
- *  ec    RD: 10.255.0.6:10011 imet 10.255.1.6
-                                 10.255.1.6            -       100     0       65110 65114 i
-```
-
-leaf2b:
-
-```bash
-veos-dc1-leaf2b#show bgp evpn route-type imet vni 10011
-BGP routing table information for VRF default
-Router identifier 10.255.0.6, local AS number 65114
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending best path selection
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.255.0.3:10011 imet 10.255.1.3
-                                 10.255.1.3            -       100     0       65110 65111 i
- *  ec    RD: 10.255.0.3:10011 imet 10.255.1.3
-                                 10.255.1.3            -       100     0       65110 65111 i
- * >Ec    RD: 10.255.0.4:10011 imet 10.255.1.4
-                                 10.255.1.4            -       100     0       65110 65112 i
- *  ec    RD: 10.255.0.4:10011 imet 10.255.1.4
-                                 10.255.1.4            -       100     0       65110 65112 i
- * >Ec    RD: 10.255.0.5:10011 imet 10.255.1.5
-                                 10.255.1.5            -       100     0       65110 65113 i
- *  ec    RD: 10.255.0.5:10011 imet 10.255.1.5
-                                 10.255.1.5            -       100     0       65110 65113 i
- * >      RD: 10.255.0.6:10011 imet 10.255.1.6
-                                 -                     -       -       0       i
-```
-
-The first thing I notice is that all my leafs (VTEPS) are participating in VNI10011, the next hops are the respective VXLAN loopback interfaces (see earlier in this post for interfaces reference). I can see the RD: 10.255.0.x:10011, which represents the leafs EVPN loopback interfaces and the respective VNI. What I do not see here is any mac or mac-ip entries. 
-
-Now what more do I see if I add some more details to the output of the above command *show bgp evpn route-type imet vni 10011 detail* (I will only take a snippet of the output to keep it a bit shorter, its local and leaf1a and leaf2b respectively):
-
-leaf1a:
-
-```bash
-veos-dc1-leaf1a(config-if-Vx1)#show bgp evpn route-type imet vni 10011 detail
-BGP routing table information for VRF default
-Router identifier 10.255.0.3, local AS number 65111
-BGP routing table entry for imet 10.255.1.3, Route Distinguisher: 10.255.0.3:10011
- Paths: 1 available
-  Local
-    - from - (0.0.0.0)
-      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
-      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
-      VNI: 10011
-      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.3
-BGP routing table entry for imet 10.255.1.6, Route Distinguisher: 10.255.0.6:10011
- Paths: 2 available
-  65110 65114
-    10.255.1.6 from 10.255.0.2 (10.255.0.2)
-      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP head, ECMP, best, ECMP contributor
-      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
-      VNI: 10011
-      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6
-  65110 65114
-    10.255.1.6 from 10.255.0.1 (10.255.0.1)
-      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP, ECMP contributor
-      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
-      VNI: 10011
-      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6
-```
-
-leaf2b:
-
-```bash
-veos-dc1-leaf2b#show bgp evpn route-type imet vni 10011 detail
-BGP routing table information for VRF default
-Router identifier 10.255.0.6, local AS number 65114
-BGP routing table entry for imet 10.255.1.3, Route Distinguisher: 10.255.0.3:10011
- Paths: 2 available
-  65110 65111
-    10.255.1.3 from 10.255.0.2 (10.255.0.2)
-      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP head, ECMP, best, ECMP contributor
-      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
-      VNI: 10011
-      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.3
-  65110 65111
-    10.255.1.3 from 10.255.0.1 (10.255.0.1)
-      Origin IGP, metric -, localpref 100, weight 0, tag 0, valid, external, ECMP, ECMP contributor
-      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
-      VNI: 10011
-      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.3
-BGP routing table entry for imet 10.255.1.6, Route Distinguisher: 10.255.0.6:10011
- Paths: 1 available
-  Local
-    - from - (0.0.0.0)
-      Origin IGP, metric -, localpref -, weight 0, tag 0, valid, local, best
-      Extended Community: Route-Target-AS:10011:10011 TunnelEncap:tunnelTypeVxlan
-      VNI: 10011
-      PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6
-```
-
-The additional and required information that differs from the detailed output of route type 2 is this:
-
-*PMSI Tunnel: Ingress Replication, MPLS Label: 10011, Leaf Information Required: false, Tunnel ID: 10.255.1.6*
-
-PMSI Tunnel - Provider Multicast Service Interface - Ingress replication
-
-MPLS Label - 10011 VNI ID
-
-Tunnel ID -  VTEP VXLAN loopback interface
-
-
-
-To sum up route type 3:
-
-- Advertising their participation in specific broadcast domains between the VTEPS in the fabric 
-- EVPN route type 3 is not about advertising host routes nor ip-subnets, but VNI participation. 
-- BUM is only forward to those that are interested or require it. 
 
 
 
