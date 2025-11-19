@@ -292,7 +292,25 @@ interface Loopback0
 ip route 10.255.1.11/32 172.18.111.2
 ```
 
-A Loopback0 interface, a static route pointing to the vZTX Loopback0 interface. Thats it for the actual switch configuration needed on the 720XP. (Dynamic routing is also possible).
+A Loopback0 interface, a static route pointing to the vZTX Loopback0 interface (Dynamic routing is also possible). Thats it for the actual switch configuration needed on the 720XP. 
+
+{{< alert >}}
+
+I got this error when I tried to apply certain rules in MSS on my 720XP:
+
+![cc_error](images/image-20251118083125706.png)
+
+After some more reading in this [doc](https://www.arista.com/assets/data/pdf/user-manual/um-books/MSS-Deployment-Guide.pdf) on page 13, one need to add this config:
+
+```bash
+traffic-policies
+   transforms interface prefix common source-destination
+
+```
+
+This can easily be added as part of your static configs in CloudVision. It will not be overwritten by MSS. It will be preserved.
+
+{{< /alert >}}
 
 Next up is CloudVision preparations
 
@@ -496,13 +514,13 @@ The Arista 720XP holds all my VLANs, it does routing when routing is needed betw
 
 ![lab](images/image-20251114084901247.png)
 
-That means I have a bunch of virtual machines placed in different vlans serving different needs, they are free to communicate with each other, within the same VLAN but also VLAN to VLAN. 
+That means I have a bunch of virtual machines placed in different vlans serving different needs, they are free to communicate with each other, within the same VLAN but also VLAN to VLAN. In addition to the virtual machines, I also have a bunch of physical devices like wired devices and wifi devices that also freely communicate through my 720XP switch. 
 
 This is something MSS can be tasked to do something about.
 
-## Creating network security rules and policies
+## Network Security in CloudVision
 
-By heading over to the *Network Security* section in CloudVision I will be greeted by the MSS Dashboard. This will give me a quick glimpse of my MSS "estate". From the amount of registered Monitoring Nodes and MSS Devices (MSS "enabled" switches) to events and policies related to these devices:
+There is a dedicated section for MSS in CloudVision called *Network Security*. This is where most tasks related to MSS like creating policies, rules, services, groups, monitor policies and devices are administered. When entering *Network Security* section in CloudVision I will be greeted by the MSS Dashboard. This will give me a quick glimpse of my MSS "estate". From the amount of registered Monitoring Nodes and MSS Devices (MSS "enabled" switches) to events and policies related to these devices:
 
 ![mss-dashboard](images/image-20251117152241363.png)
 
@@ -520,7 +538,7 @@ And under Policy Manager, Policy Objects I find my Monitor Object with my vZTX a
 
 But no rules and policies yet.
 
-Before creating any policies and rules, let us quickly go over the different things in the Network Security view and explain what they are. 
+Let me quickly go over the different things in the Network Security view and explain what they are. 
 
 
 
@@ -534,19 +552,658 @@ In the Policy Manager there are several sections:
 - Groups
 - Policy Objects
 
+#### Domains
+
 Under *Domains* I can view my Security Domains, see details of the Security Domains which devices are part of the domain and any Policy assignements.
 
 ![domains](images/image-20251117152930635.png)
 
-Under *Policies* 
+#### Policies
 
-What is a policy?????
+In *Policies* is where we define our rules to be applied. I can have many policies, but I can also have many rules in a policy.  A policy is a section where we define the rules should be "applied to", what objects the rules involve. Like one do under NSX, a policy section in the distributed firewall is where the rules for an application or infrastructure services are defined. This is the same. A policy is a section where I define where I want the rules to be applied. A policy is typically named after what its intention is, eg *application A* or *infrastructure_services*. The only difference here with MSS Policy is I define the Policy per **VRF**. 
+
+From the NSX-T manager:
+
+![policies-rules](images/image-20251118085047919.png)
+
+ When I create a policy in MSS, I give it a name, a description and map it which security domain and respective VRF in that domain. 
+
+![mss-policy](images/image-20251118090546454.png)
+
+But there are still no rules yet. 
+
+#### Rules
+
+Under the Rules section is where I create and define the rules I want. When the rule has been created I can also assign the rule(s) to a policy, which is done under the Policy section.
+
+A rule can look like this:
+
+![example-rule](images/image-20251118091201349.png)
+
+I give the rule a meaningful name, a description. Then I define what the *Source* is, which could be static ip-groups, dynamic groups from 3rd party sources like vCenter, ServiceNow etc. The same is true for the *Destination*. Then *Services* which services should this rule involve. These are ports and protocols created and defined under Policy Objects (later). Which *Direction* you are interested in, *Uni-directional* or *Bi-directional*. Then it is *Decap Type*:
+
+- **Decap Type**: This configuration determines how VXLAN encapsulated traffic is decapsulated, or has its VXLAN header removed. Select from the available options.:
+  - **Allow All**: Applies to traffic after its VXLAN header is removed, enabling full visibility into the original workload data
+  - **VXLAN Decap Only**: Dictates that traffic must be decapsulated of its VXLAN header before further processing, revealing the original workload data
+  - **No VXLAN Decap**: Applies to traffic without removing its VXLAN header, limiting visibility to outer network details
+
+** *Source: CloudVision Help Center*
+
+Under *Rule Action* I can select Drop, Forward or Redirect. 
+
+Under Monitor Object I can tell MSS to create a "monitor" rule which will mirror the traffic to my vZTX for visibility but also rule recommendations. 
+
+When I have created a rule I can go to Policies and assign the rule to a policy like this:
+
+![manage](images/image-20251118093437716.png)
+
+
+
+![assign-rule-to-policy](images/image-20251118093257763.png)
+
+
+
+![assigned](images/image-20251118093336806.png)
+
+
+
+#### Groups
+
+Under *Groups" I can add my static IP groups. Subnets, host ip addresses that I can use in my rules.
+
+![ip-groups](images/image-20251118092703211.png)
+
+I only have static groups, but MSS do support dynamic groups generated from sources like vCenter, ServiceNow etc. When I have created my groups, I can assign them to categories. This will improve how the rule recommendation creation later is done. To create categories and assign them click here:
+
+![categories](images/image-20251118120202774.png)
+
+![create_assign](images/image-20251118120254409.png)
+
+I created two categories and assigned them to their ip group respectively:
+
+![categories_assigned](images/image-20251118120330955.png)
+
+
+
+#### Policy Objects
+
+Under Policy Objects is where I can add and define my services, redirect object (external firewall) to be used in my rules. 
+
+![policy-objects](images/image-20251118092902878.png)
+
+![dns-service](images/image-20251118092942079.png)
 
 
 
 
 
-### Microsegmenting my app
+### Policy Monitor
+
+In the Policy Monitor view I can get the status of my defined policies, but also the state of my MSS enabled devices and utilization:  
+
+![monitor_policies](images/image-20251118094234463.png)
+
+Monitor devices:
+
+![devices](images/image-20251118094316187.png)
+
+### Policy Builder
+
+If have created a rule with a Monitor Object, I can view the policies being analyzed in here. 
+
+![collecting](images/image-20251118094535100.png)
+
+This is a really neat feature as it can recommend rules based on the discoveries. If I have a look at the Collected Sessions for my one policy:
+
+![collected_sessions](images/image-20251118094639246.png)
+
+It does a really good job discovering both DNS and NTP requests to my two backed servers hosting DNS and NTP. This collection process should go for a while to discover as much as possible, and if I am satisfied I can go back to the Policy View again and let it create some rule recommendations.
+
+![generate_rules](images/image-20251118094831047.png)
+
+Below is just a quick suggestion of what it has discovered. More on this later
+
+![proposed_rules](images/image-20251118094942304.png)
+
+I can even have a look at the collected session per flow:
+
+![collected_sessions_view](images/image-20251118095041290.png)
+
+To see what it has based this rule on per flow.
+
+Now I can click submit rules and it will create a workspace with the suggested configurations to be sent to my switches. 
+
+
+
+## Creating network policies and rules
+
+Now that I have gone through how things work with MSS and CloudVision, I can finally create some policies. 
+
+I will focus on doing it simple to begin with and create two policies. One policy where I allow DNS and NTP from a specific subnet to my two DNS,NTP servers and let the Policy Builder generate a rule for that. 
+
+My second policy will be focused on a simple http service running on two different  linux VMs, an application server on another VM the webserver are depending on. I will create a monitor policy to discover what they are doing between themselves and let Policy Builder generate some recommended rules. I will block unnecessary traffic between them.
+
+Then I will also showcase that Arista MSS can even be used to isolate Virtual Machines hosted on the same physical hypervisor on the same VLAN. In my case I am using Proxmox with Linux Bridge. 
+
+### First rules - DNS and NTP policy
+
+From the Policy Manager, Policies view I have created this Policy:
+
+![dns_policy](images/image-20251118112631439.png)
+
+I have created this rule under the Rules view and assigned it to my above policy:
+
+![dns_rule](images/image-20251118112737324.png)
+
+In this rule I using the following services and groups I have created under Policy Objects:
+
+- Source: Static IP group *wifi-clients* = 172.18.6.0/24
+- Destination: Static IP group *DNS_NTP_servers* = 10.100.1.6/32, 10.100.1.7/32
+- Servic DNS: Protocol UDP, destination port 53, source port all
+- Service NTP: Protocl UDP, destination port 123, source port all
+- action is forward
+- monitor object is my vZTX appliance. 
+
+![objects](images/image-20251118113152113.png)
+
+So far no configuration has been done on my switch, nor my vZTX monitor node. The only traffic policy configuration is my *transform interface prefix common source-destination*. 
+
+![switch-config](images/image-20251118113856374.png)
+
+Now I can go ahead and use the Worspace Island to build the configuration for me and have a look at what the changes will be.
+
+![changes](images/image-20251118114059223.png)
+
+There are 2 devices with proposed config changes. Lets build this workspace and see what these changes are:
+
+![vZTX](images/image-20251118114224127.png)
+
+The vZTX gets some new configuration, the gre tunnel to my 720XP switch. 
+
+My 720XP gets these configurations:
+
+![720xp](images/image-20251118114317162.png)
+
+![720xp_2](images/image-20251118114355356.png)
+
+And above is the configurations it proposes for my 720XP. Ok lets submit this workspace and run the automatically created change control. 
+
+![approve_run](images/image-20251118114519620.png)
+
+![success](images/image-20251118114609932.png)
+
+Now lets head over to the Policy Builder and monitor the collected sessions:
+
+
+
+![policy_builder](images/image-20251118114646672.png)
+
+It has already captured both NTP and DNS requests:
+
+![dns_ntp_collection](images/image-20251118114742050.png)
+
+Looking good. Now I cant wait anymore. Let Policy Builder generate some rules
+
+
+
+When clicking on the Generate button I can now select which categories it should base it rule generation on. I already have created my two categories which involves my source group and destination group. 
+
+![categories_rules](images/image-20251118120657263.png)
+
+By selecting these two relevant categories, the rule proposal will be much more optimized in how it creates the rules. Lets have a look:
+
+![rules_proposed](images/image-20251118120815409.png)
+
+Yes, it no longer proposes a rule based on every IP it discovers, but the groups assigned to the categories. 
+
+Lets see what these rules will look like in terms of configuration changes on my switch. Click submit and then build on the Workspace Island:
+
+![changes](images/image-20251118121009337.png)
+
+24 lines added to the config. That is a lot more effecient than several hundreds of lines if going by every source IP. 
+
+Lets have a look at the review:
+
+![24_changes](images/image-20251118121147095.png)
+
+These are the changes. Submit and Approve the Change Control job.
+
+In Policy Builder my two rule recommendations:
+
+![rule_recommendations](images/image-20251118121410751.png)
+
+But there, there is a but. I noticed it added these two rules in addition to my manually create monitor rule, see the last rule. 
+
+![rules_proposed](images/image-20251118120815409.png)
+
+I can make it much more optimized in terms of the number of configuration lines on my switch by going back to Rules under Policy Manager, remove it from my policy and delete it:
+
+![delete_manual_rule](images/image-20251118122031049.png)
+
+This removes further 20 lines, why? Because I also remove the monitor rule. If I still want to monitor the newly created rules i need to add a monitor to them. 
+
+![remove_20](images/image-20251118122152254.png)
+
+When it comes to the name of the rules, there seems to be no option to name them manually except going back and rename them after they have been applied created. 
+
+Lets see the changes:
+
+![changes](images/image-20251118122800926.png)
+
+ ![changes_2](images/image-20251118122827560.png)
+
+
+
+In my switch now I have this configuration:
+
+```bash
+traffic-policies
+   vrf ALL
+      traffic-policy input dns_ntp_services physical
+   !
+   field-set ipv4 prefix DNS_NTP_servers
+      10.100.1.6/32 10.100.1.7/32
+   !
+   field-set ipv4 prefix wifi_clients
+      172.18.6.0/24
+   !
+   field-set service DNS
+      protocol udp source port all destination port domain
+   !
+   field-set service DNS-reverse
+      protocol udp source port domain destination port all
+   !
+   field-set service NTP
+      protocol udp source port all destination port ntp
+   !
+   field-set service NTP-reverse
+      protocol udp source port ntp destination port all
+   transforms interface prefix common source-destination
+   !
+   traffic-policy dns_ntp_services
+      !! Allow DNS and NTP requests to 10.100.1.6 and 10.100.1.7
+      description #policy-id=256
+      !
+      match rule72 ipv4
+         source prefix field-set wifi_clients
+         destination prefix field-set DNS_NTP_servers
+         protocol service field-set NTP
+         !
+         actions
+            count
+      !
+      match rule72-reverse ipv4
+         source prefix field-set DNS_NTP_servers
+         destination prefix field-set wifi_clients
+         protocol service field-set NTP-reverse
+         !
+         actions
+            count
+      !
+      match rule73 ipv4
+         source prefix field-set wifi_clients
+         destination prefix field-set DNS_NTP_servers
+         protocol service field-set DNS
+         !
+         actions
+            count
+      !
+      match rule73-reverse ipv4
+         source prefix field-set DNS_NTP_servers
+         destination prefix field-set wifi_clients
+         protocol service field-set DNS-reverse
+         !
+         actions
+            count
+```
+
+Now, I do not have any drop rules in place. So my above rules did not make it more strict in my environment. Lets create some drop rules too. For that I will use another environment involving three virtual machines where two of them works as a web-servers hosting a simple webpage and the third as the application server serving the web-pages. 
+
+### Application Policy - Web and Application Servers
+
+In this scenario I will create an "application" focused policy. It will involve the three above mentioned virtual machines. I will apply rules allowing all of them to reach DNS and NTP, the clients will be allowed to reach the two web-servers only on HTTP while the two web-servers are not allowed to communicate with each other at all. But both web servers are allowed to reach the appserver1 on TCP:4567. All else is dropped.
+
+![web-app-rules](images/image-20251119114039240.png)
+
+
+
+Before I start microsegmenting the web-application I have created a simple monitor rule to catch whats going on, presuming I dont know anything about the application and its dependencies:
+
+![web-appserver](images/image-20251119081717750.png)
+
+This rule is very simple, it selects the three servers web01, web02 and appserver1 as source, destination and services are both any any.
+
+Lets see what the Policy Builder discovers:
+
+![observations](images/image-20251119082352200.png)
+
+I can see they are doing NTP and DNS requests to my my DNS servers, HTTP requests coming from a wifi client, both the web-servers requests the appserver1 over tcp 4567 and some HTTP to the internet, Ubuntu repositories for updates. Will I allow that? Maybe, but then I may look into a redirect rule? Lets have a look at that later.
+
+Okay, lets lock things down.
+
+Based on the collected sessions I am pretty sure what this application needs, so I will create rules supporting that. Below is the rules I have created:
+
+![rules_webapp](images/image-20251119103656095.png)
+
+And the order they are placed and enforced:
+
+![order_rules](images/image-20251119103749273.png)
+
+In the following groups:
+
+- web01_web02 = *10.100.99.51/32* & *10.100.99.52/32* (web01 and web02)
+- appserver1 = 10.100.99.50/32 (appserver1)
+- Web-appserver1 = *10.100.99.51/32*, *10.100.99.52/32* (web01, web02) and 10.100.99.50/32 (appserver1)
+
+Now lets see if the rules works as intended. As I only have allowed HTTP to the web servers, and nothing to the appserver1, except http the application specific TCP port from the web server to the application server I have no option to do SSH to the servers. Only way to reach them now is through console. 
+
+ 
+
+```bash
+#SSH to Web02
+➜  ~ ssh andreasm@10.100.99.52
+ssh: connect to host 10.100.99.52 port 22: Operation timed out
+```
+
+Well that was a first test.. It is not possible to SSH to any of the 3 involved servers. 
+
+Lets create an allow rule only for SSH to all 3 servers to make it more comfortable to manage and access instead of console. 
+
+![allow_from_wifi_clients](images/image-20251119132243163.png)
+
+Adding this rule, I am allowing my laptop which is on wifi to connect directly to the web01, web02 and appserver1 via SSH.
+
+Now some tests:
+
+Can I reach any of the three servers from any other subnet than my wifi-client subnet?
+
+```bash
+# From my linux management server in subnet 10.100.5.0/24
+andreasm@linuxmgmt10:~$ ssh 10.100.99.50 #appserver1
+ssh: connect to host 10.100.99.50 port 22: Connection timed out
+# From my laptop
+➜  ~ ssh andreasm@10.100.99.51
+andreasm@10.100.99.51's password:
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-87-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Wed Nov 19 01:30:16 PM CET 2025
+
+  System load:  0.0                Processes:              112
+  Usage of /:   45.6% of 14.66GB   Users logged in:        0
+  Memory usage: 7%                 IPv4 address for ens18: 10.100.99.51
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+255 updates can be applied immediately.
+177 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+
+Last login: Wed Nov 19 10:39:59 2025
+andreasm@web01:~$
+```
+
+By following the rules above, will I be able to reach the webpage on port 80 on both web01 and web02 from my laptop?
+
+```bash
+#From my laptop using ip 172.18.6.138
+➜  ~ curl http://10.100.99.52 #web02
+<h1>SUCCESS: Data retrieved from App Server (appserver1)</h1>
+➜  ~ curl http://10.100.99.51 #web01 
+<h1>SUCCESS: Data retrieved from App Server (appserver1)</h1>
+
+```
+
+ Yes, it seems so. And I can clearly see that both the webservers are allowed to reach the appserver1 over TCP 4567.
+
+Can my laptop reach the appserver on TCP 4567?
+
+```bash
+# From my laptop
+➜  ~ curl http://10.100.99.50:4567 #appserver1
+curl: (28) Failed to connect to 10.100.99.50 port 4567 after 75003 ms: Couldn't connect to server
+```
+
+Can any of the three servers reach the internet?
+
+```bash
+# From appserver1
+andreasm@appserver1:~$ ping 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+^C
+--- 8.8.8.8 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1021ms
+# From web01
+andreasm@web01:~$ ping 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+^C
+--- 8.8.8.8 ping statistics ---
+8 packets transmitted, 0 received, 100% packet loss, time 7172ms
+```
+
+ No, they cant.
+
+Can they resolve?
+
+```bash
+# From appserver1
+andreasm@appserver1:~$ dig nrk.no @10.100.1.7
+
+; <<>> DiG 9.18.18-0ubuntu0.22.04.1-Ubuntu <<>> nrk.no @10.100.1.7
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 29638
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1232
+; COOKIE: 8b47dddfe7bae8dc01000000691dbd6fc58a61aa810fe209 (good)
+;; QUESTION SECTION:
+;nrk.no.				IN	A
+
+;; ANSWER SECTION:
+nrk.no.			20	IN	A	213.136.45.8
+nrk.no.			20	IN	A	213.136.45.10
+
+;; Query time: 40 msec
+;; SERVER: 10.100.1.7#53(10.100.1.7) (UDP)
+;; WHEN: Wed Nov 19 13:51:59 CET 2025
+;; MSG SIZE  rcvd: 95
+```
+
+Yes, they can.
+
+Can I do SSH from any of the web servers to the appserver1?
+
+```bash
+andreasm@web01:~$ ssh 10.100.99.50 #appserver1
+ssh: connect to host 10.100.99.50 port 22: Connection timed out
+```
+
+No, that is not possible. But can I do SSH or TCP 80 between the web01 and web02?
+
+```bash
+andreasm@web01:~$ ssh 10.100.99.52
+andreasm@10.100.99.52's password:
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-87-generic x86_64)
+
+  System information as of Wed Nov 19 01:56:56 PM CET 2025
+
+  System load:  0.0                Processes:              118
+  Usage of /:   45.2% of 14.66GB   Users logged in:        1
+  Memory usage: 8%                 IPv4 address for ens18: 10.100.99.52
+  Swap usage:   0%
+
+
+255 updates can be applied immediately.
+177 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Last login: Wed Nov 19 12:23:26 2025 from 172.18.6.138
+andreasm@web02:~$
+```
+
+SSH was allowed between web01 and web02.. Ooooops. 
+What about port 80 beween? Were they not supposed to be completely isolated?
+
+```bash
+andreasm@web01:~$ curl http://10.100.99.52
+<h1>SUCCESS: Data retrieved from App Server (appserver1)</h1>
+```
+
+Ooops, again. Lets investigate why that happens
+
+### Virtual machines - same host - same vlan
+
+What happens is the following: If I happen to have multiple virtual machines on the same host in the same vlan, for vSphere hosts that is the same vDS portgroup, for Proxmox that is a Linux bridge or OVS switch, they will reach each other within the same switch as it is just layer 2. There is no need for them to exit the host to reach each other, it is done directly on the host. Well that is an issue when I have my rules enforced on the physical switch? Well out of the box it is, but there is a way around it. 
+
+**The solution**
+
+On vSphere with vDS one can use PVLAN. A Linux bridge do not support PVLAN, or at least does not have the concept of PVLAN. I have not investigated which possibilities there are within OVS. 
+
+If using Linux bridge as I am using in my Proxmox environment there is a simple solution to this. It is not involving PVLAN at all. I need to tell my bridge to isolate the ports for my respective nics on my respective virtual machines.
+Port isolation on a Linux bridge is a strict rule where traffic cannot flow directly from one isolated port to another isolated port.
+
+In Proxmox there are two ways to configure port isolation on a Linux bridge. 
+
+**Manually configure the bridge ports using cli, not preserved across vm reboots or host reboots:**
+
+Find the ports you want to isolate, then execute a command to isolate the bridge:
+
+```bash
+root@proxmox-02:/# bridge link show
+10: bond0: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 9000 master vmbr0 state forwarding priority 32 cost 100
+13: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 master vmbr1 state forwarding priority 32 cost 100
+147: tap1503i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 1500 master vmbr2vnet state forwarding priority 32 cost 2
+149: vmbr0.299@vmbr0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 master vlan299 state forwarding priority 32 cost 100
+152: tap1510i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vlan299 state forwarding priority 32 cost 2
+153: tap1501i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vlan299 state forwarding priority 32 cost 2
+154: tap1502i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vlan299 state forwarding priority 32 cost 2
+155: tap7988i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vmbr0 state forwarding priority 32 cost 2
+156: tap7988i1: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vmbr0 state forwarding priority 32 cost 2
+157: tap7988i2: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vmbr0 state forwarding priority 32 cost 2
+158: tap5999i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vmbr0 state forwarding priority 32 cost 2
+160: tap5997i0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 9000 master vmbr0 state forwarding priority 32 cost 2
+```
+
+The tap is the ports you are looking for, unless you have enabled the firewall on the VM Nic. Then it is called *fwprXXXX@fwln@@@* instead. The number behind tap is the VM id. So if your VM has id 1502, then it should have an tap id like tap1502i0. The last digit "0" is the NIC number on the VM, you can have multiple nics, which will then be tap1502i1, tap1502i2 etc. 
+
+Now I can run the command to isolate this port:
+
+```bash
+root@proxmox-02:/# bridge link set dev tap5999i0 isolated on #web01
+root@proxmox-02:/# bridge link set dev tap5997i0 isolated on #web02
+```
+
+Now I have isolated web1 and web02 on my Linux bridge. This blocks any attempt to communicate within the same bridge. The only way they can communicate now is out of the physical nic of my Proxmox host. This works fine, but there are some issues with that approach. The CLI approach is tedious and not permanent unless a startup script is made. Easy to use just for temporarily tests though.
+
+**Using Proxmox SDN to enable port isolation via the GUI**
+
+There is a graphical approach to achieve the same as above using Proxmox SDN. Proxmox SDN will use already existing bridges, you just need to configure a VLAN Zone, referring to your existing bridge:
+
+![vlan-zone](images/image-20251119154739590.png)
+
+Then a VNET using the above created Zone and a VLAN tag:
+
+![vnet](images/image-20251119155015550.png)
+
+
+
+If you notice here, the VNET has the option to "globally" Isolate all ports within the same VLAN using this VNET by selecting "Isolate Ports". 
+
+Now I can just update my VMs to use this network instead:
+
+![vm_vnet](images/image-20251119155139187.png)
+
+No need to enter the VLAN Tag as the VNET already carries the tag. 
+
+
+
+
+
+What happens if web01 and web02 lives on the same physical host on the same L2 VLAN (broadcast domain) has been isolated on the bridge and must "talk" to each other and only way to to that is through the physical switch? It will be dropped. Why?
+
+Lets discuss such a scenario below: 
+
+#### ARP scenario with port-isolation
+
+When using **Port Isolation** on the Proxmox Linux bridge it blocks web01 from talking directly to web02.
+
+- web01 shouts (ARP): *"Who has IP address B?"*
+- The bridge blocks this shout from going to web02.
+- However, the bridge **does allow** the shout to go out the "Uplink" port to my physical Arista switch.
+
+But when this ARP request is received on my pysical switch it is being dropped due to a rule of never forwarding a frame back out the same port it entered on.
+My Arista switch sees the request and thinks, *"Well I am not sending the frame using the same interface I received it on atleast, so if they need to find each other they have to do it without me involved. I can send it out on other ports in the vlan"* The frame is never received. Result: Silence. Connection fails.
+
+The solution: **local-proxy-arp**
+
+Meet my helpful neighbour, my Arista switch 
+
+Now the Arista switch receives the ARP request from VM A asking for VM B's MAC address.
+
+- **With `local-proxy-arp`:** The Arista switch sees the request and "lies." It says: *"I will handle this. Send the traffic to me."*. It will use its own mac-address to reply with.
+
+The "Hairpin" Detour:
+
+Because my Arista switch responded with its *own* MAC address, the traffic takes a detour outside the server and back in.
+
+1. **web01** sends the data destined for web02.
+2. The data leaves Proxmox, goes up the cable to my **Arista Switch**.
+3. My Arista switch receives the packet, looks at the destination IP (web02), and realizes it needs to go back out the **same interface** it came in on.
+4. My Arista switch routes the packet back down the cable to Proxmox.
+5. Proxmox receives it and delivers it to **web02**.
+
+
+
+
+
+Now where were we.. Ah yes.. Is the web01 and web02 now isolated, port 80, ssh ?
+
+
+
+Monitor drop rules
+
+I may have missed something, so lets enable monitoring on the drop rules.
+
+Diagram over VMs, two VMs same host not being enforced. 
+
+
+
+An explanation
+
+
+
+
+
+
+
+
+
+
+
+## Some useful CLI commands
+
+In this section I will quickly list some useful CLI command in relation to MSS. 
+
+### On the vZTX monitor
+
+
+
+### On the MSS Switches
+
+
 
 
 
@@ -566,25 +1223,9 @@ Being capped by CPU as offload is turned off. Multiqueue = amount of vCPU.
 
 PVLAN - Port Isolation in the bridge - alternative to PVLAN.. Needs some tweaking like local-proxy-arp on the interface on the switch... 
 
-vZTX - 
-
  
 
 
-
-## Deploying MSS in my lab
-
-### vZTX appliance
-
-Arista MSS supports two kinds of ZTX appliances
-
-CloudEOS - convert to monitor
-
-When enrolled in CloudVision, make sure there are no reconciliation not applied on the device. 
-
-### TOR switch preparation
-
-There is a simple configuration that needs to be done on the switches that will be part of MSS. As I only have one switch in my lab, a 720XP, I just need to prepare this simple configuration on it. A P2P link to my vZTX device, and a loopback interface. These loopback interfaces must be identical across all the switches in the same security zone.
 
 
 
@@ -614,4 +1255,10 @@ Arists MSS on [YouTube](https://www.youtube.com/watch?v=WyR3oqnCu4w)
 
 - [Arista Multi-Domain Segmentaton - homepage](https://www.arista.com/en/products/multi-domain-segmentation/)
 - [Arista Multi-Domain Segmentation - literature](https://www.arista.com/en/products/multi-domain-segmentation/literature)
+- [ZTX Deployment Guide](https://www.arista.com/assets/data/pdf/ZTX-7250S-Deployment-Guide.pdf)
+- [MSS Deployment Guide](https://www.arista.com/assets/data/pdf/user-manual/um-books/MSS-Deployment-Guide.pdf)
+- [MSS Data-Sheet](https://www.arista.com/assets/data/pdf/Datasheets/Multi-Domain-Segmentation-Services-for-Zero-Trust-Networking.pdf)
+- [MSS Whitepaper](https://www.arista.com/assets/data/pdf/Whitepapers/MSS-Segmentation-Technical-WP.pdf)
+
+
 
