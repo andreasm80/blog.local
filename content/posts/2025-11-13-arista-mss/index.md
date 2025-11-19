@@ -3,7 +3,7 @@ author: "Andreas M"
 title: "Arista MSS - Multi-Domain Segmentation"
 date: 2025-11-13T08:17:20+01:00
 description: "What is Arista MSS and how does it work"
-draft: true
+draft: false
 toc: true
 #featureimage: ""
 #thumbnail: "/images/thumbnail.png" # Sets thumbnail image appearing inside card on homepage.
@@ -877,7 +877,7 @@ Lets see what the Policy Builder discovers:
 
 ![observations](images/image-20251119082352200.png)
 
-I can see they are doing NTP and DNS requests to my my DNS servers, HTTP requests coming from a wifi client, both the web-servers requests the appserver1 over tcp 4567 and some HTTP to the internet, Ubuntu repositories for updates. Will I allow that? Maybe, but then I may look into a redirect rule? Lets have a look at that later.
+I can see they are doing NTP and DNS requests to my my DNS servers, HTTP requests coming from a wifi client, both the web-servers requests the appserver1 over tcp 4567 and some HTTP to the internet, Ubuntu repositories for updates. Will I allow that? Not now, they can stay offline at the moment. They are too fragile to be connected to the big Internet anyways. 
 
 Okay, lets lock things down.
 
@@ -887,7 +887,7 @@ Based on the collected sessions I am pretty sure what this application needs, so
 
 And the order they are placed and enforced:
 
-![order_rules](images/image-20251119103749273.png)
+![rules_order](images/image-20251119180235695.png)
 
 In the following groups:
 
@@ -1066,7 +1066,7 @@ Ooops, again. Lets investigate why that happens
 
 ### Virtual machines - same host - same vlan
 
-What happens is the following: If I happen to have multiple virtual machines on the same host in the same vlan, for vSphere hosts that is the same vDS portgroup, for Proxmox that is a Linux bridge or OVS switch, they will reach each other within the same switch as it is just layer 2. There is no need for them to exit the host to reach each other, it is done directly on the host. Well that is an issue when I have my rules enforced on the physical switch? Well out of the box it is, but there is a way around it. 
+What happens is the following: If I happen to have multiple virtual machines on the same host in the same vlan, for vSphere hosts that is the same vDS portgroup, for Proxmox that is a Linux bridge or OVS switch, they will reach each other within the same switch as it is just layer 2. There is no need for them to exit the host to reach each other, it is done directly on the host. Well that is an issue when I have my rules enforced on the physical switch? My Arista switch will never see this traffic, and my policies will not be enforced. But have no fear, there is a way around it. 
 
 **The solution**
 
@@ -1128,11 +1128,27 @@ Now I can just update my VMs to use this network instead:
 
 No need to enter the VLAN Tag as the VNET already carries the tag. 
 
+This approach is much easier and better to manage.
+
+{{< alert >}}
+
+When enabling port-isolation on Proxmox I noticed some degradation in performance in my Ubuntu VMs and you may want to tune the OS by disabling offload packet segmentation to get it back up to speed. Below are some things to adjust:
+
+Disable offload packet segmentation on the VMs:
+
+```bash
+sudo ethtool -K ens18 tso off gso off gro off
+```
+
+With offloading disabled, it becomes more CPU reliant. Edit the VM Hardware and populate Multiqueue = amount of vCPUs.
+
+![multiqueue](images/image-20251119181453453.png)
+
+{{< /alert >}}
 
 
 
-
-What happens if web01 and web02 lives on the same physical host on the same L2 VLAN (broadcast domain) has been isolated on the bridge and must "talk" to each other and only way to to that is through the physical switch? It will be dropped. Why?
+Now that I have solved how to isolate and force virtual machines on same VLAN to exit via the physical nic. What happens if web01 and web02 lives on the same physical host, on the same L2 VLAN (broadcast domain), and has been isolated on the bridge and must "talk" to each other? The only way to to that is through the physical switch. It will be dropped. Why?
 
 Lets discuss such a scenario below: 
 
@@ -1167,23 +1183,238 @@ Because my Arista switch responded with its *own* MAC address, the traffic takes
 
 
 
+### Application Policy - Web and Application Servers
+
+Now where were we.. Ah yes.. Is the web01 and web02 now isolated? Lets test. In the meantime I have added the "ip local-proxy-arp" on the VLAN interface 299 on my Arista switch. 
+
+```bash
+interface Vlan299
+   description test-isolation-vlan
+   vrf ALL
+   ip address 10.100.99.1/24
+   ip local-proxy-arp
+```
+
+Lets test if the web01 and web02 are now being enforced by the MSS rules.
+
+```bash
+# From web01 to web02 SSH and HTTP
+andreasm@web01:~$ ssh 10.100.99.52
+ssh: connect to host 10.100.99.52 port 22: Connection timed out
+andreasm@web01:~$ curl http://10.100.99.52
+curl: (28) Failed to connect to 10.100.99.52 port 80 after 130774 ms: Connection timed out
+# From web02 to web01 SSH and HTTP
+
+andreasm@web02:~$ curl http://10.100.99.51
+curl: (28) Failed to connect to 10.100.99.51 port 80 after 129257 ms: Connection timed out
+```
+
+Now they are being restricted by the rules on my Arista switch. 
+
+For reference, this is how my traffic-policies configuration looks like on my 720XP switch:
+
+```bash
+traffic-policies
+   vrf ALL
+      traffic-policy input vrf_all_home physical
+   !
+   field-set ipv4 prefix DNS_NTP_servers
+      10.100.1.6/32 10.100.1.7/32
+   !
+   field-set ipv4 prefix appserver1
+      10.100.99.50/32
+   !
+   field-set ipv4 prefix web-appserver1
+      10.100.99.50/32 10.100.99.51/32 10.100.99.52/32
+   !
+   field-set ipv4 prefix web01_web02
+      10.100.99.51/32 10.100.99.52/32
+   !
+   field-set ipv4 prefix wifi_clients
+      172.18.6.0/24
+   !
+   field-set service DNS
+      protocol udp source port all destination port domain
+   !
+   field-set service DNS-reverse
+      protocol udp source port domain destination port all
+   !
+   field-set service HTTP
+      protocol tcp source port all destination port www
+   !
+   field-set service HTTP-reverse
+      protocol tcp source port www destination port all
+   !
+   field-set service NTP
+      protocol udp source port all destination port ntp
+   !
+   field-set service NTP-reverse
+      protocol udp source port ntp destination port all
+   !
+   field-set service SSH
+      protocol tcp source port all destination port ssh
+   !
+   field-set service SSH-reverse
+      protocol tcp source port ssh destination port all
+   !
+   field-set service appserver1-tcp
+      protocol tcp source port all destination port 4567
+   !
+   field-set service appserver1-tcp-reverse
+      protocol tcp source port 4567 destination port all
+   transforms interface prefix common source-destination
+   !
+   traffic-policy vrf_all_home
+      !! Allow DNS and NTP requests to 10.100.1.6 and 10.100.1.7
+      description #policy-id=256
+      !
+      match allow_all_NTP ipv4
+         destination prefix field-set DNS_NTP_servers
+         protocol service field-set NTP
+         !
+         actions
+            count
+      !
+      match allow_all_NTP-reverse ipv4
+         source prefix field-set DNS_NTP_servers
+         protocol service field-set NTP-reverse
+         !
+         actions
+            count
+      !
+      match allow_all_DNS ipv4
+         destination prefix field-set DNS_NTP_servers
+         protocol service field-set DNS
+         !
+         actions
+            count
+      !
+      match allow_all_DNS-reverse ipv4
+         source prefix field-set DNS_NTP_servers
+         protocol service field-set DNS-reverse
+         !
+         actions
+            count
+      !
+      match drop_http_between_webservers ipv4
+         !! drop HTTP
+         source prefix field-set web01_web02
+         destination prefix field-set web01_web02
+         protocol service field-set HTTP
+         !
+         actions
+            count
+            drop
+      !
+      match drop_http_between_webservers-reverse ipv4
+         !! drop HTTP
+         source prefix field-set web01_web02
+         destination prefix field-set web01_web02
+         protocol service field-set HTTP-reverse
+         !
+         actions
+            count
+            drop
+      !
+      match clients_to_webservers ipv4
+         !! HTTP to webservers
+         destination prefix field-set web01_web02
+         protocol service field-set HTTP
+         !
+         actions
+            count
+      !
+      match clients_to_webservers-reverse ipv4
+         !! HTTP to webservers
+         source prefix field-set web01_web02
+         protocol service field-set HTTP-reverse
+         !
+         actions
+            count
+      !
+      match ssh_to_web-app_servers ipv4
+         !! ssh access to web app servers
+         source prefix field-set wifi_clients
+         destination prefix field-set web-appserver1
+         protocol service field-set SSH
+         !
+         actions
+            count
+      !
+      match ssh_to_web-app_servers-reverse ipv4
+         !! ssh access to web app servers
+         source prefix field-set web-appserver1
+         destination prefix field-set wifi_clients
+         protocol service field-set SSH-reverse
+         !
+         actions
+            count
+      !
+      match web-to-appserver1 ipv4
+         !! allow webservers to appserver1
+         source prefix field-set web01_web02
+         destination prefix field-set appserver1
+         protocol service field-set appserver1-tcp
+         !
+         actions
+            count
+      !
+      match web-to-appserver1-reverse ipv4
+         !! allow webservers to appserver1
+         source prefix field-set appserver1
+         destination prefix field-set web01_web02
+         protocol service field-set appserver1-tcp-reverse
+         !
+         actions
+            count
+      !
+      match drop_all_else_web-app ipv4
+         !! Drop_all_else
+         source prefix field-set web-appserver1
+         !
+         actions
+            count
+            drop
+      !
+      match drop_all_else_web-app-reverse ipv4
+         !! Drop_all_else
+         destination prefix field-set web-appserver1
+         !
+         actions
+            count
+            drop
+      !
+```
+
+Lets just display a diagram how how my VMs are interacting with each other in combination with the hardware they are running on.
+
+![flow-diagram](images/image-20251119192154779.png)
 
 
-Now where were we.. Ah yes.. Is the web01 and web02 now isolated, port 80, ssh ?
+
+On Proxmox02 the linux bridge on vlan 299 is not involved other than block all intra traffic and forcing all traffic out to my switch where the MSS policies are in place.
 
 
 
-Monitor drop rules
+### Monitor for potential allow rules I have missed
 
-I may have missed something, so lets enable monitoring on the drop rules.
+What if I have been in a rush and forgot something? The app does not work after all.
 
-Diagram over VMs, two VMs same host not being enforced. 
+Lets enable monitoring on the "drop else rule" and let it tell me whats going on.
+
+![collected_sessions](images/image-20251119182435172.png)
+
+I can clearly see the SSH and HTTP attempts beings stopped (as expected) but also that my poor VMs are trying desperately to go to Internet and fetch some needed updates, but they are being stopped. Is there a way to help them out?
 
 
 
-An explanation
 
 
+
+
+
+
+Redirect rules, I did mention aboive what if the VMs needs to go to the internet?
 
 
 
@@ -1199,29 +1430,212 @@ In this section I will quickly list some useful CLI command in relation to MSS.
 
 ### On the vZTX monitor
 
+```bash
+andreas-ztx1#show interfaces status
+Port       Name       Status       Vlan     Duplex Speed  Type         Flags Encapsulation
+Et1                   connected    routed   full   unconf 10/100/1000
+Et2                   connected    routed   full   unconf 10/100/1000
+Ma1        management connected    routed   a-full a-1G   10/100/1000
+
+```
+
+```bash
+andreas-ztx1#show interfaces tunnel 0
+Tunnel0 is up, line protocol is up (connected)
+  Hardware is Tunnel, address is 0000.0000.0000
+  Tunnel source 10.255.1.11, destination 10.255.1.10
+  Tunnel protocol/transport GRE/IP
+  Hardware forwarding enabled
+  Tunnel transport MTU 1476 bytes (default)
+  Tunnel underlay VRF "default"
+  Don't Fragment bit: copied from inner header
+  Up 2 minutes, 11 seconds
+```
+
+```bash
+andreas-ztx1#show flow tracking firewall distributed
+Flow Tracking Status
+  Type: Distributed Firewall
+  Running: yes, enabled by the 'flow tracking firewall distributed' command
+  Tracker: flowtrkr
+    Active interval: 1800000 ms
+    Inactive timeout: 15000 ms
+    Groups: ICMPv4, IPv4
+    Exporter: exp
+      VRF: default
+      Local interface: Loopback0 (10.255.1.11)
+      Export format: IPFIX version 10, MTU 9152
+      DSCP: 0
+      Template interval: 3600000 ms
+      Collectors:
+        127.0.0.1 port 4739
+    Active Ingress Interfaces:
+      Tu0
+```
+
+```bash
+andreas-ztx1#show firewall distributed instance session-table
+Legend
+eph - Ephemeral port
+
+Sessions: 75
+VRF     Proto    Source/              Fwd/Rev         Fwd/Rev         Fwd/Rev Complete Half-Open          Start Time
+                 Destination          Src VTEP IP        Pkts           Bytes
+------- -------- -------------------- ------------ ---------- --------------- -------- --------- --------------------
+default UDP      10.160.1.115:43538   10.255.1.10           1              87        0         1 2025-11-19 18:53:40
+                 10.100.1.7:53        10.255.1.10           1             141
+default UDP      172.18.199.202:51841 10.255.1.10           1              71        0         1 2025-11-19 18:53:45
+                 10.100.1.7:53        10.255.1.10           1             155
+default UDP      172.18.4.220:eph     10.255.1.10          13             904       12         0 2025-11-19 18:52:49
+                 10.100.1.6:53        10.255.1.10          13            1628
+default UDP      172.18.199.202:63375 10.255.1.10           1              71        0         1 2025-11-19 18:53:49
+                 10.100.1.7:53        10.255.1.10           1             155
+default UDP      172.18.199.202:61817 10.255.1.10           1              71        0         1 2025-11-19 18:53:43
+                 10.100.1.7:53        10.255.1.10           1             155
+default UDP      10.160.1.113:43726   10.255.1.10           1              87        0         1 2025-11-19 18:53:36
+                 10.100.1.7:53        10.255.1.10           1             103
+default UDP      172.18.199.202:51217 10.255.1.10           1              71        0         1 2025-11-19 18:53:45
+                 10.100.1.7:53        10.255.1.10           1             155
+default UDP      172.18.199.202:50857 10.255.1.10           1              71        0         1 2025-11-19 18:53:45
+                 10.100.1.7:53        10.255.1.10           1             155
+default UDP      172.18.199.202:51406 10.255.1.10           1              71        0         1 2025-11-19 18:53:50
+                 10.100.1.7:53        10.255.1.10           1             155
+default UDP      10.160.1.115:48036   10.255.1.10           1              87        0         1 2025-11-19 18:53:40
+                 10.100.1.7:53        10.255.1.10           1             103
+default UDP      172.18.6.138:48785   10.255.1.10           1              60        0         1 2025-11-19 18:53:43
+                 10.100.1.7:53        10.255.1.10           1              76
+```
+
+```bash
+andreas-ztx1#show platform sfe counters | nz
+Name                                                  Owner                             Counter Type Unit    Count
+----------------------------------------------------- --------------------------------- ------------ ------- ---------
+IPv4_Flow_Cache_Inserts                               -                                 module       flows   23846
+Tx_PMD_et2-q_out_pkts-6                               Tx_PMD_et2                        module       packets 12363
+Tx_PMD_et2-q_out_bytes-6                              Tx_PMD_et2                        module       bytes   2633319
+Tx_VKNI_et2-q_out_pkts-0                              Tx_VKNI_et2                       module       packets 182338
+Tx_VKNI_et2-q_out_bytes-0                             Tx_VKNI_et2                       module       bytes   21662140
+Tx_VKNI_et2-q_out_pkts-3                              Tx_VKNI_et2                       module       packets 2839244
+Tx_VKNI_et2-q_out_bytes-3                             Tx_VKNI_et2                       module       bytes   181712832
+L2Classify_Ethernet2-Ingress_Hdr_Check_Drop_Pkts      L2Classify_Ethernet2              module       packets 38063
+L2Classify_Ethernet2-In_Runt_Pkts                     L2Classify_Ethernet2              module       packets 145
+L2Classify_Ethernet2-Vlan_Drop_Pkts                   L2Classify_Ethernet2              module       packets 8868886
+L2Classify_Ethernet2-Bad_Router_Mac_Pkts              L2Classify_Ethernet2              module       packets 27949
+Tx_PMD_et1-q_out_pkts-1                               Tx_PMD_et1                        module       packets 119
+Tx_PMD_et1-q_out_bytes-1                              Tx_PMD_et1                        module       bytes   11590
+Tx_PMD_et1-q_out_pkts-6                               Tx_PMD_et1                        module       packets 16943
+Tx_PMD_et1-q_out_bytes-6                              Tx_PMD_et1                        module       bytes   2825679
+Tx_VKNI_et1-q_out_pkts-2                              Tx_VKNI_et1                       module       packets 117
+Tx_VKNI_et1-q_out_bytes-2                             Tx_VKNI_et1                       module       bytes   14688
+Tx_VKNI_et1-q_out_pkts-3                              Tx_VKNI_et1                       module       packets 4578
+Tx_VKNI_et1-q_out_bytes-3                             Tx_VKNI_et1                       module       bytes   274680
+Tunnel-Global-tun_decap_drop_pkts                     Ip4TunDemux                       module       packets 133
+Tunnel-0-in_ucast_pkts                                Ip4TunDemux                       module       packets 1858
+Tunnel-0-in_bytes                                     Ip4TunDemux                       module       bytes   200714
+IpfixFt-NoFcMdPkts                                    IpfixFtIngress_tu0                module       packets 231
+IpfixFt-NewFcUd                                       IpfixFtIngress_tu0                module       packets 858
+IpfixFt-DropModePkts                                  IpfixFtIngress_tu0                module       packets 1858
+```
+
+```bash
+andreas-ztx1#show agent sfe threads flow cache scan counters
+Purged count: 23849
+IPFIX export count: 8351
+IPFIX failed export count: 0
+```
+
+```bash
+andreas-ztx1#bash bessctl show flow-cache stats
+Flow Count:      97
+Num Buckets:     1048576
+Max Keys:        1048576
+Permanent Keys:  0
+Purgeable Keys:   97
+Ephemeral Keys:   47
+Ephemeral Summary Keys:   22
+Ephemeral Purge Timeout(sec):   65
+Ephemeral Source Starting Port:   49152
+Ephemeral Destination Starting Port:   49152
+Low Memory Mode: False
+Purge Timeout(sec): 10
+Tcp Half-Open Purge Timeout(sec): 10
+Tcp Idle Purge Timeout(sec): 60
+```
+
 
 
 ### On the MSS Switches
 
-
-
-
-
-
-
-CLI commands to see flows, rules etc in ZTX and 720XP. 
-
-
-
- Iperf
-
 ```bash
-sudo ethtool -K ens18 tso off gso off gro off
+andreasm-720xp-home(config)#show traffic-policy ?
+  WORD       Traffic policy name
+  field-set  Traffic policy field set
+  interface  Policy applied on interface
+  protocol   protocol
+  vlan       Policy applied on VLAN
 ```
 
-Being capped by CPU as offload is turned off. Multiqueue = amount of vCPU.
+```bash
+andreasm-720xp-home(config)#show traffic-policy vlan detail
+Traffic policy vrf_all_home
+   Configured on VLANs:
+   Applied on VLANs for IPv4 traffic:
+   Applied on VLANs for IPv6 traffic:
+   Total number of rules configured: 16
+      match allow_all_NTP ipv4
+         Destination prefix: field-set DNS_NTP_servers (Prefixes: 2, Except prefixes: 0)
+         Service: field-set NTP (Protocols: 1)
+         Actions: Count: 0 packets
+      match allow_all_NTP-reverse ipv4
+         Source prefix: field-set DNS_NTP_servers (Prefixes: 2, Except prefixes: 0)
+         Service: field-set NTP-reverse (Protocols: 1)
+         Actions: Count: 0 packets
+      match allow_all_DNS ipv4
+         Destination prefix: field-set DNS_NTP_servers (Prefixes: 2, Except prefixes: 0)
+         Service: field-set DNS (Protocols: 1)
+         Actions: Count: 0 packets
+                  Mirror session andreas-vztx-ALL
+      match allow_all_DNS-reverse ipv4
+         Source prefix: field-set DNS_NTP_servers (Prefixes: 2, Except prefixes: 0)
+         Service: field-set DNS-reverse (Protocols: 1)
+         Actions: Count: 0 packets
+                  Mirror session andreas-vztx-ALL
+      match drop_http_between_webservers ipv4
+         Source prefix: field-set web01_web02 (Prefixes: 2, Except prefixes: 0)
+         Destination prefix: field-set web01_web02 (Prefixes: 2, Except prefixes: 0)
+         Service: field-set HTTP (Protocols: 1)
+         Actions: Drop
+                  Count: 0 packets
+```
 
-PVLAN - Port Isolation in the bridge - alternative to PVLAN.. Needs some tweaking like local-proxy-arp on the interface on the switch... 
+```bash
+andreasm-720xp-home(config)#show traffic-policy interface summary
+Traffic policy vrf_all_home
+   description #policy-id=256
+   Configured on input for VRFs: ALL
+   Applied on input for IPv4 traffic in VRFs: ALL
+   Applied on input for IPv6 traffic in VRFs: ALL
+   Configured on input of interfaces:
+   Applied on input of interfaces for IPv4 traffic:
+   Applied on input of interfaces for IPv6 traffic:
+   Total number of rules configured: 16
+      match allow_all_NTP ipv4
+      match allow_all_NTP-reverse ipv4
+      match allow_all_DNS ipv4
+      match allow_all_DNS-reverse ipv4
+      match drop_http_between_webservers ipv4
+      match drop_http_between_webservers-reverse ipv4
+      match clients_to_webservers ipv4
+      match clients_to_webservers-reverse ipv4
+      match ssh_to_web-app_servers ipv4
+      match ssh_to_web-app_servers-reverse ipv4
+      match web-to-appserver1 ipv4
+      match web-to-appserver1-reverse ipv4
+      match drop_all_else_web-app ipv4
+      match drop_all_else_web-app-reverse ipv4
+      match ipv4-all-default ipv4
+      match ipv6-all-default ipv6
+```
 
  
 
@@ -1229,23 +1643,11 @@ PVLAN - Port Isolation in the bridge - alternative to PVLAN.. Needs some tweakin
 
 
 
-Redirect policy, flowdata, payload?
-
-
-
-
-
-My lab topology:
-
-Two hosts, one Arista 720XP and one vZTX.
-
-Before I could get started with MSS I needed to prepare a couple of things. 
-
-Either a local instance of CloudVision deployed and running,  and enabled 
-
 ## Outro
 
-Recommend material:
+This has been a very interesting experience. MSS is easy to get started with. It is more or less there just waiting for you to enable it. A big benefit, apart from easy administration, is the idea that I can cover my whole estate with policies, across the board with no gaps. In the DC, in the Campus, different Campus'es, Branch offices all from same management UI (CloudVision). Instead of bringing the traffic into my DC I can police the traffic at the edge, where it is. I have to do a follow up post when I also get some Arista Wifi in the house. Then I hopefully can utilize the integration of AGNI in MSS too. MSS also supports redirect rules to 3rd party firewalls for further inspection which I did not have the time to look at this time.  If MSS is in place, there is no place to hide. It will be enforced by the traffic-policies on the Arista switches. Performance wise there is no better place to enforce it than on the switches themselves. They are made for it and at line-rate performance.. Well it cant really be any better.  
+
+Recommend material to have a look at:
 
 Arists MSS on [YouTube](https://www.youtube.com/watch?v=WyR3oqnCu4w)
 
