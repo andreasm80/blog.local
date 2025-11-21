@@ -252,7 +252,7 @@ daemon TerminAttr
 
 The TerminAttr config will be done as part of the CloudVision onboarding process. Just follow the guide in CloudVision.
 
-The documentation is not stating that the Management interface MUST be in the default VRF, I created a dedicated MGMT vrf and placed it there. That is the only VRF I have configured. Then I configured interface Ethernet1 as the p2p link to my Arista 720XP switch, and a Loopback0 interface. This loopback interface will be used later when I configure MSS Monitor object in CloudVision later. Then a default route in the default VRF using my 720XP p2p link as gateway. I used a /24 subnet for these p2p links which is unnecessary. 
+The documentation is not stating that the Management interface MUST be in the default VRF, I created a dedicated MGMT vrf and placed it there. That is the only VRF I have configured. Then I configured interface Ethernet1 as the p2p link to my Arista 720XP switch, and a Loopback0 interface. This loopback interface will be used later when I configure MSS Monitor object in CloudVision. Then a default route in the default VRF using my 720XP p2p link as gateway. I used a /24 subnet for these p2p links which is unnecessary. 
 
 Now my vZTX is ready configured with its necessary configuration and I can onboard it to CloudVision. 
 
@@ -358,7 +358,7 @@ Everything MSS related is managed by Studios and Workspaces. When the initial co
 
 ![network-security](images/image-20251113203356406.png)
 
-To make sure all the MSS related features in CloudVision is readily available in the UI they may have to be enabled. Head over to settings in CloudVision and Features and enable the following features:
+To make sure all the MSS related features in CloudVision are readily available in the UI they may have to be enabled (if they are missing refer to the [Arista MSS Datasheet](https://www.arista.com/assets/data/pdf/Datasheets/Multi-Domain-Segmentation-Services-for-Zero-Trust-Networking.pdf) for CVP supported versions). Head over to settings in CloudVision and Features and enable the following features:
 
 - Network Security- MSS
 - Network Security - Fine-Grained Policy Monitor Loading
