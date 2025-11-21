@@ -55,7 +55,7 @@ From Arista's offical MSS [web-page](https://www.arista.com/en/products/multi-do
 
 
 
-In my previous role at a software vendor as a Solution Engineer for many years helping customers with microsegmentation, zero-trust and microsegmentation is nothing new but an important security solution in todays IT landscape. I find the Arista MSS solution very interesting. The biggest differenciator with MSS is where the enforcement is done and how easy it is to get started and manage. In contrast to other solutions out there MSS will allow you to cover all needs from Campus, Datacenter all the way to the Branch/Edge, not leaving any gaps. MSS enforcement point is your switches, not an agent, not a software layer but right there where the traffic is and on the devices that are responsible for switching and routing your precious data, regardless of what kind and in which part of the network it is. Then there is performance, when using MSS it is actually line-rate performance which means no performance penalty when enabling an important security solution in your fabric. 
+In my previous role at a software vendor as a Solution Engineer for many years helping customers with microsegmentation, zero-trust and microsegmentation is nothing new but an important security solution in todays IT landscape. I find the Arista MSS solution very interesting. The biggest differentiator with MSS is where the enforcement is done and how easy it is to get started and manage. In contrast to other solutions out there MSS will allow you to cover all needs from Campus, Datacenter all the way to the Branch/Edge, not leaving any gaps. MSS enforcement point is your switches, not an agent, not a software layer but right there where the traffic is and on the devices that are responsible for switching and routing your precious data, regardless of what kind and in which part of the network it is. Then there is performance, when using MSS it is actually line-rate performance which means no performance penalty when enabling an important security solution in your fabric. 
 
 So how does it work? Lets dig in and find out.
 
@@ -374,7 +374,7 @@ Screenshot of the Island...
 
 ![workspace-island](images/image-20251113205549192.png)
 
-Then ofcourse the MSS related features in CloudVision (if not already enabled). 
+Then of course the MSS related features in CloudVision (if not already enabled). 
 
 ![mss-features](images/image-20251113135132913.png)
 
@@ -1645,7 +1645,7 @@ Traffic policy vrf_all_home
 
 ## Outro
 
-This has been a very interesting experience. MSS is easy to get started with. It is more or less there just waiting for you to enable it. A big benefit, apart from easy administration, is the idea that I can cover my whole estate with policies, across the board with no gaps. In the DC, in the Campus, different Campus'es, Branch offices all from same management UI (CloudVision). Instead of bringing the traffic into my DC I can police the traffic at the edge, where it is. I have to do a follow up post when I also get some Arista Wifi in the house. Then I hopefully can utilize the integration of AGNI in MSS too. MSS also supports redirect rules to 3rd party firewalls for further inspection which I did not have the time to look at this time.  If MSS is in place, there is no place to hide. It will be enforced by the traffic-policies on the Arista switches. Performance wise there is no better place to enforce it than on the switches themselves. They are made for it and at line-rate performance.. Well it cant really be any better.  
+This has been a very interesting experience. MSS is easy to get started with. It is more or less there just waiting for you to enable it. A big benefit, apart from easy administration, is the idea that I can cover my whole estate with policies, across the board with no gaps. In the DC, in the Campus, different Campus', Branch offices all from same management UI (CloudVision). Instead of bringing the traffic into my DC I can police the traffic at the edge, where it is. I have to do a follow up post when I also get some Arista Wifi in the house. Then I hopefully can utilize the integration of AGNI in MSS too. MSS also supports redirect rules to 3rd party firewalls for further inspection which I did not have the time to look at this time.  If MSS is in place, there is no place to hide. It will be enforced by the traffic-policies on the Arista switches. Performance wise there is no better place to enforce it than on the switches themselves. They are made for it and at line-rate performance.. Well it cant really be any better.  
 
 Recommend material to have a look at:
 
