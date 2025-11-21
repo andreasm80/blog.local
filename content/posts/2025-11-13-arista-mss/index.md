@@ -458,7 +458,7 @@ Go back by clicking on MSS Service in the blue text.
 
 ![monitor_object](images/image-20251113213526732.png)
 
-Now a very important task. When you are back in the MSS Studio. Go all the way upp and look for the blue lightning symbol.
+Now a very important task. When you are back in the MSS Studio. Go all the way up and look for the blue lightning symbol.
 
 ![lightning](images/image-20251113215718176.png)
 
@@ -496,17 +496,17 @@ Submit the Workspace:
 
 
 
-Now, one can head over to Network Security and start work some magic with MSS
+Now, one can head over to Network Security and start to work some magic with MSS
 
 ![network-security](images/image-20251113220314462.png)
 
-Its now the fun begins.
+Now the fun begins.
 
 
 
 ### My lab
 
-For better context, below is how my lab environment looks like.
+For better context, below is what my lab environment looks like.
 
 My lab consists of two Proxmox servers forming a cluster using a qdevice (RPi) to form a quorom. These servers are both connected to the same Arista 720XP switch. My perimeter firewall is a virtual PfSense running as a virtual machine on the Proxmox servers. 
 
