@@ -30,11 +30,11 @@ comment: false # Disable comment if false.
 
 
 
-Before I dive into how I configured and tested Arista MSS in my lab, I feel its kind of necessary to do a short introduction of MSS. What is it?
+Before diving into the lab configuration and testing, I think a quick introduction to MSS is in order. What is it?
 
-On a very high level, Arista Multi-Domain Segmentation Services is a solution to help you achieve Zero-Trust by allowing you to create microsegmention policies in your network fabric. This is regardless whether it is in your Campus, Datacenter or Branch/Edge. 
+On a very high level, Arista Multi-Domain Segmentation Services is a solution to help you achieve Zero-Trust by allowing you to create microsegmentation policies in your network fabric. This is regardless whether it is in your Campus, Datacenter or Branch/Edge. 
 
-From Arista's offical MSS [web-page](https://www.arista.com/en/products/multi-domain-segmentation):
+From Arista's official MSS [webpage](https://www.arista.com/en/products/multi-domain-segmentation):
 
 > Arista MSS offers a switch-based microperimeter technology stack that preserves the best attributes of switch-based and host-based firewall micro-segmentation technologies and, at the same time, overcomes their main limitations while delivering a consistent, unified segmentation architecture end-to-end across multiple domains (from the campus/branch to the data center).
 
@@ -55,13 +55,13 @@ From Arista's offical MSS [web-page](https://www.arista.com/en/products/multi-do
 
 
 
-In my previous role at a software vendor as a Solution Engineer for many years helping customers with microsegmentation, zero-trust and microsegmentation is nothing new but an important security solution in todays IT landscape. I find the Arista MSS solution very interesting. The biggest differentiator with MSS is where the enforcement is done and how easy it is to get started and manage. In contrast to other solutions out there MSS will allow you to cover all needs from Campus, Datacenter all the way to the Branch/Edge, not leaving any gaps. MSS enforcement point is your switches, not an agent, not a software layer but right there where the traffic is and on the devices that are responsible for switching and routing your precious data, regardless of what kind and in which part of the network it is. Then there is performance, when using MSS it is actually line-rate performance which means no performance penalty when enabling an important security solution in your fabric. 
+In my previous role as a Solutions Engineer at a software vendor I spent many years helping customers to implement microsegmentation and zero trust networking policies. I am familiar with the ins and outs of these concepts and view them as important security solution in todays IT landscape. I find the Arista MSS solution very interesting. The biggest differentiator with MSS is where the enforcement is done and how easy it is to get started and manage. In contrast to other solutions out there MSS will allow you to cover all needs from Campus, Datacenter all the way to the Branch/Edge, not leaving any gaps. The MSS enforcement point is implemented in your switches, not an agent, not a software layer but right there where the traffic is and on the devices that are responsible for switching and routing your precious data, regardless of what kind and in which part of the network it is. Another big advantage is performance: MSS enforces policies at line rate, so there is no performance penalty when enabling an important security solution in your fabric. 
 
-So how does it work? Lets dig in and find out.
+So how does it work? Let's dig in and find out.
 
 ## What is needed to get started with MSS?
 
-This blog will only cover three components needed to run MSS, a supported Arista Switch, the ZTX appliance and Arista CloudVision. I will not cover things such as license requirements. For more detailed list of requirements and features see the MSS Data Sheet [here](https://www.arista.com/assets/data/pdf/Datasheets/Multi-Domain-Segmentation-Services-for-Zero-Trust-Networking.pdf) (page 5 for hardware and license requirements). Things like Data Sources will not be covered as I dont have things like vSphere (vCenter with VDS) and Arista AGNI (yet) available in my lab.
+This blog will only cover three components needed to run MSS, a supported Arista Switch, the ZTX appliance and Arista CloudVision. I will not cover things such as license requirements. For more detailed list of requirements and features see the MSS Data Sheet [here](https://www.arista.com/assets/data/pdf/Datasheets/Multi-Domain-Segmentation-Services-for-Zero-Trust-Networking.pdf) (page 5 for hardware and license requirements). Things like Data Sources will not be covered as I don't have things like vSphere (vCenter with VDS) and Arista AGNI (yet) available in my lab.
 
 
 
@@ -73,19 +73,19 @@ This blog will only cover three components needed to run MSS, a supported Arista
 
 Source: [arista.com](https://www.arista.com/assets/data/pdf/user-manual/um-books/MSS-Deployment-Guide.pdf)
 
-The ZTX monitor comes in two flavours, a physical appliance (ZTX-7250S-16S) and a virtual appliance. I will use the virtual appliance, vZTX, in my lab. vZTX can run on ESXi or KVM. In my lab I am using Proxmox which is KVM. Choosing between the physical or virtual in a production environment comes down to scale and performance. 
+The ZTX monitor comes in two flavours, a physical appliance (ZTX-7250S-16S) and a virtual appliance. I will use the virtual appliance, vZTX, in my lab. vZTX can run on ESXi or KVM. In my lab I am using Proxmox which is KVM based. Choosing between the physical or virtual in a production environment comes down to scale and performance. 
 
-*For more information on the ZTX deployment head over [here](https://www.arista.com/assets/data/pdf/ZTX-7250S-Deployment-Guide.pdf), it covers both the ZTX and vZTX and includes different supported toplogies.*
+*For more information on the ZTX deployment head over [here](https://www.arista.com/assets/data/pdf/ZTX-7250S-Deployment-Guide.pdf), it covers both the ZTX and vZTX and includes different supported topologies.*
 
 
 
-There are some initial configurations that needs to be in place for the ZTX to work as intended, the steps below will go through these steps. Here are the things that needs to be done:
+There are some initial configurations that need to be in place for the ZTX to work as intended, the steps below will go through these. Here are the things that need to be done:
 
 - Create the virtual machine in Proxmox with correct configuration so the CloudEOS image will boot
 - Moving the CloudEOS image into monitor mode
 - Basic configurations like username/password for SSH access and management
 - Out of Band Management interface
-- Peer to Peer link betwen the vZTX appliance and TOR switches (in my case my only 720XP).
+- Peer to Peer link between the vZTX appliance and TOR switches (in my case my only 720XP).
 - Loopback interface
 - Some static routes (dynamic routing is also possible see [this](https://www.arista.com/assets/data/pdf/ZTX-7250S-Deployment-Guide.pdf)) for the loopback addresses between vZTX and TOR switch
 - DNS
@@ -124,7 +124,7 @@ SR-IOV is a MUST in production (not supported otherwise), but in my lab I did no
 
 #### Moving the CloudEOS to Monitor Mode
 
-When the vZTX has been configured in Proxmox its time to power it up. It will boot up with a very simple config. Username defaults to admin, and there is no password or was the password admin? Dont remember.
+When the vZTX has been configured in Proxmox it's time to power it up. It will boot up with a very simple config. Username defaults to admin, and there is no password or was the password admin? Don't remember.
 
 Before I can use the CloudEOS image as my ZTX appliance the first thing that needs to be done is to move the CloudEOS into monitor mode after first boot. This is done by running the following commands:
 
@@ -146,7 +146,7 @@ vZTX# write
 vZTX# reload
 ```
 
-When the switch boots back up login again and verify veos-config after the config above:
+When the appliance boots back up login again and verify veos-config after the config above:
 
 ```bash
 # Verify the veos-config after
@@ -157,9 +157,9 @@ maxDatapathCores=2
 vZTX# 
 ```
 
-Thats it.
+That's it.
 
-#### Basic configurations - Management1-p2p link-loopback
+#### Basic configurations - Management1, p2p and loopback
 
 Now I can proceed to do the other configurations like mgmt interface, hostname, DNS, NTP and p2p link to my 720XP switch. See below for my running-config:
 
@@ -172,7 +172,7 @@ andreas-ztx1#show running-config
 !
 no aaa root
 !
-username admin privilege 15 role network-admin secret sha512 <hash-redacted>
+username admin privilege 15 role network-admin secret sha512 <redacted>
 !
 management api http-commands
    no shutdown
@@ -270,7 +270,7 @@ This may also be done using your preferred ZTP/bootstrap approach.
 
 *Under the General Requirements it says: *Have the Streaming Agent extension installed (minimum version 1.19.5). Click [here](https://www.arista.com/en/support/software-download) to download the Streaming Agent extension. If you already have the right minimum terminattr version on your EOS this can be skipped*
 
-My vZTX onboarded to CloudVision together with my 720XP:
+Below you can see my vZTX appliance ready and onboarded to CloudVision together with my 720XP:
 
 ![my-devices](images/image-20251113203605371.png)
 
@@ -292,7 +292,7 @@ interface Loopback0
 ip route 10.255.1.11/32 172.18.111.2
 ```
 
-A Loopback0 interface, a static route pointing to the vZTX Loopback0 interface (Dynamic routing is also possible). Thats it for the actual switch configuration needed on the 720XP. 
+A Loopback0 interface, a static route pointing to the vZTX Loopback0 interface (Dynamic routing is also possible). That's it for the actual switch configuration needed on the 720XP. 
 
 {{< alert >}}
 
