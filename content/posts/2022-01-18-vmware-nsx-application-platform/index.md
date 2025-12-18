@@ -47,7 +47,7 @@ A quick summary of what is needed, tools/software and what I have used in my set
 This post will cover the Advanced form factor where I went with the following node configuration:  
 1 master worker/control plane node with 4 vCPUs, 8GB RAM and 200GB local disk (ephemeral storage). For the worker nodes: 3 worker nodes with 16vCPUs, 64GB RAM and 200GB (ephemeral storage) for the persistent storage (the 1TB disk requirement) I went with vSphere CSI to expose a VMFS datastore from vSphere for the persistent volume requirement.  
 
-The next chapters will go trough the installation of Harbor (registry) and the configuration done there, then the K8s configuration specifically the CSI and MetalLB part as I am following the generic K8s installation covered earlier here: [Deploy Kubernetes on Ubuntu 20.04](https://yike.guzware.net/2020/10/08/ako-with-antrea-on-native-k8s-cluster/#Deploy_Kubernetes_on_Ubuntu_2004) .  
+The next chapters will go trough the installation of Harbor (registry) and the configuration done there, then the K8s configuration specifically the CSI and MetalLB part as I am following the generic K8s installation covered earlier here: [Deploy Kubernetes on Ubuntu 20.04](https://blog.andreasm.io/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/) .  
 Lets get to it.
 
 ### Harbor (registry requirement)
@@ -94,7 +94,7 @@ Thats it for Harbor, next up the K8s cluster
 ### The K8s cluster where NAPP is deployed
 
 As stated in the official documentation for NAPP, K8s needs to be a specific version, it can be upstream K8s, VMware Tanzu (TKC) or other K8s managed platforms such as OpenShift. But the currently validated platforms are at the moment the above two mentioned platforms: upstream K8s and TKC.  
-As I wrote initially I will go with upstream K8s for this. To get this going I prepared 4 VMs where I dedicate one master worker/control-plane node with the above given specifications and 3 worker nodes with the above given specifications. I follow my previous guide for preparing the Ubuntu os and installing K8s here: [K8s on Ubuntu](http://blog.andreasm.io/2020/10/08/ako-with-antrea-on-native-k8s-cluster/#Prepare_the_Worker_and_Master_nodes) so I will not cover this here but just continue from this with the specifics I did to get the CSI driver up, Antrea CNI and MetalLB. First out is the Antrea CNI.
+As I wrote initially I will go with upstream K8s for this. To get this going I prepared 4 VMs where I dedicate one master worker/control-plane node with the above given specifications and 3 worker nodes with the above given specifications. I follow my previous guide for preparing the Ubuntu os and installing K8s here: [K8s on Ubuntu](https://blog.andreasm.io/2020/10/08/nsx-advanced-loadbalancer-with-antrea-on-native-k8s/#Prepare_the_Worker_and_Master_nodes) so I will not cover this here but just continue from this with the specifics I did to get the CSI driver up, Antrea CNI and MetalLB. First out is the Antrea CNI.
 
 - Assuming the K8s cluster is partially up, due to no CNI is installed. I download the downstream version of Antrea (one can also use the upstream version from the Antrea github repository) from my.vmware.com. One of the reason I want to use the downstream version from my.vmware.com version is that I want to integrate it to my NSX management plane (more on that in an separate post covering NSX-T with Antrea integration).
 - Download the VMware Container Networking with Antrea (Advanced) from your my.vmware.page to your master worker. Unzip the zip file.

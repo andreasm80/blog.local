@@ -22,7 +22,7 @@ Abbreviations used in this article:
 
 ## Introduction to VMware NSX distributed IDS & IPS
 
-Before we dive into how to configure and use the distributed IDS and IPS feature in NSX let me just go through the basics where I compare the traditional approach with IDS/IPS and the NSX distributed IDS/IPS. This article is a continuation on the article [Microsegmentation with VMware NSX"](http://yikes.guzware.net/2021/07/10/microsegmentation-with-vmware-nsx/) where I talk about east/west and north/south traffic pattern and being in context with the workload its supposed to protect. Where being in context is a key thing, especially when it comes to security policies and IDS/IPS. Know what you are protecting, make the inspection as relevant as possible, inspection done optimal (reduce false positives, maintain performance) and at the right place.
+Before we dive into how to configure and use the distributed IDS and IPS feature in NSX let me just go through the basics where I compare the traditional approach with IDS/IPS and the NSX distributed IDS/IPS. This article is a continuation on the article [Microsegmentation with VMware NSX"](https://blog.andreasm.io/2021/07/10/microsegmentation-with-vmware-nsx/) where I talk about east/west and north/south traffic pattern and being in context with the workload its supposed to protect. Where being in context is a key thing, especially when it comes to security policies and IDS/IPS. Know what you are protecting, make the inspection as relevant as possible, inspection done optimal (reduce false positives, maintain performance) and at the right place.
 
 ### The traditional way of using IDS/IPS
 

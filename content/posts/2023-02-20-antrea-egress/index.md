@@ -35,7 +35,7 @@ As the diagram below will illustrate, when pods communicate out, the will all ge
 
 <img src=images/image-20230221120316551.png style="width:500px" />
 
-Ofcourse we can use Antrea Native Policies which I have written about [here](https://yikes.guzware.net/2021/07/10/antrea-network-policies/) or VMware NSX with NCP, and VMware NSX with Antrea Integration to do fine grained security from source. But still there are environments we need to handle rules in perimeter firewalls. 
+Ofcourse we can use Antrea Native Policies which I have written about [here](https://blog.andreasm.io/2021/07/10/antrea-network-policies/) or VMware NSX with NCP, and VMware NSX with Antrea Integration to do fine grained security from source. But still there are environments we need to handle rules in perimeter firewalls. 
 
 So, this post will show how to enable Antrea Egress in vSphere 8 with Tanzu. With the current release of Antrea there is only support of using the same L2 network as worker nodes for the Antrea Egress IP-Pool. 
 
